@@ -1,1 +1,1383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manufacturing Rejects Dashboard</title>
+    <style>
+        /* Reset and Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, Helvetica, sans-serif;
+        }
 
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header Styles */
+        header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px 0;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2rem;
+        }
+
+        h2 {
+            margin: 15px 0;
+            color: #2c3e50;
+            border-bottom: 2px solid #e67e22;
+            padding-bottom: 5px;
+        }
+
+        /* Filter Section */
+        .filters {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .filter-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .filter-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .filter-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .filter-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        button {
+            padding: 8px 16px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        button.reset {
+            background-color: #e74c3c;
+        }
+
+        button.reset:hover {
+            background-color: #c0392b;
+        }
+
+        /* Dashboard Grid Layout */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Summary Stats Styles */
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #e67e22;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+        }
+
+        /* Chart Containers */
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        /* Canvas-based Charts */
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Loading Indicator */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+            font-size: 1.2rem;
+            color: #7f8c8d;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin-right: 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* SVG-based Charts */
+        .bar {
+            fill: #3498db;
+            transition: fill 0.3s;
+        }
+
+        .bar:hover {
+            fill: #e67e22;
+        }
+
+        .bar-label {
+            font-size: 12px;
+            text-anchor: middle;
+            fill: #333;
+        }
+
+        .axis line, .axis path {
+            stroke: #ccc;
+        }
+
+        .axis text {
+            font-size: 11px;
+            fill: #666;
+        }
+
+        /* No Data Message */
+        .no-data {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+
+        /* Custom SVG Chart Styles */
+        svg {
+            display: block;
+            width: 100%;
+            height: 300px;
+        }
+
+        /* Legend Styles */
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .legend-color {
+            width: 15px;
+            height: 15px;
+            margin-right: 5px;
+            border-radius: 3px;
+        }
+
+        /* Tooltip Styles */
+        .tooltip {
+            position: absolute;
+            padding: 8px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            border-radius: 4px;
+            pointer-events: none;
+            z-index: 100;
+            font-size: 0.75rem;
+            max-width: 200px;
+            box-shadow: 0 3px 14px rgba(0, 0, 0, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Manufacturing Rejects Dashboard</h1>
+        </header>
+
+        <section class="filters">
+            <h2>Filters</h2>
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label for="date-from">From Date:</label>
+                    <input type="date" id="date-from">
+                </div>
+                <div class="filter-group">
+                    <label for="date-to">To Date:</label>
+                    <input type="date" id="date-to">
+                </div>
+                <div class="filter-group">
+                    <label for="supervisor">Supervisor:</label>
+                    <select id="supervisor">
+                        <option value="">All Supervisors</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="product">Product:</label>
+                    <select id="product">
+                        <option value="">All Products</option>
+                    </select>
+                </div>
+            </div>
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label for="variant">Variant:</label>
+                    <select id="variant">
+                        <option value="">All Variants</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="batch">Batch Number:</label>
+                    <select id="batch">
+                        <option value="">All Batches</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="part">Part Name:</label>
+                    <select id="part">
+                        <option value="">All Parts</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="alias">Part Alias:</label>
+                    <select id="alias">
+                        <option value="">All Aliases</option>
+                    </select>
+                </div>
+            </div>
+            <div class="filter-buttons">
+                <button id="apply-filters">Apply Filters</button>
+                <button id="reset-filters" class="reset">Reset Filters</button>
+            </div>
+        </section>
+
+        <section class="summary-stats">
+            <div class="stat-card">
+                <div id="total-rejects" class="stat-value">0</div>
+                <div class="stat-label">Total Rejects</div>
+            </div>
+            <div class="stat-card">
+                <div id="total-cost" class="stat-value">$0</div>
+                <div class="stat-label">Total Cost</div>
+            </div>
+            <div class="stat-card">
+                <div id="scrap-count" class="stat-value">0</div>
+                <div class="stat-label">Scrap Count</div>
+            </div>
+            <div class="stat-card">
+                <div id="rts-count" class="stat-value">0</div>
+                <div class="stat-label">RTS Count</div>
+            </div>
+        </section>
+
+        <div class="dashboard-grid">
+            <div class="card">
+                <h2>Reject Reasons Distribution</h2>
+                <div id="reasons-chart" class="chart-container">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <span>Loading data...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <h2>Daily Rejects Trend</h2>
+                <div id="trend-chart" class="chart-container">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <span>Loading data...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <h2>Top Problem Parts</h2>
+                <div id="parts-chart" class="chart-container">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <span>Loading data...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <h2>Cost by Station</h2>
+                <div id="station-chart" class="chart-container">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <span>Loading data...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Detailed Rejects Data</h2>
+            <div id="data-table-container" style="overflow-x: auto;">
+                <table id="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Supervisor</th>
+                            <th>Product</th>
+                            <th>Variant</th>
+                            <th>Batch</th>
+                            <th>Station</th>
+                            <th>Reject Reason</th>
+                            <th>Action</th>
+                            <th>QTY</th>
+                            <th>Cost</th>
+                        </tr>
+                    </thead>
+                    <tbody id="data-table-body">
+                        <!-- Data will be loaded here via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let rejectData = [];
+        let filteredData = [];
+        const GITHUB_REPO = 'OPSSinapi/rejects-dashboard';
+        const FILE_PATH = 'RejectsData.json';
+        const DATA_URL = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/${FILE_PATH}`;
+
+        // DOM elements
+        const filterElements = {
+            dateFrom: document.getElementById('date-from'),
+            dateTo: document.getElementById('date-to'),
+            supervisor: document.getElementById('supervisor'),
+            product: document.getElementById('product'),
+            variant: document.getElementById('variant'),
+            batch: document.getElementById('batch'),
+            part: document.getElementById('part'),
+            alias: document.getElementById('alias'),
+            applyBtn: document.getElementById('apply-filters'),
+            resetBtn: document.getElementById('reset-filters')
+        };
+
+        const statElements = {
+            totalRejects: document.getElementById('total-rejects'),
+            totalCost: document.getElementById('total-cost'),
+            scrapCount: document.getElementById('scrap-count'),
+            rtsCount: document.getElementById('rts-count')
+        };
+
+        const chartContainers = {
+            reasons: document.getElementById('reasons-chart'),
+            trend: document.getElementById('trend-chart'),
+            parts: document.getElementById('parts-chart'),
+            station: document.getElementById('station-chart')
+        };
+
+        const dataTableBody = document.getElementById('data-table-body');
+
+        // Color schemes
+        const colors = [
+            '#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', 
+            '#1abc9c', '#e67e22', '#34495e', '#16a085', '#d35400', 
+            '#8e44ad', '#27ae60', '#c0392b', '#2980b9', '#f1c40f'
+        ];
+
+        // Fetch data from GitHub
+        async function fetchData() {
+            try {
+                const response = await fetch(DATA_URL);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                const data = await response.json();
+                return data.rejectData || [];
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                alert('Failed to load data. Please check the console for details.');
+                return [];
+            }
+        }
+
+        // Initialize the dashboard
+        async function initDashboard() {
+            // Show loading indicators
+            Object.values(chartContainers).forEach(container => {
+                container.innerHTML = `
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <span>Loading data...</span>
+                    </div>
+                `;
+            });
+
+            // Fetch data
+            rejectData = await fetchData();
+            
+            if (rejectData.length === 0) {
+                Object.values(chartContainers).forEach(container => {
+                    container.innerHTML = `
+                        <div class="no-data">No data available</div>
+                    `;
+                });
+                return;
+            }
+
+            // Set initial date range if not set
+            if (!filterElements.dateFrom.value) {
+                // Find earliest and latest dates in the data
+                const dates = rejectData.map(item => new Date(item.ProductionDate));
+                const minDate = new Date(Math.min(...dates));
+                const maxDate = new Date(Math.max(...dates));
+                
+                // Format dates for input elements
+                filterElements.dateFrom.value = formatDateForInput(minDate);
+                filterElements.dateTo.value = formatDateForInput(maxDate);
+            }
+
+            // Populate filter dropdowns
+            populateFilterDropdowns();
+
+            // Apply initial filtering
+            applyFilters();
+
+            // Add event listeners
+            filterElements.applyBtn.addEventListener('click', applyFilters);
+            filterElements.resetBtn.addEventListener('click', resetFilters);
+        }
+
+        // Populate filter dropdowns with unique values from the data
+        function populateFilterDropdowns() {
+            // Get unique values for each filter
+            const uniqueValues = {
+                supervisor: new Set(),
+                product: new Set(),
+                variant: new Set(),
+                batch: new Set(),
+                part: new Set(),
+                alias: new Set()
+            };
+
+            rejectData.forEach(item => {
+                if (item.LineSupervisor) uniqueValues.supervisor.add(item.LineSupervisor);
+                if (item.Product) uniqueValues.product.add(item.Product);
+                if (item.Variant) uniqueValues.variant.add(item.Variant);
+                if (item.BatchNumber) uniqueValues.batch.add(item.BatchNumber);
+                
+                // Handle parts (which might be arrays)
+                if (Array.isArray(item.Parts)) {
+                    item.Parts.forEach(part => uniqueValues.part.add(part.trim()));
+                } else if (typeof item.Parts === 'string') {
+                    item.Parts.split(',').forEach(part => uniqueValues.part.add(part.trim()));
+                }
+                
+                // Handle aliases (which might be arrays)
+                if (Array.isArray(item.Aliases)) {
+                    item.Aliases.forEach(alias => uniqueValues.alias.add(alias.trim()));
+                } else if (typeof item.Aliases === 'string') {
+                    item.Aliases.split(',').forEach(alias => uniqueValues.alias.add(alias.trim()));
+                }
+            });
+
+            // Populate dropdowns
+            populateSelect(filterElements.supervisor, [...uniqueValues.supervisor].sort());
+            populateSelect(filterElements.product, [...uniqueValues.product].sort());
+            populateSelect(filterElements.variant, [...uniqueValues.variant].sort());
+            populateSelect(filterElements.batch, [...uniqueValues.batch].sort());
+            populateSelect(filterElements.part, [...uniqueValues.part].sort());
+            populateSelect(filterElements.alias, [...uniqueValues.alias].sort());
+        }
+
+        // Helper function to populate a select element with options
+        function populateSelect(selectElement, options) {
+            // Keep the first option (usually "All X")
+            const firstOption = selectElement.options[0];
+            selectElement.innerHTML = '';
+            selectElement.appendChild(firstOption);
+
+            // Add new options
+            options.forEach(option => {
+                if (option) { // Only add non-empty options
+                    const optionElement = document.createElement('option');
+                    optionElement.value = option;
+                    optionElement.textContent = option;
+                    selectElement.appendChild(optionElement);
+                }
+            });
+        }
+
+        // Apply filters to the data
+        function applyFilters() {
+            const filters = {
+                dateFrom: filterElements.dateFrom.value ? new Date(filterElements.dateFrom.value) : null,
+                dateTo: filterElements.dateTo.value ? new Date(filterElements.dateTo.value) : null,
+                supervisor: filterElements.supervisor.value,
+                product: filterElements.product.value,
+                variant: filterElements.variant.value,
+                batch: filterElements.batch.value,
+                part: filterElements.part.value,
+                alias: filterElements.alias.value
+            };
+
+            // Filter the data
+            filteredData = rejectData.filter(item => {
+                // Date range filter
+                if (filters.dateFrom && filters.dateTo) {
+                    const itemDate = new Date(item.ProductionDate);
+                    if (itemDate < filters.dateFrom || itemDate > filters.dateTo) {
+                        return false;
+                    }
+                }
+
+                // Text filters
+                if (filters.supervisor && item.LineSupervisor !== filters.supervisor) return false;
+                if (filters.product && item.Product !== filters.product) return false;
+                if (filters.variant && item.Variant !== filters.variant) return false;
+                if (filters.batch && item.BatchNumber !== filters.batch) return false;
+                
+                // Part name filter (might be array or string)
+                if (filters.part) {
+                    let partFound = false;
+                    if (Array.isArray(item.Parts)) {
+                        partFound = item.Parts.some(part => part.trim() === filters.part);
+                    } else if (typeof item.Parts === 'string') {
+                        partFound = item.Parts.split(',').some(part => part.trim() === filters.part);
+                    }
+                    if (!partFound) return false;
+                }
+                
+                // Part alias filter (might be array or string)
+                if (filters.alias) {
+                    let aliasFound = false;
+                    if (Array.isArray(item.Aliases)) {
+                        aliasFound = item.Aliases.some(alias => alias.trim() === filters.alias);
+                    } else if (typeof item.Aliases === 'string') {
+                        aliasFound = item.Aliases.split(',').some(alias => alias.trim() === filters.alias);
+                    }
+                    if (!aliasFound) return false;
+                }
+                
+                return true;
+            });
+
+            // Update dashboard with filtered data
+            updateDashboard();
+        }
+
+        // Reset all filters
+        function resetFilters() {
+            // Reset filter elements
+            filterElements.supervisor.value = '';
+            filterElements.product.value = '';
+            filterElements.variant.value = '';
+            filterElements.batch.value = '';
+            filterElements.part.value = '';
+            filterElements.alias.value = '';
+
+            // Find the date range of all data
+            const dates = rejectData.map(item => new Date(item.ProductionDate));
+            const minDate = new Date(Math.min(...dates));
+            const maxDate = new Date(Math.max(...dates));
+            
+            // Set date inputs
+            filterElements.dateFrom.value = formatDateForInput(minDate);
+            filterElements.dateTo.value = formatDateForInput(maxDate);
+
+            // Apply filters (which will be reset)
+            applyFilters();
+        }
+
+        // Update dashboard with current filtered data
+        function updateDashboard() {
+            // Update summary statistics
+            updateSummaryStats();
+            
+            // Update charts
+            createRejectReasonsChart();
+            createDailyTrendChart();
+            createTopProblemsChart();
+            createStationCostChart();
+            
+            // Update data table
+            updateDataTable();
+        }
+
+        // Update summary statistics
+        function updateSummaryStats() {
+            const totalQty = filteredData.reduce((sum, item) => sum + (item.QTY || 0), 0);
+            const totalCost = filteredData.reduce((sum, item) => sum + (item.Cost || 0), 0);
+            
+            const scrapCount = filteredData.filter(item => item.ActionSelection === 'Scrap')
+                .reduce((sum, item) => sum + (item.QTY || 0), 0);
+            
+            const rtsCount = filteredData.filter(item => item.ActionSelection === 'RTS' || item.ActionSelection === 'Local')
+                .reduce((sum, item) => sum + (item.QTY || 0), 0);
+            
+            statElements.totalRejects.textContent = totalQty;
+            statElements.totalCost.textContent = `$${totalCost.toFixed(2)}`;
+            statElements.scrapCount.textContent = scrapCount;
+            statElements.rtsCount.textContent = rtsCount;
+        }
+
+        // Create reject reasons chart
+        function createRejectReasonsChart() {
+            const container = chartContainers.reasons;
+            
+            if (filteredData.length === 0) {
+                container.innerHTML = '<div class="no-data">No data available</div>';
+                return;
+            }
+
+            // Group data by reject reason
+            const reasonCounts = {};
+            filteredData.forEach(item => {
+                const reason = item.RejectReason || 'Unknown';
+                if (!reasonCounts[reason]) {
+                    reasonCounts[reason] = {
+                        count: 0,
+                        cost: 0
+                    };
+                }
+                reasonCounts[reason].count += (item.QTY || 0);
+                reasonCounts[reason].cost += (item.Cost || 0);
+            });
+
+            // Sort by count descending
+            const sortedReasons = Object.keys(reasonCounts).sort((a, b) => 
+                reasonCounts[b].count - reasonCounts[a].count
+            );
+
+            // Create SVG
+            const margin = { top: 30, right: 30, bottom: 70, left: 60 };
+            const width = container.clientWidth - margin.left - margin.right;
+            const height = container.clientHeight - margin.top - margin.bottom;
+
+            container.innerHTML = '';
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', '100%');
+            svg.setAttribute('height', '100%');
+            svg.setAttribute('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
+            container.appendChild(svg);
+
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
+            svg.appendChild(g);
+
+            // Calculate scales
+            const x = sortedReasons.map((_, i) => i * (width / sortedReasons.length));
+            const barWidth = width / sortedReasons.length - 10;
+            
+            const maxCount = Math.max(...Object.values(reasonCounts).map(r => r.count));
+            const y = (count) => height * (1 - count / maxCount);
+
+            // Create bars
+            sortedReasons.forEach((reason, i) => {
+                const barHeight = height - y(reasonCounts[reason].count);
+                
+                const bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                bar.setAttribute('x', x[i]);
+                bar.setAttribute('y', y(reasonCounts[reason].count));
+                bar.setAttribute('width', barWidth);
+                bar.setAttribute('height', barHeight);
+                bar.setAttribute('fill', colors[i % colors.length]);
+                bar.classList.add('bar');
+                
+                // Add tooltip on hover
+                bar.addEventListener('mouseover', (e) => {
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'tooltip';
+                    tooltip.innerHTML = `
+                        <strong>${reason}</strong><br>
+                        Count: ${reasonCounts[reason].count}<br>
+                        Cost: $${reasonCounts[reason].cost.toFixed(2)}
+                    `;
+                    tooltip.style.left = `${e.pageX + 10}px`;
+                    tooltip.style.top = `${e.pageY - 30}px`;
+                    document.body.appendChild(tooltip);
+                });
+                
+                bar.addEventListener('mousemove', (e) => {
+                    const tooltip = document.querySelector('.tooltip');
+                    if (tooltip) {
+                        tooltip.style.left = `${e.pageX + 10}px`;
+                        tooltip.style.top = `${e.pageY - 30}px`;
+                    }
+                });
+                
+                bar.addEventListener('mouseout', () => {
+                    const tooltip = document.querySelector('.tooltip');
+                    if (tooltip) {
+                        tooltip.remove();
+                    }
+                });
+                
+                g.appendChild(bar);
+                
+                // Add label below bar
+                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                label.setAttribute('x', x[i] + barWidth / 2);
+                label.setAttribute('y', height + 15);
+                label.setAttribute('text-anchor', 'middle');
+                label.setAttribute('transform', `rotate(45, ${x[i] + barWidth / 2}, ${height + 15})`);
+                label.textContent = reason.length > 15 ? reason.substring(0, 12) + '...' : reason;
+                label.classList.add('bar-label');
+                g.appendChild(label);
+                
+                // Add count on top of bar
+                const countLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                countLabel.setAttribute('x', x[i] + barWidth / 2);
+                countLabel.setAttribute('y', y(reasonCounts[reason].count) - 5);
+                countLabel.setAttribute('text-anchor', 'middle');
+                countLabel.textContent = reasonCounts[reason].count;
+                countLabel.classList.add('bar-label');
+                g.appendChild(countLabel);
+            });
+
+            // Add Y axis label
+            const yLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            yLabel.setAttribute('transform', 'rotate(-90)');
+            yLabel.setAttribute('y', -margin.left + 20);
+            yLabel.setAttribute('x', -(height / 2));
+            yLabel.setAttribute('text-anchor', 'middle');
+            yLabel.textContent = 'Count';
+            g.appendChild(yLabel);
+        }
+
+        // Create daily trend chart
+        function createDailyTrendChart() {
+            const container = chartContainers.trend;
+            
+            if (filteredData.length === 0) {
+                container.innerHTML = '<div class="no-data">No data available</div>';
+                return;
+            }
+
+            // Group data by date
+            const dateGroups = {};
+            filteredData.forEach(item => {
+                const date = item.ProductionDate;
+                if (!dateGroups[date]) {
+                    dateGroups[date] = {
+                        count: 0,
+                        cost: 0
+                    };
+                }
+                dateGroups[date].count += (item.QTY || 0);
+                dateGroups[date].cost += (item.Cost || 0);
+            });
+
+            // Sort dates
+            const sortedDates = Object.keys(dateGroups).sort();
+
+            // Create SVG
+            const margin = { top: 30, right: 60, bottom: 70, left: 60 };
+            const width = container.clientWidth - margin.left - margin.right;
+            const height = container.clientHeight - margin.top - margin.bottom;
+
+            container.innerHTML = '';
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', '100%');
+            svg.setAttribute('height', '100%');
+            svg.setAttribute('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
+            container.appendChild(svg);
+
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
+            svg.appendChild(g);
+
+            // Calculate scales
+            const x = sortedDates.map((_, i) => i * (width / (sortedDates.length - 1)));
+            
+            const maxCount = Math.max(...Object.values(dateGroups).map(d => d.count));
+            const y1 = (count) => height * (1 - count / maxCount);
+            
+            const maxCost = Math.max(...Object.values(dateGroups).map(d => d.cost));
+            const y2 = (cost) => height * (1 - cost / maxCost);
+
+            // Create count line
+            let countPath = `M${x[0]},${y1(dateGroups[sortedDates[0]].count)}`;
+            sortedDates.forEach((date, i) => {
+                if (i > 0) {
+                    countPath += ` L${x[i]},${y1(dateGroups[date].count)}`;
+                }
+            });
+
+            const countLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            countLine.setAttribute('d', countPath);
+            countLine.setAttribute('fill', 'none');
+            countLine.setAttribute('stroke', '#3498db');
+            countLine.setAttribute('stroke-width', '3');
+            g.appendChild(countLine);
+
+            // Create cost line
+            let costPath = `M${x[0]},${y2(dateGroups[sortedDates[0]].cost)}`;
+            sortedDates.forEach((date, i) => {
+                if (i > 0) {
+                    costPath += ` L${x[i]},${y2(dateGroups[date].cost)}`;
+                }
+            });
+
+            const costLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            costLine.setAttribute('d', costPath);
+            costLine.setAttribute('fill', 'none');
+            costLine.setAttribute('stroke', '#e74c3c');
+            costLine.setAttribute('stroke-width', '3');
+            g.appendChild(costLine);
+
+            // Add data points with tooltips
+            sortedDates.forEach((date, i) => {
+                // Count point
+                const countPoint = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                countPoint.setAttribute('cx', x[i]);
+                countPoint.setAttribute('cy', y1(dateGroups[date].count));
+                countPoint.setAttribute('r', '5');
+                countPoint.setAttribute('fill', '#3498db');
+                
+                // Add tooltip
+                countPoint.addEventListener('mouseover', (e) => {
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'tooltip';
+                    tooltip.innerHTML = `
+                        <strong>${formatDate(date)}</strong><br>
+                        Count: ${dateGroups[date].count}
+                    `;
+                    tooltip.style.left = `${e.pageX + 10}px`;
+                    tooltip.style.top = `${e.pageY - 30}px`;
+                    document.body.appendChild(tooltip);
+                });
+                
+                countPoint.addEventListener('mousemove', (e) => {
+                    const tooltip = document.querySelector('.tooltip');
+                    if (tooltip) {
+                        tooltip.style.left = `${e.pageX + 10}px`;
+                        tooltip.style.top = `${e.pageY - 30}px`;
+                    }
+                });
+                
+                countPoint.addEventListener('mouseout', () => {
+                    const tooltip = document.querySelector('.tooltip');
+                    if (tooltip) {
+                        tooltip.remove();
+                    }
+                });
+                
+                g.appendChild(countPoint);
+                
+                // Cost point
+                const costPoint = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                costPoint.setAttribute('cx', x[i]);
+                costPoint.setAttribute('cy', y2(dateGroups[date].cost));
+                costPoint.setAttribute('r', '5');
+                costPoint.setAttribute('fill', '#e74c3c');
+                
+                // Add tooltip
+                costPoint.addEventListener('mouseover', (e) => {
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'tooltip';
+                    tooltip.innerHTML = `
+                        <strong>${formatDate(date)}</strong><br>
+                        Cost: $${dateGroups[date].cost.toFixed(2)}
+                    `;
+                    tooltip.style.left = `${e.pageX + 10}px`;
+                    tooltip.style.top = `${e.pageY - 30}px`;
+                    document.body.appendChild(tooltip);
+                });
+                
+                costPoint.addEventListener('mousemove', (e) => {
+                    const tooltip = document.querySelector('.tooltip');
+                    if (tooltip) {
+                        tooltip.style.left = `${e.pageX + 10}px`;
+                        tooltip.style.top = `${e.pageY - 30}px`;
+                    }
+                });
+                
+                costPoint.addEventListener('mouseout', () => {
+                    const tooltip = document.querySelector('.tooltip');
+                    if (tooltip) {
+                        tooltip.remove();
+                    }
+                });
+                
+                g.appendChild(costPoint);
+                
+                // X-axis label
+                if (sortedDates.length <= 10 || i % Math.ceil(sortedDates.length / 10) === 0) {
+                    const dateLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    dateLabel.setAttribute('x', x[i]);
+                    dateLabel.setAttribute('y', height + 20);
+                    dateLabel.setAttribute('text-anchor', 'middle');
+                    dateLabel.setAttribute('transform', `rotate(45, ${x[i]}, ${height + 20})`);
+                    dateLabel.textContent = formatDate(date);
+                    dateLabel.classList.add('axis');
+                    g.appendChild(dateLabel);
+                }
+            });
+
+            // Add Y axis labels
+            const countLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            countLabel.setAttribute('transform', 'rotate(-90)');
+            countLabel.setAttribute('y', -margin.left + 20);
+            countLabel.setAttribute('x', -(height / 2));
+            countLabel.setAttribute('text-anchor', 'middle');
+            countLabel.setAttribute('fill', '#3498db');
+            countLabel.textContent = 'Count';
+            g.appendChild(countLabel);
+
+            const costLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            costLabel.setAttribute('transform', 'rotate(-90)');
+            costLabel.setAttribute('y', width + margin.right - 15);
+            costLabel.setAttribute('x', -(height / 2));
+            costLabel.setAttribute('text-anchor', 'middle');
+            costLabel.setAttribute('fill', '#e74c3c');
+            costLabel.textContent = 'Cost ($)';
+            g.appendChild(costLabel);
+
+            // Add legend
+            const legend = document.createElement('div');
+            legend.className = 'legend';
+            legend.innerHTML = `
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #3498db;"></div>
+                    <span>Count</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #e74c3c;"></div>
+                    <span>Cost</span>
+                </div>
+            `;
+            container.appendChild(legend);
+        }
+
+        // Create top problems chart
+        function createTopProblemsChart() {
+            const container = chartContainers.parts;
+            
+            if (filteredData.length === 0) {
+                container.innerHTML = '<div class="no-data">No data available</div>';
+                return;
+            }
+
+            // Get all parts with their frequency
+            const partCounts = {};
+            
+            filteredData.forEach(item => {
+                // Get parts from the item (might be array or string)
+                let parts = [];
+                if (Array.isArray(item.Parts)) {
+                    parts = item.Parts;
+                } else if (typeof item.Parts === 'string') {
+                    parts = item.Parts.split(',').map(p => p.trim());
+                }
+                
+                // Count each part
+                parts.forEach(part => {
+                    if (!part) return;
+                    if (!partCounts[part]) {
+                        partCounts[part] = {
+                            count: 0,
+                            cost: 0
+                        };
+                    }
+                    partCounts[part].count += (item.QTY || 0);
+                    
+                    // Distribute cost evenly among parts
+                    const partCount = parts.length || 1;
+                    partCounts[part].cost += ((item.Cost || 0) / partCount);
+                });
+            });
+
+            // Sort by count descending and get top 10
+            const topParts = Object.keys(partCounts)
+                .sort((a, b) => partCounts[b].count - partCounts[a].count)
+                .slice(0, 10);
+
+            // Create SVG
+            const margin = { top: 30, right: 30, bottom: 120, left: 60 };
+            const width = container.clientWidth - margin.left - margin.right;
+            const height = container.clientHeight - margin.top - margin.bottom;
+
+            container.innerHTML = '';
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', '100%');
+            svg.setAttribute('height', '100%');
+            svg.setAttribute('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
+            container.appendChild(svg);
+
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
+            svg.appendChild(g);
+
+            // Calculate scales
+            const x = topParts.map((_, i) => i * (width / topParts.length));
+            const barWidth = width / topParts.length - 10;
+            
+            const maxCount = Math.max(...topParts.map(part => partCounts[part].count));
+            const y = (count) => height * (1 - count / maxCount);
+
+            // Create bars
+            topParts.forEach((part, i) => {
+                const barHeight = height - y(partCounts[part].count);
+                
+                const bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                bar.setAttribute('x', x[i]);
+                bar.setAttribute('y', y(partCounts[part].count));
+                bar.setAttribute('width', barWidth);
+                bar.setAttribute('height', barHeight);
+                bar.setAttribute('fill', colors[i % colors.length]);
+                bar.classList.add('bar');
+                
+                // Add tooltip on hover
+                bar.addEventListener('mouseover', (e) => {
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'tooltip';
+                    tooltip.innerHTML = `
+                        <strong>${part}</strong><br>
+                        Count: ${partCounts[part].count}<br>
+                        Cost: $${partCounts[part].cost.toFixed(2)}
+                    `;
+                    tooltip.style.left = `${e.pageX + 10}px`;
+                    tooltip.style.top = `${e.pageY - 30}px`;
+                    document.body.appendChild(tooltip);
+                });
+                
+                bar.addEventListener('mousemove', (e) => {
+                    const tooltip = document.querySelector('.tooltip');
+                    if (tooltip) {
+                        tooltip.style.left = `${e.pageX + 10}px`;
+                        tooltip.style.top = `${e.pageY - 30}px`;
+                    }
+                });
+                
+                bar.addEventListener('mouseout', () => {
+                    const tooltip = document.querySelector('.tooltip');
+                    if (tooltip) {
+                        tooltip.remove();
+                    }
+                });
+                
+                g.appendChild(bar);
+                
+                // Add label below bar
+                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                label.setAttribute('x', x[i] + barWidth / 2);
+                label.setAttribute('y', height + 15);
+                label.setAttribute('text-anchor', 'middle');
+                label.setAttribute('transform', `rotate(45, ${x[i] + barWidth / 2}, ${height + 15})`);
+                label.textContent = part.length > 15 ? part.substring(0, 12) + '...' : part;
+                label.classList.add('bar-label');
+                g.appendChild(label);
+                
+                // Add count on top of bar
+                const countLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                countLabel.setAttribute('x', x[i] + barWidth / 2);
+                countLabel.setAttribute('y', y(partCounts[part].count) - 5);
+                countLabel.setAttribute('text-anchor', 'middle');
+                countLabel.textContent = partCounts[part].count;
+                countLabel.classList.add('bar-label');
+                g.appendChild(countLabel);
+            });
+
+            // Add Y axis label
+            const yLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            yLabel.setAttribute('transform', 'rotate(-90)');
+            yLabel.setAttribute('y', -margin.left + 20);
+            yLabel.setAttribute('x', -(height / 2));
+            yLabel.setAttribute('text-anchor', 'middle');
+            yLabel.textContent = 'Count';
+            g.appendChild(yLabel);
+        }
+
+        // Create station cost chart
+        function createStationCostChart() {
+            const container = chartContainers.station;
+            
+            if (filteredData.length === 0) {
+                container.innerHTML = '<div class="no-data">No data available</div>';
+                return;
+            }
+
+            // Group data by station
+            const stationData = {};
+            filteredData.forEach(item => {
+                const station = item["Station"] || 'Unknown';
+                if (!stationData[station]) {
+                    stationData[station] = {
+                        count: 0,
+                        cost: 0
+                    };
+                }
+                stationData[station].count += (item.QTY || 0);
+                stationData[station].cost += (item.Cost || 0);
+            });
+
+            // Sort by cost descending
+            const sortedStations = Object.keys(stationData).sort((a, b) => 
+                stationData[b].cost - stationData[a].cost
+            );
+
+            // Create SVG
+            const margin = { top: 30, right: 30, bottom: 120, left: 60 };
+            const width = container.clientWidth - margin.left - margin.right;
+            const height = container.clientHeight - margin.top - margin.bottom;
+
+            container.innerHTML = '';
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', '100%');
+            svg.setAttribute('height', '100%');
+            svg.setAttribute('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
+            container.appendChild(svg);
+
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
+            svg.appendChild(g);
+
+            // Calculate scales
+            const x = sortedStations.map((_, i) => i * (width / sortedStations.length));
+            const barWidth = width / sortedStations.length - 10;
+            
+            const maxCost = Math.max(...Object.values(stationData).map(s => s.cost));
+            const y = (cost) => height * (1 - cost / maxCost);
+
+            // Create bars
+            sortedStations.forEach((station, i) => {
+                const barHeight = height - y(stationData[station].cost);
+                
+                const bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                bar.setAttribute('x', x[i]);
+                bar.setAttribute('y', y(stationData[station].cost));
+                bar.setAttribute('width', barWidth);
+                bar.setAttribute('height', barHeight);
+                bar.setAttribute('fill', colors[i % colors.length]);
+                bar.classList.add('bar');
+                
+                // Add tooltip on hover
+                bar.addEventListener('mouseover', (e) => {
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'tooltip';
+                    tooltip.innerHTML = `
+                        <strong>${station}</strong><br>
+                        Cost: $${stationData[station].cost.toFixed(2)}<br>
+                        Count: ${stationData[station].count}
+                    `;
+                    tooltip.style.left = `${e.pageX + 10}px`;
+                    tooltip.style.top = `${e.pageY - 30}px`;
+                    document.body.appendChild(tooltip);
+                });
+                
+                bar.addEventListener('mousemove', (e) => {
+                    const tooltip = document.querySelector('.tooltip');
+                    if (tooltip) {
+                        tooltip.style.left = `${e.pageX + 10}px`;
+                        tooltip.style.top = `${e.pageY - 30}px`;
+                    }
+                });
+                
+                bar.addEventListener('mouseout', () => {
+                    const tooltip = document.querySelector('.tooltip');
+                    if (tooltip) {
+                        tooltip.remove();
+                    }
+                });
+                
+                g.appendChild(bar);
+                
+                // Add label below bar
+                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                label.setAttribute('x', x[i] + barWidth / 2);
+                label.setAttribute('y', height + 15);
+                label.setAttribute('text-anchor', 'middle');
+                label.setAttribute('transform', `rotate(45, ${x[i] + barWidth / 2}, ${height + 15})`);
+                label.textContent = station.length > 15 ? station.substring(0, 12) + '...' : station;
+                label.classList.add('bar-label');
+                g.appendChild(label);
+                
+                // Add cost on top of bar
+                const costLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                costLabel.setAttribute('x', x[i] + barWidth / 2);
+                costLabel.setAttribute('y', y(stationData[station].cost) - 5);
+                costLabel.setAttribute('text-anchor', 'middle');
+                costLabel.textContent = '$' + stationData[station].cost.toFixed(0);
+                costLabel.classList.add('bar-label');
+                g.appendChild(costLabel);
+            });
+
+            // Add Y axis label
+            const yLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            yLabel.setAttribute('transform', 'rotate(-90)');
+            yLabel.setAttribute('y', -margin.left + 20);
+            yLabel.setAttribute('x', -(height / 2));
+            yLabel.setAttribute('text-anchor', 'middle');
+            yLabel.textContent = 'Cost ($)';
+            g.appendChild(yLabel);
+        }
+
+        // Update data table
+        function updateDataTable() {
+            dataTableBody.innerHTML = '';
+            
+            // Sort filtered data by date (newest first)
+            const sortedData = [...filteredData].sort((a, b) => 
+                new Date(b.ProductionDate) - new Date(a.ProductionDate)
+            );
+            
+            // Create table rows
+            sortedData.forEach(item => {
+                const row = document.createElement('tr');
+                
+                // Add cells
+                row.innerHTML = `
+                    <td>${formatDate(item.ProductionDate)}</td>
+                    <td>${item.LineSupervisor || ''}</td>
+                    <td>${item.Product || ''}</td>
+                    <td>${item.Variant || ''}</td>
+                    <td>${item.BatchNumber || ''}</td>
+                    <td>${item.Station || ''}</td>
+                    <td>${item.RejectReason || ''}</td>
+                    <td>${item.ActionSelection || ''}</td>
+                    <td>${item.QTY || 0}</td>
+                    <td>$${(item.Cost || 0).toFixed(2)}</td>
+                `;
+                
+                dataTableBody.appendChild(row);
+            });
+        }
+
+        // Helper function to format date for display
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+        }
+
+        // Helper function to format date for date input elements
+        function formatDateForInput(date) {
+            if (!date || !(date instanceof Date)) return '';
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // Initialize the dashboard when the page loads
+        window.addEventListener('load', initDashboard);
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (filteredData.length > 0) {
+                createRejectReasonsChart();
+                createDailyTrendChart();
+                createTopProblemsChart();
+                createStationCostChart();
+            }
+        });
+    </script>
+</body>
+</html>
