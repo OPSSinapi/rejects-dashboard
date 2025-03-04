@@ -379,7 +379,6 @@
                 </div>
                 <div class="filter-buttons">
                     <button id="apply-date">Apply Dates</button>
-                    <button id="reset-date" class="reset">Reset Dates</button>
                 </div>
             </div>
 
@@ -537,7 +536,6 @@
             part: document.getElementById('part'),
             alias: document.getElementById('alias'),
             applyDateBtn: document.getElementById('apply-date'),
-            resetDateBtn: document.getElementById('reset-date'),
             resetAllBtn: document.getElementById('reset-all-filters')
         };
 
@@ -608,33 +606,23 @@
                 return;
             }
 
-            // Set initial date range if not set
-            if (!filterElements.dateFrom.value) {
-                // Find earliest and latest dates in the data
-                const dates = rejectData.map(item => new Date(item.ProductionDate));
-                const minDate = new Date(Math.min(...dates));
-                const maxDate = new Date(Math.max(...dates));
-                
-                // Format dates for input elements
-                filterElements.dateFrom.value = formatDateForInput(minDate);
-                filterElements.dateTo.value = formatDateForInput(maxDate);
-            }
+            // Set initial date range to last 5 days with rejects
+            setDefaultDateRange();
 
             // Apply initial date filter to get the base data set
             applyDateFilter();
 
             // Add event listeners
             filterElements.applyDateBtn.addEventListener('click', applyDateFilter);
-            filterElements.resetDateBtn.addEventListener('click', resetDateFilter);
             filterElements.resetAllBtn.addEventListener('click', resetAllFilters);
             
-            // Add event listeners for cascading filters
-            filterElements.supervisor.addEventListener('change', updateCascadingFilters);
-            filterElements.product.addEventListener('change', updateCascadingFilters);
-            filterElements.variant.addEventListener('change', updateCascadingFilters);
-            filterElements.batch.addEventListener('change', updateCascadingFilters);
-            filterElements.part.addEventListener('change', updateCascadingFilters);
-            filterElements.alias.addEventListener('change', updateCascadingFilters);
+            // Add event listeners for filters
+            filterElements.supervisor.addEventListener('change', () => applyDetailFilters());
+            filterElements.product.addEventListener('change', () => applyDetailFilters());
+            filterElements.variant.addEventListener('change', () => applyDetailFilters());
+            filterElements.batch.addEventListener('change', () => applyDetailFilters());
+            filterElements.part.addEventListener('change', () => applyDetailFilters());
+            filterElements.alias.addEventListener('change', () => applyDetailFilters());
             
             // Top 10 sort toggle
             top10Elements.sortByQty.addEventListener('click', () => {
@@ -650,6 +638,42 @@
                 top10Elements.sortByQty.classList.remove('active');
                 updateTop10Table();
             });
+        }
+
+        // Set default date range to the most recent 5 days with rejects
+        function setDefaultDateRange() {
+            // Get all unique dates with rejects
+            const uniqueDates = new Set();
+            rejectData.forEach(item => {
+                if (item.ProductionDate) {
+                    uniqueDates.add(item.ProductionDate);
+                }
+            });
+            
+            // Convert to array, parse as dates, and sort descending
+            const sortedDates = Array.from(uniqueDates)
+                .map(dateStr => new Date(dateStr))
+                .sort((a, b) => b - a);
+            
+            // Get at most 5 most recent days with data
+            const recentDates = sortedDates.slice(0, 5);
+            
+            if (recentDates.length > 0) {
+                // Set date range from most recent to oldest of the 5 (or fewer) dates
+                const toDate = recentDates[0];
+                const fromDate = recentDates[recentDates.length - 1];
+                
+                filterElements.dateFrom.value = formatDateForInput(fromDate);
+                filterElements.dateTo.value = formatDateForInput(toDate);
+            } else {
+                // Fallback to current date if no data
+                const today = new Date();
+                const fiveDaysAgo = new Date();
+                fiveDaysAgo.setDate(today.getDate() - 4);
+                
+                filterElements.dateFrom.value = formatDateForInput(fiveDaysAgo);
+                filterElements.dateTo.value = formatDateForInput(today);
+            }
         }
 
         // Apply date filter
@@ -678,21 +702,6 @@
             updateDashboard();
         }
 
-        // Reset date filter
-        function resetDateFilter() {
-            // Find the date range of all data
-            const dates = rejectData.map(item => new Date(item.ProductionDate));
-            const minDate = new Date(Math.min(...dates));
-            const maxDate = new Date(Math.max(...dates));
-            
-            // Set date inputs
-            filterElements.dateFrom.value = formatDateForInput(minDate);
-            filterElements.dateTo.value = formatDateForInput(maxDate);
-
-            // Apply the date filter
-            applyDateFilter();
-        }
-
         // Reset all other filters except date
         function resetOtherFilters(skipUpdate = false) {
             // Reset filter elements
@@ -715,12 +724,12 @@
             }
         }
 
-        // Reset all filters
+        // Reset all filters except date
         function resetAllFilters() {
-            resetDateFilter();
+            resetOtherFilters();
         }
 
-        // Populate filter dropdowns with unique values from the data
+        // Populate filter dropdowns with unique values from the date-filtered data
         function populateFilterDropdowns() {
             // Get unique values for each filter from date-filtered data
             const uniqueValues = {
@@ -754,18 +763,18 @@
             });
 
             // Populate dropdowns based on current filter values
-            populateSelect(filterElements.supervisor, [...uniqueValues.supervisor].sort(), true);
-            populateSelect(filterElements.product, [...uniqueValues.product].sort(), true);
-            populateSelect(filterElements.variant, [...uniqueValues.variant].sort(), true);
-            populateSelect(filterElements.batch, [...uniqueValues.batch].sort(), true);
-            populateSelect(filterElements.part, [...uniqueValues.part].sort(), true);
-            populateSelect(filterElements.alias, [...uniqueValues.alias].sort(), true);
+            populateSelect(filterElements.supervisor, [...uniqueValues.supervisor].sort());
+            populateSelect(filterElements.product, [...uniqueValues.product].sort());
+            populateSelect(filterElements.variant, [...uniqueValues.variant].sort());
+            populateSelect(filterElements.batch, [...uniqueValues.batch].sort());
+            populateSelect(filterElements.part, [...uniqueValues.part].sort());
+            populateSelect(filterElements.alias, [...uniqueValues.alias].sort());
         }
 
         // Helper function to populate a select element with options
-        function populateSelect(selectElement, options, keepValue = false) {
-            // Remember the current value if needed
-            const currentValue = keepValue ? selectElement.value : '';
+        function populateSelect(selectElement, options) {
+            // Remember the current value
+            const currentValue = selectElement.value;
             
             // Keep the first option (usually "All X")
             const firstOption = selectElement.options[0];
@@ -783,20 +792,15 @@
             });
             
             // Try to restore the previous value if it still exists
-            if (keepValue && currentValue) {
+            if (currentValue) {
                 if (Array.from(selectElement.options).some(opt => opt.value === currentValue)) {
                     selectElement.value = currentValue;
                 }
             }
         }
 
-        // Update cascading filters when any filter changes
-        function updateCascadingFilters(event) {
-            // Don't trigger this function from its own changes
-            if (event && event.target.hasAttribute('data-updating')) {
-                return;
-            }
-            
+        // Apply filters based on selected values
+        function applyDetailFilters() {
             // Get current filter values
             const filters = {
                 supervisor: filterElements.supervisor.value,
@@ -807,7 +811,7 @@
                 alias: filterElements.alias.value
             };
             
-            // Apply filters to get data for other dropdowns
+            // Apply filters to get data
             filteredData = dateFilteredData.filter(item => {
                 // Skip if no date-filtered data
                 if (dateFilteredData.length === 0) return false;
@@ -843,17 +847,27 @@
                 return true;
             });
             
-            // Update dropdown options based on filtered data
-            updateDropdownOptions();
+            // Update filter dropdown options based on available data
+            updateFilterOptions();
             
             // Update dashboard with filtered data
             updateDashboard();
         }
 
-        // Update dropdown options based on filtered data
-        function updateDropdownOptions() {
-            // Get unique values for each filter from currently filtered data
-            const uniqueValues = {
+        // Update filter dropdown options based on currently selected filters
+        function updateFilterOptions() {
+            // Get currently selected values
+            const currentValues = {
+                supervisor: filterElements.supervisor.value,
+                product: filterElements.product.value,
+                variant: filterElements.variant.value,
+                batch: filterElements.batch.value,
+                part: filterElements.part.value,
+                alias: filterElements.alias.value
+            };
+            
+            // Get unique values for each filter based on filtered data
+            const availableValues = {
                 supervisor: new Set(),
                 product: new Set(),
                 variant: new Set(),
@@ -861,84 +875,87 @@
                 part: new Set(),
                 alias: new Set()
             };
-
+            
+            // First, get all items that match the current filters
             filteredData.forEach(item => {
-                if (item.LineSupervisor) uniqueValues.supervisor.add(item.LineSupervisor);
-                if (item.Product) uniqueValues.product.add(item.Product);
-                if (item.Variant) uniqueValues.variant.add(item.Variant);
-                if (item.BatchNumber) uniqueValues.batch.add(item.BatchNumber);
+                // Add available values
+                if (item.LineSupervisor) availableValues.supervisor.add(item.LineSupervisor);
+                if (item.Product) availableValues.product.add(item.Product);
+                if (item.Variant) availableValues.variant.add(item.Variant);
+                if (item.BatchNumber) availableValues.batch.add(item.BatchNumber);
                 
-                // Handle parts (which might be arrays)
+                // Add available parts
                 if (Array.isArray(item.Parts)) {
-                    item.Parts.forEach(part => uniqueValues.part.add(part.trim()));
+                    item.Parts.forEach(part => part && availableValues.part.add(part.trim()));
                 } else if (typeof item.Parts === 'string') {
-                    item.Parts.split(',').forEach(part => uniqueValues.part.add(part.trim()));
+                    item.Parts.split(',').forEach(part => part && availableValues.part.add(part.trim()));
                 }
                 
-                // Handle aliases (which might be arrays)
+                // Add available aliases
                 if (Array.isArray(item.Aliases)) {
-                    item.Aliases.forEach(alias => uniqueValues.alias.add(alias.trim()));
+                    item.Aliases.forEach(alias => alias && availableValues.alias.add(alias.trim()));
                 } else if (typeof item.Aliases === 'string') {
-                    item.Aliases.split(',').forEach(alias => uniqueValues.alias.add(alias.trim()));
+                    item.Aliases.split(',').forEach(alias => alias && availableValues.alias.add(alias.trim()));
                 }
             });
+            
+            // Now, update each filter dropdown while preserving the current selection if valid
+            if (!currentValues.supervisor || availableValues.supervisor.has(currentValues.supervisor)) {
+                populateSelectWithValue(filterElements.supervisor, [...availableValues.supervisor].sort(), currentValues.supervisor);
+            } else {
+                populateSelectWithValue(filterElements.supervisor, [...availableValues.supervisor].sort(), "");
+            }
+            
+            if (!currentValues.product || availableValues.product.has(currentValues.product)) {
+                populateSelectWithValue(filterElements.product, [...availableValues.product].sort(), currentValues.product);
+            } else {
+                populateSelectWithValue(filterElements.product, [...availableValues.product].sort(), "");
+            }
+            
+            if (!currentValues.variant || availableValues.variant.has(currentValues.variant)) {
+                populateSelectWithValue(filterElements.variant, [...availableValues.variant].sort(), currentValues.variant);
+            } else {
+                populateSelectWithValue(filterElements.variant, [...availableValues.variant].sort(), "");
+            }
+            
+            if (!currentValues.batch || availableValues.batch.has(currentValues.batch)) {
+                populateSelectWithValue(filterElements.batch, [...availableValues.batch].sort(), currentValues.batch);
+            } else {
+                populateSelectWithValue(filterElements.batch, [...availableValues.batch].sort(), "");
+            }
+            
+            if (!currentValues.part || availableValues.part.has(currentValues.part)) {
+                populateSelectWithValue(filterElements.part, [...availableValues.part].sort(), currentValues.part);
+            } else {
+                populateSelectWithValue(filterElements.part, [...availableValues.part].sort(), "");
+            }
+            
+            if (!currentValues.alias || availableValues.alias.has(currentValues.alias)) {
+                populateSelectWithValue(filterElements.alias, [...availableValues.alias].sort(), currentValues.alias);
+            } else {
+                populateSelectWithValue(filterElements.alias, [...availableValues.alias].sort(), "");
+            }
+        }
 
-            // Mark elements as updating to prevent event loops
-            const selects = [
-                filterElements.supervisor,
-                filterElements.product,
-                filterElements.variant,
-                filterElements.batch,
-                filterElements.part,
-                filterElements.alias
-            ];
+        // Helper function to populate a select with a specific value
+        function populateSelectWithValue(selectElement, options, value) {
+            // Keep the first option (usually "All X")
+            const firstOption = selectElement.options[0].cloneNode(true);
+            selectElement.innerHTML = '';
+            selectElement.appendChild(firstOption);
+
+            // Add new options
+            options.forEach(option => {
+                if (option) { // Only add non-empty options
+                    const optionElement = document.createElement('option');
+                    optionElement.value = option;
+                    optionElement.textContent = option;
+                    selectElement.appendChild(optionElement);
+                }
+            });
             
-            selects.forEach(select => select.setAttribute('data-updating', 'true'));
-            
-            // Populate dropdowns with new options but keep selected values if valid
-            if (!filterElements.supervisor.value || uniqueValues.supervisor.has(filterElements.supervisor.value)) {
-                populateSelect(filterElements.supervisor, [...uniqueValues.supervisor].sort(), true);
-            } else {
-                populateSelect(filterElements.supervisor, [...uniqueValues.supervisor].sort());
-            }
-            
-            if (!filterElements.product.value || uniqueValues.product.has(filterElements.product.value)) {
-                populateSelect(filterElements.product, [...uniqueValues.product].sort(), true);
-            } else {
-                populateSelect(filterElements.product, [...uniqueValues.product].sort());
-            }
-            
-            if (!filterElements.variant.value || uniqueValues.variant.has(filterElements.variant.value)) {
-                populateSelect(filterElements.variant, [...uniqueValues.variant].sort(), true);
-            } else {
-                populateSelect(filterElements.variant, [...uniqueValues.variant].sort());
-            }
-            
-            if (!filterElements.batch.value || uniqueValues.batch.has(filterElements.batch.value)) {
-                populateSelect(filterElements.batch, [...uniqueValues.batch].sort(), true);
-            } else {
-                populateSelect(filterElements.batch, [...uniqueValues.batch].sort());
-            }
-            
-            // Part and alias are more complex as they might be in arrays
-            let keepPartValue = !filterElements.part.value;
-            let keepAliasValue = !filterElements.alias.value;
-            
-            if (filterElements.part.value) {
-                const partExists = uniqueValues.part.has(filterElements.part.value);
-                keepPartValue = partExists;
-            }
-            
-            if (filterElements.alias.value) {
-                const aliasExists = uniqueValues.alias.has(filterElements.alias.value);
-                keepAliasValue = aliasExists;
-            }
-            
-            populateSelect(filterElements.part, [...uniqueValues.part].sort(), keepPartValue);
-            populateSelect(filterElements.alias, [...uniqueValues.alias].sort(), keepAliasValue);
-            
-            // Remove updating attribute
-            selects.forEach(select => select.removeAttribute('data-updating'));
+            // Set the specified value
+            selectElement.value = value;
         }
 
         // Update dashboard with current filtered data
