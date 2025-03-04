@@ -101,24 +101,6 @@
             width: 130px;
         }
 
-        .select-all-checkbox {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            margin-left: 10px;
-        }
-
-        .select-all-checkbox input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
-        }
-
-        .select-all-checkbox label {
-            font-weight: bold;
-            color: #555;
-            font-size: 0.8rem;
-        }
-
         /* Multi-select dropdown styles */
         .multi-select {
             position: relative;
@@ -201,6 +183,21 @@
         
         .multi-select-option input[type="checkbox"] {
             margin-right: 5px;
+        }
+
+        .only-btn {
+            margin-left: 5px;
+            padding: 1px 3px;
+            font-size: 0.65rem;
+            background-color: #2980b9;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .only-btn:hover {
+            background-color: #3498db;
         }
 
         /* Filter buttons */
@@ -587,10 +584,6 @@
                         </div>
                     </div>
                 </div>
-                <div class="select-all-checkbox">
-                    <input type="checkbox" id="select-all-checkbox" checked>
-                    <label for="select-all-checkbox">Select All</label>
-                </div>
                 <div class="filter-buttons">
                     <button id="reset-all-filters" class="reset">Reset All</button>
                 </div>
@@ -696,9 +689,8 @@
         const FILE_PATH = 'RejectsData.json';
         const DATA_URL = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/${FILE_PATH}`;
         let sortTop10By = 'qty'; // 'qty' or 'cost'
-        let allFiltersSelected = true; // Track if all filters are selected (default true)
 
-        // Filter availability based on selected filters
+        // Available filter options (all possible values from date-filtered data)
         let availableFilterOptions = {
             supervisor: new Set(),
             product: new Set(),
@@ -708,7 +700,7 @@
             alias: new Set()
         };
 
-        // Multi-select filter values
+        // Multi-select filter values (selected values)
         const filterValues = {
             supervisor: [],
             product: [],
@@ -724,7 +716,6 @@
             dateTo: document.getElementById('date-to'),
             applyDateBtn: document.getElementById('apply-date'),
             resetAllBtn: document.getElementById('reset-all-filters'),
-            selectAllCheckbox: document.getElementById('select-all-checkbox'),
             multiSelects: {
                 supervisor: document.getElementById('supervisor-select'),
                 product: document.getElementById('product-select'),
@@ -807,17 +798,6 @@
 
             // Set initial date range to last 5 days with rejects
             setDefaultDateRange();
-
-            // Add event listener for select all checkbox
-            filterElements.selectAllCheckbox.addEventListener('change', function() {
-                allFiltersSelected = this.checked;
-                if (this.checked) {
-                    selectAllFilters();
-                } else {
-                    // Just apply existing filter values
-                    applyFiltersAndUpdateAvailableOptions();
-                }
-            });
 
             // Apply initial date filter to get the base data set
             applyDateFilter();
@@ -921,9 +901,8 @@
                     // Update header text
                     updateHeaderText(multiSelect, filterName);
                     
-                    // Apply filters and check if select all should be unchecked
-                    applyFiltersAndUpdateAvailableOptions();
-                    updateSelectAllCheckbox();
+                    // Apply filters
+                    applyDetailFilters();
                 });
                 
                 // Clear all button
@@ -943,10 +922,8 @@
                     // Update header text
                     updateHeaderText(multiSelect, filterName);
                     
-                    // Apply filters and uncheck select all 
-                    applyFiltersAndUpdateAvailableOptions();
-                    filterElements.selectAllCheckbox.checked = false;
-                    allFiltersSelected = false;
+                    // Apply filters
+                    applyDetailFilters();
                 });
             });
         }
@@ -1023,13 +1000,11 @@
             // Populate multi-select dropdowns based on date-filtered data
             populateMultiSelectOptions();
             
-            // Apply select all if checkbox is checked
-            if (allFiltersSelected) {
-                selectAllFilters();
-            } else {
-                // Just apply existing filters
-                applyFiltersAndUpdateAvailableOptions();
-            }
+            // Set filtered data to date filtered data initially
+            filteredData = [...dateFilteredData];
+            
+            // Update dashboard
+            updateDashboard();
         }
 
         // Calculate available options based on the current date-filtered data
@@ -1084,116 +1059,7 @@
             });
         }
 
-        // Calculate available options based on currently selected filters
-        function calculateFilteredOptions() {
-            // Create a deep copy of the original filter options
-            const filteredOptions = {};
-            Object.keys(availableFilterOptions).forEach(key => {
-                filteredOptions[key] = new Set([...availableFilterOptions[key]]);
-            });
-
-            // If all filters are selected, just return all available options
-            if (allFiltersSelected) {
-                return filteredOptions;
-            }
-
-            // Track which filters have selections
-            const activeFilters = Object.keys(filterValues).filter(key => filterValues[key].length > 0);
-            
-            // If no active filters, return all available options
-            if (activeFilters.length === 0) {
-                return filteredOptions;
-            }
-
-            // Filter the data based on active filters
-            const tempFiltered = dateFilteredData.filter(item => {
-                // Skip items that don't match active filters
-                for (const filterKey of activeFilters) {
-                    if (filterKey === 'supervisor' && filterValues.supervisor.length > 0) {
-                        if (!filterValues.supervisor.includes(item.LineSupervisor)) return false;
-                    }
-                    if (filterKey === 'product' && filterValues.product.length > 0) {
-                        if (!filterValues.product.includes(item.Product)) return false;
-                    }
-                    if (filterKey === 'variant' && filterValues.variant.length > 0) {
-                        if (!filterValues.variant.includes(item.Variant)) return false;
-                    }
-                    if (filterKey === 'batch' && filterValues.batch.length > 0) {
-                        const batchStr = item.BatchNumber !== undefined && item.BatchNumber !== null 
-                            ? String(item.BatchNumber) 
-                            : '';
-                        if (!filterValues.batch.includes(batchStr)) return false;
-                    }
-                    if (filterKey === 'part' && filterValues.part.length > 0) {
-                        let partFound = false;
-                        let parts = [];
-                        
-                        if (Array.isArray(item.Parts)) {
-                            parts = item.Parts;
-                        } else if (typeof item.Parts === 'string') {
-                            parts = item.Parts.split(',').map(p => p.trim());
-                        }
-                        
-                        partFound = parts.some(part => part && filterValues.part.includes(part.trim()));
-                        if (!partFound) return false;
-                    }
-                    if (filterKey === 'alias' && filterValues.alias.length > 0) {
-                        let aliasFound = false;
-                        let aliases = [];
-                        
-                        if (Array.isArray(item.Aliases)) {
-                            aliases = item.Aliases;
-                        } else if (typeof item.Aliases === 'string') {
-                            aliases = item.Aliases.split(',').map(a => a.trim());
-                        }
-                        
-                        aliasFound = aliases.some(alias => alias && filterValues.alias.includes(alias.trim()));
-                        if (!aliasFound) return false;
-                    }
-                }
-                return true;
-            });
-
-            // Reset filtered options
-            Object.keys(filteredOptions).forEach(key => {
-                filteredOptions[key] = new Set();
-            });
-
-            // Recalculate available options based on filtered data
-            tempFiltered.forEach(item => {
-                if (item.LineSupervisor) filteredOptions.supervisor.add(item.LineSupervisor);
-                if (item.Product) filteredOptions.product.add(item.Product);
-                if (item.Variant) filteredOptions.variant.add(item.Variant);
-                
-                if (item.BatchNumber !== undefined && item.BatchNumber !== null) {
-                    filteredOptions.batch.add(String(item.BatchNumber));
-                }
-                
-                if (Array.isArray(item.Parts)) {
-                    item.Parts.forEach(part => {
-                        if (part && part.trim()) filteredOptions.part.add(part.trim());
-                    });
-                } else if (typeof item.Parts === 'string') {
-                    item.Parts.split(',').forEach(part => {
-                        if (part && part.trim()) filteredOptions.part.add(part.trim());
-                    });
-                }
-                
-                if (Array.isArray(item.Aliases)) {
-                    item.Aliases.forEach(alias => {
-                        if (alias && alias.trim()) filteredOptions.alias.add(alias.trim());
-                    });
-                } else if (typeof item.Aliases === 'string') {
-                    item.Aliases.split(',').forEach(alias => {
-                        if (alias && alias.trim()) filteredOptions.alias.add(alias.trim());
-                    });
-                }
-            });
-
-            return filteredOptions;
-        }
-
-        // Reset all other filters except date
+        // Reset all filters except date
         function resetOtherFilters(skipUpdate = false) {
             // Reset filter values
             Object.keys(filterValues).forEach(key => {
@@ -1205,97 +1071,50 @@
                 updateHeaderText(filterElements.multiSelects[key], key);
             });
 
-            // Set all filters selected based on checkbox
-            allFiltersSelected = filterElements.selectAllCheckbox.checked;
-
             if (!skipUpdate) {
-                // Apply filters and update dashboard
-                applyFiltersAndUpdateAvailableOptions();
+                // Set filtered data to date filtered data
+                filteredData = [...dateFilteredData];
+                
+                // Update dashboard
+                updateDashboard();
+                
+                // Update filter dropdowns
+                populateMultiSelectOptions();
             }
         }
 
         // Reset all filters except date
         function resetAllFilters() {
-            // Set the checkbox to checked
-            filterElements.selectAllCheckbox.checked = true;
-            allFiltersSelected = true;
-            
-            // Reset other filters
             resetOtherFilters();
-            
-            // Update filter dropdowns and select all
-            populateMultiSelectOptions();
-            selectAllFilters();
         }
 
-        // Select all filters
-        function selectAllFilters() {
-            allFiltersSelected = true;
-            filterElements.selectAllCheckbox.checked = true;
+        // Select only one option in a filter
+        function selectOnlyThisOption(filterName, value) {
+            // Clear all selections for this filter
+            filterValues[filterName] = [value];
             
-            // Select all available options for each filter
-            Object.keys(filterElements.multiSelects).forEach(key => {
-                const multiSelect = filterElements.multiSelects[key];
-                const optionsContainer = multiSelect.querySelector('.multi-select-options');
-                const checkboxes = optionsContainer.querySelectorAll('input[type="checkbox"]');
-                
-                // Check all checkboxes
-                checkboxes.forEach(checkbox => {
-                    checkbox.checked = true;
-                });
-                
-                // Update selected values to include all available options
-                filterValues[key] = [...availableFilterOptions[key]];
-                
-                // Update header text
-                updateHeaderText(multiSelect, key);
+            // Update all checkboxes in this filter
+            const multiSelect = filterElements.multiSelects[filterName];
+            const checkboxes = multiSelect.querySelectorAll('input[type="checkbox"]');
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = checkbox.value === value;
             });
             
-            // Set filtered data to date filtered data
-            filteredData = [...dateFilteredData];
+            // Update header text
+            updateHeaderText(multiSelect, filterName);
             
-            // Update dashboard
-            updateDashboard();
-        }
-
-        // Update select all checkbox state
-        function updateSelectAllCheckbox() {
-            // Check if any filter has selections
-            const hasSelections = Object.values(filterValues).some(values => values.length > 0);
-            
-            // If no selections, check select all
-            if (!hasSelections) {
-                filterElements.selectAllCheckbox.checked = true;
-                allFiltersSelected = true;
-            } else {
-                // Check if all potential options are selected
-                let allSelected = true;
-                
-                Object.keys(availableFilterOptions).forEach(key => {
-                    // If this filter has available options
-                    if (availableFilterOptions[key].size > 0) {
-                        // And not all of them are selected
-                        if (filterValues[key].length < availableFilterOptions[key].size) {
-                            allSelected = false;
-                        }
-                    }
-                });
-                
-                filterElements.selectAllCheckbox.checked = allSelected;
-                allFiltersSelected = allSelected;
-            }
+            // Apply filters
+            applyDetailFilters();
         }
 
         // Populate multi-select options based on available options
         function populateMultiSelectOptions() {
-            // Calculate filtered options based on current selections
-            const filteredOptions = calculateFilteredOptions();
-
             // Populate each multi-select dropdown
             Object.keys(filterElements.multiSelects).forEach(key => {
                 const multiSelect = filterElements.multiSelects[key];
                 const optionsContainer = multiSelect.querySelector('.multi-select-options');
-                const values = [...filteredOptions[key]].filter(val => val).sort();
+                const values = [...availableFilterOptions[key]].filter(val => val).sort();
                 
                 // Clear existing options
                 optionsContainer.innerHTML = '';
@@ -1317,16 +1136,20 @@
                         checkbox.type = 'checkbox';
                         checkbox.value = value;
                         checkbox.id = `${key}-${value.toString().replace(/[^a-zA-Z0-9]/g, '-')}`;
-                        
-                        // Check if this value should be checked
-                        checkbox.checked = allFiltersSelected || filterValues[key].includes(value);
+                        checkbox.checked = filterValues[key].includes(value);
                         
                         const label = document.createElement('label');
                         label.htmlFor = checkbox.id;
                         label.textContent = value;
                         
+                        const onlyBtn = document.createElement('button');
+                        onlyBtn.className = 'only-btn';
+                        onlyBtn.textContent = 'Only';
+                        onlyBtn.setAttribute('title', 'Show only this option');
+                        
                         option.appendChild(checkbox);
                         option.appendChild(label);
+                        option.appendChild(onlyBtn);
                         optionsContainer.appendChild(option);
                         
                         // Add event listener to checkbox
@@ -1347,22 +1170,16 @@
                             // Update header text
                             updateHeaderText(multiSelect, key);
                             
-                            // Apply filters and update available options
-                            applyFiltersAndUpdateAvailableOptions();
-                            
-                            // Update select all checkbox
-                            filterElements.selectAllCheckbox.checked = false;
-                            allFiltersSelected = false;
+                            // Apply filters
+                            applyDetailFilters();
+                        });
+                        
+                        // Add event listener to "Only" button
+                        onlyBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            selectOnlyThisOption(key, value);
                         });
                     });
-                }
-                
-                // If all filters selected, update filter values to include all options
-                if (allFiltersSelected) {
-                    filterValues[key] = values;
-                } else {
-                    // Only keep selected values that are still available
-                    filterValues[key] = filterValues[key].filter(val => values.includes(val));
                 }
                 
                 // Update header text
@@ -1370,24 +1187,8 @@
             });
         }
 
-        // Apply filters and update available options
-        function applyFiltersAndUpdateAvailableOptions() {
-            // Apply filters to get filtered data
-            applyDetailFilters();
-            
-            // Update filter options based on current selections
-            populateMultiSelectOptions();
-        }
-
         // Apply filters based on multi-select values
         function applyDetailFilters() {
-            // If all filters are selected, show all date-filtered data
-            if (allFiltersSelected) {
-                filteredData = [...dateFilteredData];
-                updateDashboard();
-                return;
-            }
-            
             // Check if any filter has selections
             const hasSelections = Object.values(filterValues).some(values => values.length > 0);
             
