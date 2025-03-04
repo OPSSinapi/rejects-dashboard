@@ -185,21 +185,6 @@
             margin-right: 5px;
         }
 
-        .only-btn {
-            margin-left: 5px;
-            padding: 1px 3px;
-            font-size: 0.65rem;
-            background-color: #2980b9;
-            color: white;
-            border: none;
-            border-radius: 3px;
-            cursor: pointer;
-        }
-
-        .only-btn:hover {
-            background-color: #3498db;
-        }
-
         /* Filter buttons */
         .filter-buttons {
             display: flex;
@@ -689,6 +674,7 @@
         const FILE_PATH = 'RejectsData.json';
         const DATA_URL = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/${FILE_PATH}`;
         let sortTop10By = 'qty'; // 'qty' or 'cost'
+        let isUpdatingFilters = false; // Flag to prevent recursive filter updates
 
         // Available filter options (all possible values from date-filtered data)
         let availableFilterOptions = {
@@ -902,7 +888,7 @@
                     updateHeaderText(multiSelect, filterName);
                     
                     // Apply filters
-                    applyDetailFilters();
+                    applyDetailFilters(filterName);
                 });
                 
                 // Clear all button
@@ -923,7 +909,7 @@
                     updateHeaderText(multiSelect, filterName);
                     
                     // Apply filters
-                    applyDetailFilters();
+                    applyDetailFilters(filterName);
                 });
             });
         }
@@ -1088,26 +1074,6 @@
             resetOtherFilters();
         }
 
-        // Select only one option in a filter
-        function selectOnlyThisOption(filterName, value) {
-            // Clear all selections for this filter
-            filterValues[filterName] = [value];
-            
-            // Update all checkboxes in this filter
-            const multiSelect = filterElements.multiSelects[filterName];
-            const checkboxes = multiSelect.querySelectorAll('input[type="checkbox"]');
-            
-            checkboxes.forEach(checkbox => {
-                checkbox.checked = checkbox.value === value;
-            });
-            
-            // Update header text
-            updateHeaderText(multiSelect, filterName);
-            
-            // Apply filters
-            applyDetailFilters();
-        }
-
         // Populate multi-select options based on available options
         function populateMultiSelectOptions() {
             // Populate each multi-select dropdown
@@ -1142,14 +1108,8 @@
                         label.htmlFor = checkbox.id;
                         label.textContent = value;
                         
-                        const onlyBtn = document.createElement('button');
-                        onlyBtn.className = 'only-btn';
-                        onlyBtn.textContent = 'Only';
-                        onlyBtn.setAttribute('title', 'Show only this option');
-                        
                         option.appendChild(checkbox);
                         option.appendChild(label);
-                        option.appendChild(onlyBtn);
                         optionsContainer.appendChild(option);
                         
                         // Add event listener to checkbox
@@ -1171,13 +1131,7 @@
                             updateHeaderText(multiSelect, key);
                             
                             // Apply filters
-                            applyDetailFilters();
-                        });
-                        
-                        // Add event listener to "Only" button
-                        onlyBtn.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            selectOnlyThisOption(key, value);
+                            applyDetailFilters(key);
                         });
                     });
                 }
@@ -1188,82 +1142,172 @@
         }
 
         // Apply filters based on multi-select values
-        function applyDetailFilters() {
-            // Check if any filter has selections
-            const hasSelections = Object.values(filterValues).some(values => values.length > 0);
+        function applyDetailFilters(changedFilter) {
+            // Flag to prevent recursive updates
+            if (isUpdatingFilters) return;
+            isUpdatingFilters = true;
             
-            // If no selections, show all date-filtered data
-            if (!hasSelections) {
-                filteredData = [...dateFilteredData];
-                updateDashboard();
-                return;
-            }
-            
-            // Apply filters to get data
-            filteredData = dateFilteredData.filter(item => {
-                // For filters with selections, item must match at least one selected value
-                if (filterValues.supervisor.length > 0 && !filterValues.supervisor.includes(item.LineSupervisor)) {
-                    return false;
+            try {
+                // Check if any filter has selections
+                const hasSelections = Object.values(filterValues).some(values => values.length > 0);
+                
+                // If no selections, show all date-filtered data
+                if (!hasSelections) {
+                    filteredData = [...dateFilteredData];
+                    updateDashboard();
+                    isUpdatingFilters = false;
+                    return;
                 }
                 
-                if (filterValues.product.length > 0 && !filterValues.product.includes(item.Product)) {
-                    return false;
-                }
-                
-                if (filterValues.variant.length > 0 && !filterValues.variant.includes(item.Variant)) {
-                    return false;
-                }
-                
-                // Check batch filter - convert item.BatchNumber to string for comparison
-                if (filterValues.batch.length > 0) {
-                    const batchStr = item.BatchNumber !== undefined && item.BatchNumber !== null 
-                        ? String(item.BatchNumber) 
-                        : '';
-                    
-                    if (!filterValues.batch.includes(batchStr)) {
+                // Apply filters to get data
+                filteredData = dateFilteredData.filter(item => {
+                    // For filters with selections, item must match at least one selected value
+                    if (filterValues.supervisor.length > 0 && !filterValues.supervisor.includes(item.LineSupervisor)) {
                         return false;
                     }
-                }
-                
-                // Check part filter
-                if (filterValues.part.length > 0) {
-                    let partFound = false;
-                    let parts = [];
                     
-                    if (Array.isArray(item.Parts)) {
-                        parts = item.Parts;
-                    } else if (typeof item.Parts === 'string') {
-                        parts = item.Parts.split(',').map(p => p.trim());
+                    if (filterValues.product.length > 0 && !filterValues.product.includes(item.Product)) {
+                        return false;
                     }
                     
-                    // Check if any selected part is in this item's parts
-                    partFound = parts.some(part => part && filterValues.part.includes(part.trim()));
-                    
-                    if (!partFound) return false;
-                }
-                
-                // Check alias filter
-                if (filterValues.alias.length > 0) {
-                    let aliasFound = false;
-                    let aliases = [];
-                    
-                    if (Array.isArray(item.Aliases)) {
-                        aliases = item.Aliases;
-                    } else if (typeof item.Aliases === 'string') {
-                        aliases = item.Aliases.split(',').map(a => a.trim());
+                    if (filterValues.variant.length > 0 && !filterValues.variant.includes(item.Variant)) {
+                        return false;
                     }
                     
-                    // Check if any selected alias is in this item's aliases
-                    aliasFound = aliases.some(alias => alias && filterValues.alias.includes(alias.trim()));
+                    // Check batch filter - convert item.BatchNumber to string for comparison
+                    if (filterValues.batch.length > 0) {
+                        const batchStr = item.BatchNumber !== undefined && item.BatchNumber !== null 
+                            ? String(item.BatchNumber) 
+                            : '';
+                        
+                        if (!filterValues.batch.includes(batchStr)) {
+                            return false;
+                        }
+                    }
                     
-                    if (!aliasFound) return false;
+                    // Check part filter
+                    if (filterValues.part.length > 0) {
+                        let partFound = false;
+                        let parts = [];
+                        
+                        if (Array.isArray(item.Parts)) {
+                            parts = item.Parts;
+                        } else if (typeof item.Parts === 'string') {
+                            parts = item.Parts.split(',').map(p => p.trim());
+                        }
+                        
+                        // Check if any selected part is in this item's parts
+                        partFound = parts.some(part => part && filterValues.part.includes(part.trim()));
+                        
+                        if (!partFound) return false;
+                    }
+                    
+                    // Check alias filter
+                    if (filterValues.alias.length > 0) {
+                        let aliasFound = false;
+                        let aliases = [];
+                        
+                        if (Array.isArray(item.Aliases)) {
+                            aliases = item.Aliases;
+                        } else if (typeof item.Aliases === 'string') {
+                            aliases = item.Aliases.split(',').map(a => a.trim());
+                        }
+                        
+                        // Check if any selected alias is in this item's aliases
+                        aliasFound = aliases.some(alias => alias && filterValues.alias.includes(alias.trim()));
+                        
+                        if (!aliasFound) return false;
+                    }
+                    
+                    return true;
+                });
+                
+                // Update dashboard with filtered data
+                updateDashboard();
+                
+                // Update the checkboxes in other filters to reflect relationships
+                updateRelatedFilterOptions(changedFilter);
+            } finally {
+                isUpdatingFilters = false;
+            }
+        }
+
+        // Update checkboxes for related filter options based on the filtered data
+        function updateRelatedFilterOptions(changedFilter) {
+            if (!changedFilter) return;
+            
+            // Calculate related values in the filtered data for each filter type
+            const relatedValues = {
+                supervisor: new Set(),
+                product: new Set(),
+                variant: new Set(),
+                batch: new Set(),
+                part: new Set(),
+                alias: new Set()
+            };
+            
+            // Extract all values from the filtered data
+            filteredData.forEach(item => {
+                if (item.LineSupervisor) relatedValues.supervisor.add(item.LineSupervisor);
+                if (item.Product) relatedValues.product.add(item.Product);
+                if (item.Variant) relatedValues.variant.add(item.Variant);
+                
+                if (item.BatchNumber !== undefined && item.BatchNumber !== null) {
+                    relatedValues.batch.add(String(item.BatchNumber));
                 }
                 
-                return true;
+                if (Array.isArray(item.Parts)) {
+                    item.Parts.forEach(part => {
+                        if (part && part.trim()) relatedValues.part.add(part.trim());
+                    });
+                } else if (typeof item.Parts === 'string') {
+                    item.Parts.split(',').forEach(part => {
+                        if (part && part.trim()) relatedValues.part.add(part.trim());
+                    });
+                }
+                
+                if (Array.isArray(item.Aliases)) {
+                    item.Aliases.forEach(alias => {
+                        if (alias && alias.trim()) relatedValues.alias.add(alias.trim());
+                    });
+                } else if (typeof item.Aliases === 'string') {
+                    item.Aliases.split(',').forEach(alias => {
+                        if (alias && alias.trim()) relatedValues.alias.add(alias.trim());
+                    });
+                }
             });
             
-            // Update dashboard with filtered data
-            updateDashboard();
+            // For each filter type (except the one that changed), check if any values match the filtered data
+            Object.keys(filterElements.multiSelects).forEach(key => {
+                if (key === changedFilter) return; // Skip the filter that triggered the change
+                
+                const multiSelect = filterElements.multiSelects[key];
+                const checkboxes = multiSelect.querySelectorAll('input[type="checkbox"]');
+                
+                // Update checkbox states based on related values
+                checkboxes.forEach(checkbox => {
+                    // Update the checkbox state based on filtered data
+                    const value = checkbox.value;
+                    const isInFilteredData = relatedValues[key].has(value);
+                    const isAlreadySelected = filterValues[key].includes(value);
+                    
+                    if (isAlreadySelected) {
+                        // Keep selected
+                        checkbox.checked = true;
+                    } else {
+                        // Check if it's a related value for the current filter
+                        checkbox.checked = isInFilteredData;
+                    }
+                });
+                
+                // Update the filter values
+                filterValues[key] = Array.from(checkboxes)
+                    .filter(checkbox => checkbox.checked)
+                    .map(checkbox => checkbox.value);
+                
+                // Update header text
+                updateHeaderText(multiSelect, key);
+            });
         }
 
         // Update dashboard with current filtered data
