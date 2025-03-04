@@ -30,18 +30,23 @@
         }
 
         /* Header Styles */
-        header {
+        .header-row {
             background-color: #2c3e50;
             color: white;
-            padding: 8px 0;
+            padding: 8px;
             margin-bottom: 5px;
             border-radius: 6px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
             flex: 0 0 auto;
         }
 
         h1 {
-            text-align: center;
-            font-size: 1.5rem;
+            font-size: 1.3rem;
+            white-space: nowrap;
+            margin-right: 10px;
         }
 
         h2 {
@@ -52,34 +57,7 @@
             font-size: 1rem;
         }
 
-        /* Filter Section */
-        .filters {
-            background-color: white;
-            padding: 8px;
-            border-radius: 6px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            margin-bottom: 5px;
-            flex: 0 0 auto;
-        }
-
-        .filter-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 5px;
-            align-items: center;
-        }
-
-        .date-filter-row {
-            display: flex;
-            flex-wrap: nowrap;
-            gap: 8px;
-            margin-bottom: 8px;
-            align-items: center;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 8px;
-        }
-
+        /* Filter Group */
         .filter-group {
             display: flex;
             align-items: center;
@@ -88,28 +66,44 @@
 
         .filter-group label {
             font-weight: bold;
-            color: #555;
+            color: white;
             font-size: 0.8rem;
             white-space: nowrap;
         }
 
         .filter-group input[type="date"] {
-            padding: 5px;
+            padding: 4px;
             border: 1px solid #ddd;
             border-radius: 4px;
             font-size: 0.8rem;
-            width: 130px;
+            width: 120px;
+            background-color: white;
+        }
+
+        /* Apply button */
+        .apply-btn {
+            padding: 4px 8px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+
+        .apply-btn:hover {
+            background-color: #2980b9;
         }
 
         /* Multi-select dropdown styles */
         .multi-select {
             position: relative;
-            width: 180px;
+            width: 130px;
             font-size: 0.8rem;
         }
         
         .multi-select-header {
-            padding: 5px;
+            padding: 4px;
             border: 1px solid #ddd;
             border-radius: 4px;
             background-color: white;
@@ -123,7 +117,7 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            max-width: 150px;
+            max-width: 100px;
         }
         
         .multi-select-dropdown {
@@ -135,7 +129,7 @@
             border: 1px solid #ddd;
             border-radius: 4px;
             width: 250px;
-            max-height: 250px;
+            max-height: 300px;
             overflow-y: auto;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
             display: none;
@@ -164,23 +158,9 @@
             padding: 2px 5px;
             font-size: 0.7rem;
         }
-
-        .only-btn {
-            padding: 2px 5px;
-            font-size: 0.7rem;
-            background-color: #2980b9;
-            color: white;
-            border: none;
-            border-radius: 3px;
-            cursor: pointer;
-        }
-
-        .only-btn:hover {
-            background-color: #3498db;
-        }
         
         .multi-select-options {
-            max-height: 150px;
+            max-height: 200px;
             overflow-y: auto;
         }
         
@@ -199,33 +179,34 @@
             margin-right: 5px;
         }
 
-        /* Filter buttons */
-        .filter-buttons {
-            display: flex;
-            gap: 5px;
-            margin-left: auto;
+        .only-btn {
+            margin-left: 5px;
+            padding: 1px 3px;
+            font-size: 0.65rem;
+            background-color: #2980b9;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
         }
 
-        button {
-            padding: 4px 8px;
+        .only-btn:hover {
             background-color: #3498db;
+        }
+
+        /* Reset button */
+        .reset-btn {
+            padding: 4px 8px;
+            background-color: #e74c3c;
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            transition: background-color 0.3s;
             font-size: 0.75rem;
+            margin-left: auto;
         }
 
-        button:hover {
-            background-color: #2980b9;
-        }
-
-        button.reset {
-            background-color: #e74c3c;
-        }
-
-        button.reset:hover {
+        .reset-btn:hover {
             background-color: #c0392b;
         }
 
@@ -295,6 +276,11 @@
         .sort-toggle button {
             padding: 2px 6px;
             font-size: 0.7rem;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
         }
 
         .sort-toggle button.active {
@@ -322,6 +308,7 @@
 
         .card h2 {
             flex: 0 0 auto;
+            color: #2c3e50;
         }
 
         /* Chart Containers */
@@ -461,139 +448,126 @@
 </head>
 <body>
     <div class="container">
-        <header>
+        <div class="header-row">
             <h1>Manufacturing Rejects Dashboard</h1>
-        </header>
-
-        <section class="filters">
-            <div class="date-filter-row">
-                <div class="filter-group">
-                    <label for="date-from">From:</label>
-                    <input type="date" id="date-from">
-                </div>
-                <div class="filter-group">
-                    <label for="date-to">To:</label>
-                    <input type="date" id="date-to">
-                </div>
-                <div class="filter-buttons">
-                    <button id="apply-date">Apply Dates</button>
+            
+            <!-- Date Filters -->
+            <div class="filter-group">
+                <label for="date-from">From:</label>
+                <input type="date" id="date-from">
+            </div>
+            <div class="filter-group">
+                <label for="date-to">To:</label>
+                <input type="date" id="date-to">
+            </div>
+            <button id="apply-date" class="apply-btn">Apply Dates</button>
+            
+            <!-- Other Filters -->
+            <div class="filter-group">
+                <label for="supervisor">Supervisor:</label>
+                <div id="supervisor-select" class="multi-select">
+                    <div class="multi-select-header">
+                        <span class="multi-select-header-text">All Supervisors</span>
+                        <span>▼</span>
+                    </div>
+                    <div class="multi-select-dropdown">
+                        <input type="text" class="multi-select-search" placeholder="Search...">
+                        <div class="multi-select-actions">
+                            <button class="select-all">Select All</button>
+                            <button class="clear-all">Clear All</button>
+                        </div>
+                        <div class="multi-select-options"></div>
+                    </div>
                 </div>
             </div>
-
-            <div class="filter-row">
-                <div class="filter-group">
-                    <label for="supervisor">Supervisor:</label>
-                    <div id="supervisor-select" class="multi-select">
-                        <div class="multi-select-header">
-                            <span class="multi-select-header-text">All Supervisors</span>
-                            <span>▼</span>
-                        </div>
-                        <div class="multi-select-dropdown">
-                            <input type="text" class="multi-select-search" placeholder="Search...">
-                            <div class="multi-select-actions">
-                                <button class="select-all">Select All</button>
-                                <button class="clear-all">Clear All</button>
-                                <button class="only-btn">Only</button>
-                            </div>
-                            <div class="multi-select-options"></div>
-                        </div>
+            <div class="filter-group">
+                <label for="product">Product:</label>
+                <div id="product-select" class="multi-select">
+                    <div class="multi-select-header">
+                        <span class="multi-select-header-text">All Products</span>
+                        <span>▼</span>
                     </div>
-                </div>
-                <div class="filter-group">
-                    <label for="product">Product:</label>
-                    <div id="product-select" class="multi-select">
-                        <div class="multi-select-header">
-                            <span class="multi-select-header-text">All Products</span>
-                            <span>▼</span>
+                    <div class="multi-select-dropdown">
+                        <input type="text" class="multi-select-search" placeholder="Search...">
+                        <div class="multi-select-actions">
+                            <button class="select-all">Select All</button>
+                            <button class="clear-all">Clear All</button>
                         </div>
-                        <div class="multi-select-dropdown">
-                            <input type="text" class="multi-select-search" placeholder="Search...">
-                            <div class="multi-select-actions">
-                                <button class="select-all">Select All</button>
-                                <button class="clear-all">Clear All</button>
-                                <button class="only-btn">Only</button>
-                            </div>
-                            <div class="multi-select-options"></div>
-                        </div>
+                        <div class="multi-select-options"></div>
                     </div>
-                </div>
-                <div class="filter-group">
-                    <label for="variant">Variant:</label>
-                    <div id="variant-select" class="multi-select">
-                        <div class="multi-select-header">
-                            <span class="multi-select-header-text">All Variants</span>
-                            <span>▼</span>
-                        </div>
-                        <div class="multi-select-dropdown">
-                            <input type="text" class="multi-select-search" placeholder="Search...">
-                            <div class="multi-select-actions">
-                                <button class="select-all">Select All</button>
-                                <button class="clear-all">Clear All</button>
-                                <button class="only-btn">Only</button>
-                            </div>
-                            <div class="multi-select-options"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="filter-group">
-                    <label for="batch">Batch:</label>
-                    <div id="batch-select" class="multi-select">
-                        <div class="multi-select-header">
-                            <span class="multi-select-header-text">All Batches</span>
-                            <span>▼</span>
-                        </div>
-                        <div class="multi-select-dropdown">
-                            <input type="text" class="multi-select-search" placeholder="Search...">
-                            <div class="multi-select-actions">
-                                <button class="select-all">Select All</button>
-                                <button class="clear-all">Clear All</button>
-                                <button class="only-btn">Only</button>
-                            </div>
-                            <div class="multi-select-options"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="filter-group">
-                    <label for="part">Part:</label>
-                    <div id="part-select" class="multi-select">
-                        <div class="multi-select-header">
-                            <span class="multi-select-header-text">All Parts</span>
-                            <span>▼</span>
-                        </div>
-                        <div class="multi-select-dropdown">
-                            <input type="text" class="multi-select-search" placeholder="Search...">
-                            <div class="multi-select-actions">
-                                <button class="select-all">Select All</button>
-                                <button class="clear-all">Clear All</button>
-                                <button class="only-btn">Only</button>
-                            </div>
-                            <div class="multi-select-options"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="filter-group">
-                    <label for="alias">Alias:</label>
-                    <div id="alias-select" class="multi-select">
-                        <div class="multi-select-header">
-                            <span class="multi-select-header-text">All Aliases</span>
-                            <span>▼</span>
-                        </div>
-                        <div class="multi-select-dropdown">
-                            <input type="text" class="multi-select-search" placeholder="Search...">
-                            <div class="multi-select-actions">
-                                <button class="select-all">Select All</button>
-                                <button class="clear-all">Clear All</button>
-                                <button class="only-btn">Only</button>
-                            </div>
-                            <div class="multi-select-options"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="filter-buttons">
-                    <button id="reset-all-filters" class="reset">Reset All</button>
                 </div>
             </div>
-        </section>
+            <div class="filter-group">
+                <label for="variant">Variant:</label>
+                <div id="variant-select" class="multi-select">
+                    <div class="multi-select-header">
+                        <span class="multi-select-header-text">All Variants</span>
+                        <span>▼</span>
+                    </div>
+                    <div class="multi-select-dropdown">
+                        <input type="text" class="multi-select-search" placeholder="Search...">
+                        <div class="multi-select-actions">
+                            <button class="select-all">Select All</button>
+                            <button class="clear-all">Clear All</button>
+                        </div>
+                        <div class="multi-select-options"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="filter-group">
+                <label for="batch">Batch:</label>
+                <div id="batch-select" class="multi-select">
+                    <div class="multi-select-header">
+                        <span class="multi-select-header-text">All Batches</span>
+                        <span>▼</span>
+                    </div>
+                    <div class="multi-select-dropdown">
+                        <input type="text" class="multi-select-search" placeholder="Search...">
+                        <div class="multi-select-actions">
+                            <button class="select-all">Select All</button>
+                            <button class="clear-all">Clear All</button>
+                        </div>
+                        <div class="multi-select-options"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="filter-group">
+                <label for="part">Part:</label>
+                <div id="part-select" class="multi-select">
+                    <div class="multi-select-header">
+                        <span class="multi-select-header-text">All Parts</span>
+                        <span>▼</span>
+                    </div>
+                    <div class="multi-select-dropdown">
+                        <input type="text" class="multi-select-search" placeholder="Search...">
+                        <div class="multi-select-actions">
+                            <button class="select-all">Select All</button>
+                            <button class="clear-all">Clear All</button>
+                        </div>
+                        <div class="multi-select-options"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="filter-group">
+                <label for="alias">Alias:</label>
+                <div id="alias-select" class="multi-select">
+                    <div class="multi-select-header">
+                        <span class="multi-select-header-text">All Aliases</span>
+                        <span>▼</span>
+                    </div>
+                    <div class="multi-select-dropdown">
+                        <input type="text" class="multi-select-search" placeholder="Search...">
+                        <div class="multi-select-actions">
+                            <button class="select-all">Select All</button>
+                            <button class="clear-all">Clear All</button>
+                        </div>
+                        <div class="multi-select-options"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <button id="reset-all-filters" class="reset-btn">Reset All</button>
+        </div>
 
         <div class="dashboard-content">
             <div class="summary-and-top10">
@@ -695,10 +669,6 @@
         const DATA_URL = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/${FILE_PATH}`;
         let sortTop10By = 'qty'; // 'qty' or 'cost'
 
-        // Active filter that initiated the current filtering (for the "Only" functionality)
-        let activeFilterKey = null;
-        let activeFilterValue = null;
-
         // Available filter options (all possible values from date-filtered data)
         let availableFilterOptions = {
             supervisor: new Set(),
@@ -709,7 +679,7 @@
             alias: new Set()
         };
 
-        // Selected filter values
+        // Multi-select filter values (selected values)
         const filterValues = {
             supervisor: [],
             product: [],
@@ -805,7 +775,7 @@
             // Initialize multi-select dropdowns
             initMultiSelectDropdowns();
 
-            // Find default date range (last 5 days with rejects)
+            // Set initial date range to last 5 days with rejects
             setDefaultDateRange();
 
             // Apply initial date filter to get the base data set
@@ -845,7 +815,6 @@
                 const optionsContainer = multiSelect.querySelector('.multi-select-options');
                 const selectAllBtn = multiSelect.querySelector('.select-all');
                 const clearAllBtn = multiSelect.querySelector('.clear-all');
-                const onlyBtn = multiSelect.querySelector('.only-btn');
                 
                 // Toggle dropdown
                 header.addEventListener('click', (e) => {
@@ -893,22 +862,6 @@
                     });
                 });
                 
-                // "Only" button for this filter
-                onlyBtn.addEventListener('click', () => {
-                    // Get checked options
-                    const checkedOptions = Array.from(optionsContainer.querySelectorAll('input[type="checkbox"]:checked'))
-                        .map(checkbox => checkbox.value);
-                    
-                    if (checkedOptions.length > 0) {
-                        // Set active filter to this filter with selected values
-                        activeFilterKey = key;
-                        activeFilterValue = checkedOptions;
-                        
-                        // Apply filter and update other filters
-                        synchronizeFiltersBasedOnSelection(key, checkedOptions);
-                    }
-                });
-                
                 // Select all button
                 selectAllBtn.addEventListener('click', () => {
                     const visibleOptions = Array.from(optionsContainer.querySelectorAll('.multi-select-option'))
@@ -920,18 +873,15 @@
                     });
                     
                     // Update selected values
-                    filterValues[key] = Array.from(optionsContainer.querySelectorAll('input[type="checkbox"]:checked'))
+                    const filterName = multiSelect.id.replace('-select', '');
+                    filterValues[filterName] = Array.from(optionsContainer.querySelectorAll('input[type="checkbox"]:checked'))
                         .map(checkbox => checkbox.value);
                     
                     // Update header text
-                    updateHeaderText(multiSelect, key);
+                    updateHeaderText(multiSelect, filterName);
                     
-                    // Set active filter to this filter with all values
-                    activeFilterKey = key;
-                    activeFilterValue = filterValues[key];
-                    
-                    // Apply filter and update other filters
-                    synchronizeFiltersBasedOnSelection(key, filterValues[key]);
+                    // Apply filters
+                    applyDetailFilters();
                 });
                 
                 // Clear all button
@@ -945,19 +895,14 @@
                     });
                     
                     // Update selected values
-                    filterValues[key] = [];
+                    const filterName = multiSelect.id.replace('-select', '');
+                    filterValues[filterName] = [];
                     
                     // Update header text
-                    updateHeaderText(multiSelect, key);
+                    updateHeaderText(multiSelect, filterName);
                     
-                    // Clear active filter if this is the active one
-                    if (activeFilterKey === key) {
-                        activeFilterKey = null;
-                        activeFilterValue = null;
-                    }
-                    
-                    // Apply filter and update other filters
-                    synchronizeFiltersBasedOnSelection(key, []);
+                    // Apply filters
+                    applyDetailFilters();
                 });
             });
         }
@@ -1037,10 +982,6 @@
             // Set filtered data to date filtered data initially
             filteredData = [...dateFilteredData];
             
-            // Clear active filter
-            activeFilterKey = null;
-            activeFilterValue = null;
-            
             // Update dashboard
             updateDashboard();
         }
@@ -1097,7 +1038,7 @@
             });
         }
 
-        // Reset all other filters except date
+        // Reset all filters except date
         function resetOtherFilters(skipUpdate = false) {
             // Reset filter values
             Object.keys(filterValues).forEach(key => {
@@ -1108,10 +1049,6 @@
             Object.keys(filterElements.multiSelects).forEach(key => {
                 updateHeaderText(filterElements.multiSelects[key], key);
             });
-
-            // Clear active filter
-            activeFilterKey = null;
-            activeFilterValue = null;
 
             if (!skipUpdate) {
                 // Set filtered data to date filtered data
@@ -1128,6 +1065,26 @@
         // Reset all filters except date
         function resetAllFilters() {
             resetOtherFilters();
+        }
+
+        // Select only one option in a filter
+        function selectOnlyThisOption(filterName, value) {
+            // Clear all selections for this filter
+            filterValues[filterName] = [value];
+            
+            // Update all checkboxes in this filter
+            const multiSelect = filterElements.multiSelects[filterName];
+            const checkboxes = multiSelect.querySelectorAll('input[type="checkbox"]');
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = checkbox.value === value;
+            });
+            
+            // Update header text
+            updateHeaderText(multiSelect, filterName);
+            
+            // Apply filters
+            applyDetailFilters();
         }
 
         // Populate multi-select options based on available options
@@ -1164,25 +1121,42 @@
                         label.htmlFor = checkbox.id;
                         label.textContent = value;
                         
+                        const onlyBtn = document.createElement('button');
+                        onlyBtn.className = 'only-btn';
+                        onlyBtn.textContent = 'Only';
+                        onlyBtn.setAttribute('title', 'Show only this option');
+                        
                         option.appendChild(checkbox);
                         option.appendChild(label);
+                        option.appendChild(onlyBtn);
                         optionsContainer.appendChild(option);
                         
                         // Add event listener to checkbox
                         checkbox.addEventListener('change', () => {
-                            // Update filter values based on all checked checkboxes
-                            filterValues[key] = Array.from(optionsContainer.querySelectorAll('input[type="checkbox"]:checked'))
-                                .map(cb => cb.value);
+                            if (checkbox.checked) {
+                                // Add to selected values if not already there
+                                if (!filterValues[key].includes(value)) {
+                                    filterValues[key].push(value);
+                                }
+                            } else {
+                                // Remove from selected values
+                                const index = filterValues[key].indexOf(value);
+                                if (index !== -1) {
+                                    filterValues[key].splice(index, 1);
+                                }
+                            }
                             
                             // Update header text
                             updateHeaderText(multiSelect, key);
                             
-                            // Set this as the active filter
-                            activeFilterKey = key;
-                            activeFilterValue = filterValues[key];
-                            
-                            // Synchronize filters based on this selection
-                            synchronizeFiltersBasedOnSelection(key, filterValues[key]);
+                            // Apply filters
+                            applyDetailFilters();
+                        });
+                        
+                        // Add event listener to "Only" button
+                        onlyBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            selectOnlyThisOption(key, value);
                         });
                     });
                 }
@@ -1192,172 +1166,39 @@
             });
         }
 
-        // Calculate related filter values based on selected values in one filter
-        function calculateRelatedFilterValues(filterKey, selectedValues) {
-            // If no values selected, show all options
-            if (selectedValues.length === 0) {
-                return {
-                    supervisor: [...availableFilterOptions.supervisor],
-                    product: [...availableFilterOptions.product],
-                    variant: [...availableFilterOptions.variant],
-                    batch: [...availableFilterOptions.batch],
-                    part: [...availableFilterOptions.part],
-                    alias: [...availableFilterOptions.alias]
-                };
-            }
-            
-            // Find all records that match the selected values in the specified filter
-            const matchingRecords = dateFilteredData.filter(item => {
-                if (filterKey === 'supervisor') {
-                    return selectedValues.includes(item.LineSupervisor);
-                }
-                if (filterKey === 'product') {
-                    return selectedValues.includes(item.Product);
-                }
-                if (filterKey === 'variant') {
-                    return selectedValues.includes(item.Variant);
-                }
-                if (filterKey === 'batch') {
-                    const batchStr = item.BatchNumber !== undefined && item.BatchNumber !== null 
-                        ? String(item.BatchNumber) 
-                        : '';
-                    return selectedValues.includes(batchStr);
-                }
-                if (filterKey === 'part') {
-                    let parts = [];
-                    if (Array.isArray(item.Parts)) {
-                        parts = item.Parts;
-                    } else if (typeof item.Parts === 'string') {
-                        parts = item.Parts.split(',').map(p => p.trim());
-                    }
-                    return parts.some(part => part && selectedValues.includes(part.trim()));
-                }
-                if (filterKey === 'alias') {
-                    let aliases = [];
-                    if (Array.isArray(item.Aliases)) {
-                        aliases = item.Aliases;
-                    } else if (typeof item.Aliases === 'string') {
-                        aliases = item.Aliases.split(',').map(a => a.trim());
-                    }
-                    return aliases.some(alias => alias && selectedValues.includes(alias.trim()));
-                }
-                return false;
-            });
-            
-            // Extract unique values for each filter from matching records
-            const relatedValues = {
-                supervisor: new Set(),
-                product: new Set(),
-                variant: new Set(),
-                batch: new Set(),
-                part: new Set(),
-                alias: new Set()
-            };
-            
-            matchingRecords.forEach(item => {
-                if (item.LineSupervisor) relatedValues.supervisor.add(item.LineSupervisor);
-                if (item.Product) relatedValues.product.add(item.Product);
-                if (item.Variant) relatedValues.variant.add(item.Variant);
-                
-                if (item.BatchNumber !== undefined && item.BatchNumber !== null) {
-                    relatedValues.batch.add(String(item.BatchNumber));
-                }
-                
-                if (Array.isArray(item.Parts)) {
-                    item.Parts.forEach(part => {
-                        if (part && part.trim()) relatedValues.part.add(part.trim());
-                    });
-                } else if (typeof item.Parts === 'string') {
-                    item.Parts.split(',').forEach(part => {
-                        if (part && part.trim()) relatedValues.part.add(part.trim());
-                    });
-                }
-                
-                if (Array.isArray(item.Aliases)) {
-                    item.Aliases.forEach(alias => {
-                        if (alias && alias.trim()) relatedValues.alias.add(alias.trim());
-                    });
-                } else if (typeof item.Aliases === 'string') {
-                    item.Aliases.split(',').forEach(alias => {
-                        if (alias && alias.trim()) relatedValues.alias.add(alias.trim());
-                    });
-                }
-            });
-            
-            // Convert Sets to Arrays
-            return {
-                supervisor: [...relatedValues.supervisor],
-                product: [...relatedValues.product],
-                variant: [...relatedValues.variant],
-                batch: [...relatedValues.batch],
-                part: [...relatedValues.part],
-                alias: [...relatedValues.alias]
-            };
-        }
-
-        // Synchronize all filters based on selection in one filter
-        function synchronizeFiltersBasedOnSelection(filterKey, selectedValues) {
-            // Calculate related values for each filter
-            const relatedValues = calculateRelatedFilterValues(filterKey, selectedValues);
-            
-            // Update filter values and UI for each filter
-            Object.keys(filterElements.multiSelects).forEach(key => {
-                if (key !== filterKey) {
-                    // Clear current selections for this filter
-                    filterValues[key] = [...relatedValues[key]];
-                    
-                    // Update checkboxes
-                    const multiSelect = filterElements.multiSelects[key];
-                    const checkboxes = multiSelect.querySelectorAll('input[type="checkbox"]');
-                    
-                    checkboxes.forEach(checkbox => {
-                        checkbox.checked = relatedValues[key].includes(checkbox.value);
-                    });
-                    
-                    // Update header text
-                    updateHeaderText(multiSelect, key);
-                }
-            });
-            
-            // Apply filters to data
-            applyFiltersToData();
-            
-            // Update dashboard
-            updateDashboard();
-        }
-
-        // Apply filters to data
-        function applyFiltersToData() {
-            // If no filters have selections, show all date-filtered data
+        // Apply filters based on multi-select values
+        function applyDetailFilters() {
+            // Check if any filter has selections
             const hasSelections = Object.values(filterValues).some(values => values.length > 0);
             
+            // If no selections, show all date-filtered data
             if (!hasSelections) {
                 filteredData = [...dateFilteredData];
+                updateDashboard();
                 return;
             }
             
-            // Find all records that match at least one value in each filter with selections
+            // Apply filters to get data
             filteredData = dateFilteredData.filter(item => {
-                // Check supervisor filter
+                // For filters with selections, item must match at least one selected value
                 if (filterValues.supervisor.length > 0 && !filterValues.supervisor.includes(item.LineSupervisor)) {
                     return false;
                 }
                 
-                // Check product filter
                 if (filterValues.product.length > 0 && !filterValues.product.includes(item.Product)) {
                     return false;
                 }
                 
-                // Check variant filter
                 if (filterValues.variant.length > 0 && !filterValues.variant.includes(item.Variant)) {
                     return false;
                 }
                 
-                // Check batch filter
+                // Check batch filter - convert item.BatchNumber to string for comparison
                 if (filterValues.batch.length > 0) {
                     const batchStr = item.BatchNumber !== undefined && item.BatchNumber !== null 
                         ? String(item.BatchNumber) 
                         : '';
+                    
                     if (!filterValues.batch.includes(batchStr)) {
                         return false;
                     }
@@ -1365,34 +1206,43 @@
                 
                 // Check part filter
                 if (filterValues.part.length > 0) {
+                    let partFound = false;
                     let parts = [];
+                    
                     if (Array.isArray(item.Parts)) {
                         parts = item.Parts;
                     } else if (typeof item.Parts === 'string') {
                         parts = item.Parts.split(',').map(p => p.trim());
                     }
                     
-                    if (!parts.some(part => part && filterValues.part.includes(part.trim()))) {
-                        return false;
-                    }
+                    // Check if any selected part is in this item's parts
+                    partFound = parts.some(part => part && filterValues.part.includes(part.trim()));
+                    
+                    if (!partFound) return false;
                 }
                 
                 // Check alias filter
                 if (filterValues.alias.length > 0) {
+                    let aliasFound = false;
                     let aliases = [];
+                    
                     if (Array.isArray(item.Aliases)) {
                         aliases = item.Aliases;
                     } else if (typeof item.Aliases === 'string') {
                         aliases = item.Aliases.split(',').map(a => a.trim());
                     }
                     
-                    if (!aliases.some(alias => alias && filterValues.alias.includes(alias.trim()))) {
-                        return false;
-                    }
+                    // Check if any selected alias is in this item's aliases
+                    aliasFound = aliases.some(alias => alias && filterValues.alias.includes(alias.trim()));
+                    
+                    if (!aliasFound) return false;
                 }
                 
                 return true;
             });
+            
+            // Update dashboard with filtered data
+            updateDashboard();
         }
 
         // Update dashboard with current filtered data
@@ -2031,7 +1881,7 @@
                 costLabel.setAttribute('text-anchor', 'middle');
                 costLabel.textContent = 'R' + stationData[station].cost.toFixed(0);
                 costLabel.classList.add('bar-label');
-                g.appendChild(costLabel);
+                g.appendChild(countLabel);
             });
         }
 
