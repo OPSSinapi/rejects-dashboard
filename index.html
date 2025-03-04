@@ -258,38 +258,49 @@
             overflow: hidden;
         }
 
-        .summary-and-top10 {
+        .main-container {
+            flex: 1;
             display: flex;
             gap: 5px;
-            margin-bottom: 5px;
-            flex: 0 0 auto;
+            overflow: hidden;
         }
-
-        .summary-metrics {
-            flex: 1;
+        
+        .left-panel {
+            flex: 3;
             display: flex;
             flex-direction: column;
             gap: 5px;
+            overflow: hidden;
         }
-
-        .metrics-row {
+        
+        .right-panel {
+            flex: 2;
             display: flex;
+            flex-direction: column;
             gap: 5px;
-            align-items: center;
+            overflow: hidden;
         }
 
-        .metric-card {
+        .metrics-bar {
             background-color: white;
             border-radius: 6px;
             padding: 8px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            flex: 1;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .total-cost-container {
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            gap: 15px;
+        }
+
+        .cost-display {
+            display: flex;
+            flex-direction: column;
         }
 
         .total-cost {
@@ -321,26 +332,10 @@
             color: #2c3e50;
         }
 
-        .parts-metrics {
-            display: flex;
-            gap: 10px;
-            margin-top: 5px;
-        }
-
-        .parts-metric {
-            font-size: 0.8rem;
-            color: #7f8c8d;
-        }
-
-        .parts-metric-value {
-            font-weight: bold;
-            color: #2c3e50;
-        }
-
         .type-selector {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 15px;
         }
 
         .type-dropdown {
@@ -394,12 +389,31 @@
             font-weight: bold;
         }
 
+        .parts-metrics {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .parts-metric {
+            font-size: 0.8rem;
+            color: #7f8c8d;
+        }
+
+        .parts-metric-value {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
         .top10-container {
-            flex: 2;
             background-color: white;
             border-radius: 6px;
             padding: 8px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
 
         .top10-header {
@@ -431,32 +445,31 @@
             background-color: #2c3e50;
         }
 
-        .charts-grid {
+        .table-container {
             flex: 1;
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            grid-template-rows: repeat(2, 1fr);
-            gap: 5px;
+            overflow: auto;
             min-height: 0;
         }
 
-        .card {
+        .chart-card {
             background-color: white;
             border-radius: 6px;
             padding: 8px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            flex: 1;
             display: flex;
             flex-direction: column;
             overflow: hidden;
         }
 
-        .card h2 {
+        .card-title {
             flex: 0 0 auto;
+            margin-bottom: 8px;
         }
 
-        /* Chart Containers */
-        .chart-container {
+        .card-content {
             flex: 1;
+            overflow: hidden;
             position: relative;
             min-height: 0;
         }
@@ -481,7 +494,9 @@
         th {
             background-color: #f2f2f2;
             font-weight: bold;
-            position: relative;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
         th.clickable {
@@ -518,9 +533,24 @@
             fill: #e67e22;
         }
 
+        .horizontal-bar {
+            fill: #3498db;
+            transition: fill 0.3s;
+        }
+
+        .horizontal-bar:hover {
+            fill: #e67e22;
+        }
+
         .bar-label {
             font-size: 9px;
             text-anchor: middle;
+            fill: #333;
+        }
+
+        .horizontal-bar-label {
+            font-size: 9px;
+            text-anchor: start;
             fill: #333;
         }
 
@@ -531,6 +561,31 @@
         .axis text {
             font-size: 9px;
             fill: #666;
+        }
+
+        /* Box and Whisker Plot */
+        .box-plot {
+            stroke: #333;
+            stroke-width: 1;
+            fill: #e8f4fb;
+        }
+
+        .median-line {
+            stroke: #2c3e50;
+            stroke-width: 2;
+        }
+
+        .whisker-line {
+            stroke: #333;
+            stroke-width: 1;
+        }
+
+        .outlier {
+            fill: #e74c3c;
+        }
+
+        .date-marker {
+            fill: #e74c3c;
         }
 
         /* Loading Indicator */
@@ -775,129 +830,132 @@
             </div>
         </section>
 
+        <div class="metrics-bar">
+            <div class="total-cost-container">
+                <div class="cost-display">
+                    <div id="total-cost" class="total-cost">R0</div>
+                    <div class="total-cost-label">Total Cost</div>
+                </div>
+                <div class="type-metrics" id="type-metrics-container">
+                    <div class="type-metric" id="scrap-metric">
+                        <span>Scrap:</span>
+                        <span id="scrap-percent" class="type-percent">0%</span>
+                    </div>
+                    <div class="type-metric" id="rts-metric">
+                        <span>RTS:</span>
+                        <span id="rts-percent" class="type-percent">0%</span>
+                    </div>
+                    <div class="type-metric" id="local-metric" style="display: none;">
+                        <span>Local:</span>
+                        <span id="local-percent" class="type-percent">0%</span>
+                    </div>
+                </div>
+            </div>
+            <div class="type-selector">
+                <div class="type-dropdown" id="action-dropdown">
+                    <button class="dropdown-btn">
+                        <span id="current-action">All Types</span>
+                        <span>▼</span>
+                    </button>
+                    <div class="dropdown-content" id="action-dropdown-content">
+                        <a href="#" class="dropdown-item active" data-action="All">All Types</a>
+                        <!-- Actions will be populated dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="dashboard-content">
-            <div class="summary-and-top10">
-                <div class="summary-metrics">
-                    <div class="metric-card">
-                        <div class="total-cost-container">
-                            <div>
-                                <div id="total-cost" class="total-cost">R0</div>
-                                <div class="total-cost-label">Total Cost</div>
+            <div class="main-container">
+                <div class="left-panel">
+                    <div class="top10-container">
+                        <div class="top10-header">
+                            <div class="top10-title">
+                                <h2>Top 10 Rejects</h2>
+                                <div class="parts-metrics">
+                                    <div class="parts-metric">
+                                        <span>Single Parts:</span>
+                                        <span id="single-parts-count" class="parts-metric-value">0</span>
+                                    </div>
+                                    <div class="parts-metric">
+                                        <span>Assemblies:</span>
+                                        <span id="assemblies-count" class="parts-metric-value">0</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="type-selector">
-                                <div class="type-metrics">
-                                    <div class="type-metric">
-                                        <span>Scrap:</span>
-                                        <span id="scrap-percent" class="type-percent">0%</span>
-                                    </div>
-                                    <div class="type-metric">
-                                        <span>RTS:</span>
-                                        <span id="rts-percent" class="type-percent">0%</span>
-                                    </div>
-                                    <div class="type-metric" id="local-metric" style="display: none;">
-                                        <span>Local:</span>
-                                        <span id="local-percent" class="type-percent">0%</span>
-                                    </div>
-                                </div>
-                                <div class="type-dropdown" id="action-dropdown">
-                                    <button class="dropdown-btn">
-                                        <span id="current-action">All Types</span>
-                                        <span>▼</span>
-                                    </button>
-                                    <div class="dropdown-content" id="action-dropdown-content">
-                                        <a href="#" class="dropdown-item active" data-action="All">All Types</a>
-                                        <!-- Actions will be populated dynamically -->
-                                    </div>
-                                </div>
+                            <div class="sort-toggle">
+                                <span>Sort by:</span>
+                                <button id="sort-by-qty" class="active">Quantity</button>
+                                <button id="sort-by-cost">Cost</button>
                             </div>
                         </div>
-                        <div class="parts-metrics">
-                            <div class="parts-metric">
-                                <span>Single Parts:</span>
-                                <span id="single-parts-count" class="parts-metric-value">0</span>
-                            </div>
-                            <div class="parts-metric">
-                                <span>Assemblies:</span>
-                                <span id="assemblies-count" class="parts-metric-value">0</span>
+                        <div class="table-container">
+                            <table id="top10-table">
+                                <thead>
+                                    <tr>
+                                        <th class="clickable" id="station-header">Station</th>
+                                        <th id="parts-header">Parts</th>
+                                        <th id="batch-header" style="display: none;">Batch Nr</th>
+                                        <th id="supplier-header" style="display: none;">Supplier</th>
+                                        <th class="clickable" id="reject-reason-header">Reject Reason</th>
+                                        <th>QTY</th>
+                                        <th>Cost (R)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="top10-table-body">
+                                    <!-- Data will be loaded here via JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Popup menus -->
+                        <div id="reject-reason-menu" class="popup-menu">
+                            <!-- Will be populated dynamically -->
+                        </div>
+                        <div id="station-menu" class="popup-menu">
+                            <!-- Will be populated dynamically -->
+                        </div>
+                    </div>
+                    
+                    <div class="chart-card">
+                        <h2 class="card-title">Daily Rejects Trend</h2>
+                        <div id="trend-chart" class="card-content">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                <span>Loading data...</span>
                             </div>
                         </div>
                     </div>
                 </div>
                 
-                <div class="top10-container">
-                    <div class="top10-header">
-                        <div class="top10-title">
-                            <h2>Top 10 Rejects</h2>
+                <div class="right-panel">
+                    <div class="chart-card">
+                        <h2 class="card-title">Reject Reasons Distribution (Top 3)</h2>
+                        <div id="reasons-chart" class="card-content">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                <span>Loading data...</span>
+                            </div>
                         </div>
-                        <div class="sort-toggle">
-                            <span>Sort by:</span>
-                            <button id="sort-by-qty" class="active">Quantity</button>
-                            <button id="sort-by-cost">Cost</button>
-                        </div>
-                    </div>
-                    <div id="top10-table-container" style="overflow-x: auto;">
-                        <table id="top10-table">
-                            <thead>
-                                <tr>
-                                    <th class="clickable" id="station-header">Station</th>
-                                    <th id="parts-header">Parts</th>
-                                    <th id="batch-header" style="display: none;">Batch Nr</th>
-                                    <th id="supplier-header" style="display: none;">Supplier</th>
-                                    <th class="clickable" id="reject-reason-header">Reject Reason</th>
-                                    <th>QTY</th>
-                                    <th>Cost (R)</th>
-                                </tr>
-                            </thead>
-                            <tbody id="top10-table-body">
-                                <!-- Data will be loaded here via JavaScript -->
-                            </tbody>
-                        </table>
                     </div>
                     
-                    <!-- Popup menus -->
-                    <div id="reject-reason-menu" class="popup-menu">
-                        <!-- Will be populated dynamically -->
-                    </div>
-                    <div id="station-menu" class="popup-menu">
-                        <!-- Will be populated dynamically -->
-                    </div>
-                </div>
-            </div>
-
-            <div class="charts-grid">
-                <div class="card">
-                    <h2>Reject Reasons Distribution (Top 3)</h2>
-                    <div id="reasons-chart" class="chart-container">
-                        <div class="loading">
-                            <div class="spinner"></div>
-                            <span>Loading data...</span>
+                    <div class="chart-card">
+                        <h2 class="card-title">Top Problem Parts (Top 3)</h2>
+                        <div id="parts-chart" class="card-content">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                <span>Loading data...</span>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="card">
-                    <h2>Daily Rejects Trend</h2>
-                    <div id="trend-chart" class="chart-container">
-                        <div class="loading">
-                            <div class="spinner"></div>
-                            <span>Loading data...</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="card">
-                    <h2>Top Problem Parts (Top 3)</h2>
-                    <div id="parts-chart" class="chart-container">
-                        <div class="loading">
-                            <div class="spinner"></div>
-                            <span>Loading data...</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="card">
-                    <h2>Cost by Station (Top 3)</h2>
-                    <div id="station-chart" class="chart-container">
-                        <div class="loading">
-                            <div class="spinner"></div>
-                            <span>Loading data...</span>
+                    
+                    <div class="chart-card">
+                        <h2 class="card-title">Cost by Station (Top 3)</h2>
+                        <div id="station-chart" class="card-content">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                <span>Loading data...</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -947,6 +1005,15 @@
             // Structure: { filterName: { value: { otherFilterName: [associated values] } } }
         };
 
+        // Store data metrics for box and whisker plot
+        let globalDataMetrics = {
+            min: 0,
+            max: 0,
+            median: 0,
+            q1: 0, 
+            q3: 0
+        };
+
         // DOM elements
         const filterElements = {
             dateFrom: document.getElementById('date-from'),
@@ -965,9 +1032,11 @@
 
         const metricElements = {
             totalCost: document.getElementById('total-cost'),
+            scrapMetric: document.getElementById('scrap-metric'),
+            rtsMetric: document.getElementById('rts-metric'),
+            localMetric: document.getElementById('local-metric'),
             scrapPercent: document.getElementById('scrap-percent'),
             rtsPercent: document.getElementById('rts-percent'),
-            localMetric: document.getElementById('local-metric'),
             localPercent: document.getElementById('local-percent'),
             singlePartsCount: document.getElementById('single-parts-count'),
             assembliesCount: document.getElementById('assemblies-count')
@@ -1043,6 +1112,9 @@
                 return;
             }
 
+            // Calculate global data metrics
+            calculateGlobalDataMetrics();
+
             // Initialize multi-select dropdowns
             initMultiSelectDropdowns();
 
@@ -1068,6 +1140,9 @@
                 updateTop10Table();
                 updateRejectReasonMenu();
                 updateStationMenu();
+                createRejectReasonsChart();
+                createTopProblemsChart();
+                createStationCostChart();
             });
             
             top10Elements.sortByCost.addEventListener('click', () => {
@@ -1077,6 +1152,9 @@
                 updateTop10Table();
                 updateRejectReasonMenu();
                 updateStationMenu();
+                createRejectReasonsChart();
+                createTopProblemsChart();
+                createStationCostChart();
             });
 
             // Close popup menus when clicking outside
@@ -1096,6 +1174,53 @@
                     top10Elements.actionDropdownContent.classList.remove('show');
                 }
             });
+        }
+
+        // Calculate global data metrics for box and whisker plot
+        function calculateGlobalDataMetrics() {
+            if (rejectData.length === 0) return;
+            
+            // Group data by date
+            const dateGroups = {};
+            rejectData.forEach(item => {
+                const date = item.ProductionDate;
+                if (!dateGroups[date]) {
+                    dateGroups[date] = {
+                        count: 0,
+                        cost: 0
+                    };
+                }
+                dateGroups[date].count += (item.QTY || 0);
+                dateGroups[date].cost += (item.Cost || 0);
+            });
+            
+            // Get metrics by the current sort type
+            const metricValues = Object.values(dateGroups).map(g => 
+                sortTop10By === 'qty' ? g.count : g.cost
+            ).sort((a, b) => a - b);
+            
+            // Calculate metrics
+            const min = metricValues[0] || 0;
+            const max = metricValues[metricValues.length - 1] || 0;
+            
+            // Calculate quartiles
+            const q1Index = Math.floor(metricValues.length * 0.25);
+            const medianIndex = Math.floor(metricValues.length * 0.5);
+            const q3Index = Math.floor(metricValues.length * 0.75);
+            
+            const q1 = metricValues[q1Index] || 0;
+            const median = metricValues[medianIndex] || 0;
+            const q3 = metricValues[q3Index] || 0;
+            
+            globalDataMetrics = {
+                min,
+                max,
+                median,
+                q1,
+                q3
+            };
+            
+            console.log('Global data metrics:', globalDataMetrics);
         }
 
         // Initialize action dropdown
@@ -1534,25 +1659,37 @@
         // Update action dropdown with available actions
         function updateActionDropdown() {
             const actions = new Set();
+            let actionCounts = {};
             
-            // Collect all unique action types
+            // Collect all unique action types and count them
             dateFilteredData.forEach(item => {
                 if (item.ActionSelection) {
                     actions.add(item.ActionSelection);
+                    
+                    if (!actionCounts[item.ActionSelection]) {
+                        actionCounts[item.ActionSelection] = 0;
+                    }
+                    actionCounts[item.ActionSelection] += 1;
                 }
             });
             
             // Clear existing options except "All"
             const dropdownContent = top10Elements.actionDropdownContent;
-            const allOption = dropdownContent.querySelector('[data-action="All"]');
             dropdownContent.innerHTML = '';
             
-            if (allOption) {
-                dropdownContent.appendChild(allOption);
-            }
+            // Add "All Types" option
+            const allOption = document.createElement('a');
+            allOption.href = '#';
+            allOption.className = 'dropdown-item ' + (selectedAction === 'All' ? 'active' : '');
+            allOption.setAttribute('data-action', 'All');
+            allOption.textContent = 'All Types';
+            dropdownContent.appendChild(allOption);
             
-            // Add action options
+            // Add action options with counts > 0
             Array.from(actions).sort().forEach(action => {
+                // Skip if count is 0
+                if (actionCounts[action] === 0) return;
+                
                 const option = document.createElement('a');
                 option.href = '#';
                 option.className = 'dropdown-item';
@@ -1566,8 +1703,11 @@
                 dropdownContent.appendChild(option);
             });
             
-            // Check if Local type exists
-            if (actions.has('Local')) {
+            // Check if Local type exists and has items
+            const hasLocal = actions.has('Local') && actionCounts['Local'] > 0;
+            
+            // Update metrics display (will handle visibility later in updateMetrics)
+            if (hasLocal) {
                 metricElements.localMetric.style.display = '';
             } else {
                 metricElements.localMetric.style.display = 'none';
@@ -2204,12 +2344,10 @@
             metricElements.rtsPercent.textContent = `${rtsPercent}%`;
             metricElements.localPercent.textContent = `${localPercent}%`;
             
-            // Show/hide local metric based on data
-            if (localCount > 0) {
-                metricElements.localMetric.style.display = '';
-            } else {
-                metricElements.localMetric.style.display = 'none';
-            }
+            // Show/hide metrics based on percentages
+            metricElements.scrapMetric.style.display = scrapPercent > 0 ? '' : 'none';
+            metricElements.rtsMetric.style.display = rtsPercent > 0 ? '' : 'none';
+            metricElements.localMetric.style.display = localPercent > 0 ? '' : 'none';
             
             // Update parts counts
             metricElements.singlePartsCount.textContent = singlePartsCount;
@@ -2390,13 +2528,18 @@
                 reasonCounts[reason].cost += (item.Cost || 0);
             });
 
-            // Sort by count descending
+            // Sort by the selected sort type
             const sortedReasons = Object.keys(reasonCounts).sort((a, b) => 
-                reasonCounts[b].count - reasonCounts[a].count
+                sortTop10By === 'qty' 
+                    ? reasonCounts[b].count - reasonCounts[a].count 
+                    : reasonCounts[b].cost - reasonCounts[a].cost
             );
 
-            // Create SVG
-            const margin = { top: 20, right: 20, bottom: 60, left: 40 };
+            // Limit to top 3 reasons
+            const topReasons = sortedReasons.slice(0, 3);
+
+            // Create SVG for horizontal bar chart
+            const margin = { top: 10, right: 80, bottom: 20, left: 120 };
             const width = container.clientWidth - margin.left - margin.right;
             const height = container.clientHeight - margin.top - margin.bottom;
 
@@ -2411,27 +2554,26 @@
             g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
             svg.appendChild(g);
 
-            // Limit to top 3 reasons
-            const topReasons = sortedReasons.slice(0, 3);
-
             // Calculate scales
-            const x = topReasons.map((_, i) => i * (width / topReasons.length));
-            const barWidth = width / topReasons.length - 20; // Wider bars for 3 items
+            const barHeight = Math.min(30, (height / topReasons.length) * 0.8);
+            const y = topReasons.map((_, i) => i * (height / topReasons.length) + barHeight);
             
-            const maxCount = Math.max(...topReasons.map(r => reasonCounts[r].count));
-            const y = (count) => height * (1 - count / maxCount);
+            const metric = sortTop10By === 'qty' ? 'count' : 'cost';
+            const maxValue = Math.max(...topReasons.map(r => reasonCounts[r][metric]));
+            const x = (value) => width * (value / maxValue);
 
             // Create bars
             topReasons.forEach((reason, i) => {
-                const barHeight = height - y(reasonCounts[reason].count);
+                const value = reasonCounts[reason][metric];
+                const barWidth = x(value);
                 
                 const bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                bar.setAttribute('x', x[i] + 10); // Center the wider bars
-                bar.setAttribute('y', y(reasonCounts[reason].count));
+                bar.setAttribute('x', 0);
+                bar.setAttribute('y', y[i] - barHeight);
                 bar.setAttribute('width', barWidth);
                 bar.setAttribute('height', barHeight);
                 bar.setAttribute('fill', colors[i % colors.length]);
-                bar.classList.add('bar');
+                bar.classList.add('horizontal-bar');
                 
                 // Add tooltip on hover
                 bar.addEventListener('mouseover', (e) => {
@@ -2464,230 +2606,31 @@
                 
                 g.appendChild(bar);
                 
-                // Add label below bar
-                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                label.setAttribute('x', x[i] + barWidth / 2 + 10); // Adjust for centered bars
-                label.setAttribute('y', height + 12);
-                label.setAttribute('text-anchor', 'middle');
-                label.setAttribute('transform', `rotate(45, ${x[i] + barWidth / 2 + 10}, ${height + 12})`);
-                label.textContent = reason.length > 18 ? reason.substring(0, 16) + '...' : reason;
-                label.classList.add('bar-label');
-                g.appendChild(label);
+                // Add label to the left of bar
+                const nameLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                nameLabel.setAttribute('x', -5);
+                nameLabel.setAttribute('y', y[i] - barHeight/2);
+                nameLabel.setAttribute('text-anchor', 'end');
+                nameLabel.setAttribute('dominant-baseline', 'middle');
+                nameLabel.textContent = reason.length > 18 ? reason.substring(0, 16) + '...' : reason;
+                nameLabel.classList.add('horizontal-bar-label');
+                g.appendChild(nameLabel);
                 
-                // Add count on top of bar
-                const countLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                countLabel.setAttribute('x', x[i] + barWidth / 2 + 10); // Adjust for centered bars
-                countLabel.setAttribute('y', y(reasonCounts[reason].count) - 5);
-                countLabel.setAttribute('text-anchor', 'middle');
-                countLabel.textContent = reasonCounts[reason].count;
-                countLabel.classList.add('bar-label');
-                g.appendChild(countLabel);
+                // Add value to the right of bar
+                const valueLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                valueLabel.setAttribute('x', barWidth + 5);
+                valueLabel.setAttribute('y', y[i] - barHeight/2);
+                valueLabel.setAttribute('dominant-baseline', 'middle');
+                
+                // Format value based on type
+                const valueText = sortTop10By === 'qty' 
+                    ? value
+                    : 'R' + value.toFixed(0);
+                
+                valueLabel.textContent = valueText;
+                valueLabel.classList.add('horizontal-bar-label');
+                g.appendChild(valueLabel);
             });
-        }
-
-        // Create daily trend chart
-        function createDailyTrendChart() {
-            const container = chartContainers.trend;
-            
-            let dataToUse = filteredData;
-            
-            // Apply action filter if selected
-            if (selectedAction !== 'All') {
-                dataToUse = dataToUse.filter(item => item.ActionSelection === selectedAction);
-            }
-            
-            // Apply reject reason filter if selected
-            if (selectedRejectReason !== null) {
-                dataToUse = dataToUse.filter(item => item.RejectReason === selectedRejectReason);
-            }
-            
-            // Apply station filter if selected
-            if (selectedStation !== null) {
-                dataToUse = dataToUse.filter(item => item.Station === selectedStation);
-            }
-            
-            if (dataToUse.length === 0) {
-                container.innerHTML = '<div class="no-data">No data available</div>';
-                return;
-            }
-
-            // Group data by date
-            const dateGroups = {};
-            dataToUse.forEach(item => {
-                const date = item.ProductionDate;
-                if (!dateGroups[date]) {
-                    dateGroups[date] = {
-                        count: 0,
-                        cost: 0
-                    };
-                }
-                dateGroups[date].count += (item.QTY || 0);
-                dateGroups[date].cost += (item.Cost || 0);
-            });
-
-            // Sort dates
-            const sortedDates = Object.keys(dateGroups).sort();
-
-            // Create SVG
-            const margin = { top: 20, right: 40, bottom: 60, left: 40 };
-            const width = container.clientWidth - margin.left - margin.right;
-            const height = container.clientHeight - margin.top - margin.bottom;
-
-            container.innerHTML = '';
-            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            svg.setAttribute('width', '100%');
-            svg.setAttribute('height', '100%');
-            svg.setAttribute('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
-            container.appendChild(svg);
-
-            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-            g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
-            svg.appendChild(g);
-
-            // Calculate scales
-            const x = sortedDates.map((_, i) => i * (width / (sortedDates.length - 1 || 1)));
-            
-            const maxCount = Math.max(...Object.values(dateGroups).map(d => d.count));
-            const y1 = (count) => height * (1 - count / maxCount);
-            
-            const maxCost = Math.max(...Object.values(dateGroups).map(d => d.cost));
-            const y2 = (cost) => height * (1 - cost / maxCost);
-
-            // Create count line
-            if (sortedDates.length > 1) {
-                let countPath = `M${x[0]},${y1(dateGroups[sortedDates[0]].count)}`;
-                sortedDates.forEach((date, i) => {
-                    if (i > 0) {
-                        countPath += ` L${x[i]},${y1(dateGroups[date].count)}`;
-                    }
-                });
-
-                const countLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                countLine.setAttribute('d', countPath);
-                countLine.setAttribute('fill', 'none');
-                countLine.setAttribute('stroke', '#3498db');
-                countLine.setAttribute('stroke-width', '2');
-                g.appendChild(countLine);
-
-                // Create cost line
-                let costPath = `M${x[0]},${y2(dateGroups[sortedDates[0]].cost)}`;
-                sortedDates.forEach((date, i) => {
-                    if (i > 0) {
-                        costPath += ` L${x[i]},${y2(dateGroups[date].cost)}`;
-                    }
-                });
-
-                const costLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                costLine.setAttribute('d', costPath);
-                costLine.setAttribute('fill', 'none');
-                costLine.setAttribute('stroke', '#e74c3c');
-                costLine.setAttribute('stroke-width', '2');
-                g.appendChild(costLine);
-            }
-
-            // Add data points with tooltips
-            sortedDates.forEach((date, i) => {
-                // Count point
-                const countPoint = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                countPoint.setAttribute('cx', x[i]);
-                countPoint.setAttribute('cy', y1(dateGroups[date].count));
-                countPoint.setAttribute('r', '4');
-                countPoint.setAttribute('fill', '#3498db');
-                
-                // Add tooltip
-                countPoint.addEventListener('mouseover', (e) => {
-                    const tooltip = document.createElement('div');
-                    tooltip.className = 'tooltip';
-                    tooltip.innerHTML = `
-                        <strong>${formatDate(date)}</strong><br>
-                        Count: ${dateGroups[date].count}
-                    `;
-                    tooltip.style.left = `${e.pageX + 10}px`;
-                    tooltip.style.top = `${e.pageY - 30}px`;
-                    document.body.appendChild(tooltip);
-                });
-                
-                countPoint.addEventListener('mousemove', (e) => {
-                    const tooltip = document.querySelector('.tooltip');
-                    if (tooltip) {
-                        tooltip.style.left = `${e.pageX + 10}px`;
-                        tooltip.style.top = `${e.pageY - 30}px`;
-                    }
-                });
-                
-                countPoint.addEventListener('mouseout', () => {
-                    const tooltip = document.querySelector('.tooltip');
-                    if (tooltip) {
-                        tooltip.remove();
-                    }
-                });
-                
-                g.appendChild(countPoint);
-                
-                // Cost point
-                const costPoint = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                costPoint.setAttribute('cx', x[i]);
-                costPoint.setAttribute('cy', y2(dateGroups[date].cost));
-                costPoint.setAttribute('r', '4');
-                costPoint.setAttribute('fill', '#e74c3c');
-                
-                // Add tooltip
-                costPoint.addEventListener('mouseover', (e) => {
-                    const tooltip = document.createElement('div');
-                    tooltip.className = 'tooltip';
-                    tooltip.innerHTML = `
-                        <strong>${formatDate(date)}</strong><br>
-                        Cost: R${dateGroups[date].cost.toFixed(2)}
-                    `;
-                    tooltip.style.left = `${e.pageX + 10}px`;
-                    tooltip.style.top = `${e.pageY - 30}px`;
-                    document.body.appendChild(tooltip);
-                });
-                
-                costPoint.addEventListener('mousemove', (e) => {
-                    const tooltip = document.querySelector('.tooltip');
-                    if (tooltip) {
-                        tooltip.style.left = `${e.pageX + 10}px`;
-                        tooltip.style.top = `${e.pageY - 30}px`;
-                    }
-                });
-                
-                costPoint.addEventListener('mouseout', () => {
-                    const tooltip = document.querySelector('.tooltip');
-                    if (tooltip) {
-                        tooltip.remove();
-                    }
-                });
-                
-                g.appendChild(costPoint);
-                
-                // X-axis label - limit number for readability
-                if (sortedDates.length <= 8 || i % Math.ceil(sortedDates.length / 8) === 0) {
-                    const dateLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                    dateLabel.setAttribute('x', x[i]);
-                    dateLabel.setAttribute('y', height + 15);
-                    dateLabel.setAttribute('text-anchor', 'middle');
-                    dateLabel.setAttribute('transform', `rotate(45, ${x[i]}, ${height + 15})`);
-                    dateLabel.textContent = formatDate(date);
-                    dateLabel.classList.add('axis');
-                    g.appendChild(dateLabel);
-                }
-            });
-
-            // Add legend
-            const legend = document.createElement('div');
-            legend.className = 'legend';
-            legend.innerHTML = `
-                <div class="legend-item">
-                    <div class="legend-color" style="background-color: #3498db;"></div>
-                    <span>Count</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background-color: #e74c3c;"></div>
-                    <span>Cost</span>
-                </div>
-            `;
-            container.appendChild(legend);
         }
 
         // Create top problems chart
@@ -2745,13 +2688,18 @@
                 });
             });
 
-            // Sort by count descending and get top 3
-            const topParts = Object.keys(partCounts)
-                .sort((a, b) => partCounts[b].count - partCounts[a].count)
-                .slice(0, 3);
+            // Sort by the selected sort type
+            const sortedParts = Object.keys(partCounts).sort((a, b) => 
+                sortTop10By === 'qty' 
+                    ? partCounts[b].count - partCounts[a].count 
+                    : partCounts[b].cost - partCounts[a].cost
+            );
 
-            // Create SVG
-            const margin = { top: 20, right: 20, bottom: 70, left: 40 };
+            // Get top 3
+            const topParts = sortedParts.slice(0, 3);
+
+            // Create SVG for horizontal bar chart
+            const margin = { top: 10, right: 80, bottom: 20, left: 120 };
             const width = container.clientWidth - margin.left - margin.right;
             const height = container.clientHeight - margin.top - margin.bottom;
 
@@ -2767,23 +2715,25 @@
             svg.appendChild(g);
 
             // Calculate scales
-            const x = topParts.map((_, i) => i * (width / topParts.length));
-            const barWidth = width / topParts.length - 20; // Wider bars for 3 items
+            const barHeight = Math.min(30, (height / topParts.length) * 0.8);
+            const y = topParts.map((_, i) => i * (height / topParts.length) + barHeight);
             
-            const maxCount = Math.max(...topParts.map(part => partCounts[part].count));
-            const y = (count) => height * (1 - count / maxCount);
+            const metric = sortTop10By === 'qty' ? 'count' : 'cost';
+            const maxValue = Math.max(...topParts.map(p => partCounts[p][metric]));
+            const x = (value) => width * (value / maxValue);
 
             // Create bars
             topParts.forEach((part, i) => {
-                const barHeight = height - y(partCounts[part].count);
+                const value = partCounts[part][metric];
+                const barWidth = x(value);
                 
                 const bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                bar.setAttribute('x', x[i] + 10); // Center the wider bars
-                bar.setAttribute('y', y(partCounts[part].count));
+                bar.setAttribute('x', 0);
+                bar.setAttribute('y', y[i] - barHeight);
                 bar.setAttribute('width', barWidth);
                 bar.setAttribute('height', barHeight);
                 bar.setAttribute('fill', colors[i % colors.length]);
-                bar.classList.add('bar');
+                bar.classList.add('horizontal-bar');
                 
                 // Add tooltip on hover
                 bar.addEventListener('mouseover', (e) => {
@@ -2816,24 +2766,30 @@
                 
                 g.appendChild(bar);
                 
-                // Add label below bar
-                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                label.setAttribute('x', x[i] + barWidth / 2 + 10); // Adjust for centered bars
-                label.setAttribute('y', height + 12);
-                label.setAttribute('text-anchor', 'middle');
-                label.setAttribute('transform', `rotate(45, ${x[i] + barWidth / 2 + 10}, ${height + 12})`);
-                label.textContent = part.length > 18 ? part.substring(0, 16) + '...' : part;
-                label.classList.add('bar-label');
-                g.appendChild(label);
+                // Add label to the left of bar
+                const nameLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                nameLabel.setAttribute('x', -5);
+                nameLabel.setAttribute('y', y[i] - barHeight/2);
+                nameLabel.setAttribute('text-anchor', 'end');
+                nameLabel.setAttribute('dominant-baseline', 'middle');
+                nameLabel.textContent = part.length > 18 ? part.substring(0, 16) + '...' : part;
+                nameLabel.classList.add('horizontal-bar-label');
+                g.appendChild(nameLabel);
                 
-                // Add count on top of bar
-                const countLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                countLabel.setAttribute('x', x[i] + barWidth / 2 + 10); // Adjust for centered bars
-                countLabel.setAttribute('y', y(partCounts[part].count) - 5);
-                countLabel.setAttribute('text-anchor', 'middle');
-                countLabel.textContent = partCounts[part].count;
-                countLabel.classList.add('bar-label');
-                g.appendChild(countLabel);
+                // Add value to the right of bar
+                const valueLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                valueLabel.setAttribute('x', barWidth + 5);
+                valueLabel.setAttribute('y', y[i] - barHeight/2);
+                valueLabel.setAttribute('dominant-baseline', 'middle');
+                
+                // Format value based on type
+                const valueText = sortTop10By === 'qty' 
+                    ? value
+                    : 'R' + value.toFixed(0);
+                
+                valueLabel.textContent = valueText;
+                valueLabel.classList.add('horizontal-bar-label');
+                g.appendChild(valueLabel);
             });
         }
 
@@ -2877,13 +2833,18 @@
                 stationData[station].cost += (item.Cost || 0);
             });
 
-            // Sort by cost descending and take top 3
-            const sortedStations = Object.keys(stationData)
-                .sort((a, b) => stationData[b].cost - stationData[a].cost)
-                .slice(0, 3);
+            // Sort by the selected sort type
+            const sortedStations = Object.keys(stationData).sort((a, b) => 
+                sortTop10By === 'qty' 
+                    ? stationData[b].count - stationData[a].count 
+                    : stationData[b].cost - stationData[a].cost
+            );
 
-            // Create SVG
-            const margin = { top: 20, right: 20, bottom: 70, left: 40 };
+            // Get top 3
+            const topStations = sortedStations.slice(0, 3);
+
+            // Create SVG for horizontal bar chart
+            const margin = { top: 10, right: 80, bottom: 20, left: 120 };
             const width = container.clientWidth - margin.left - margin.right;
             const height = container.clientHeight - margin.top - margin.bottom;
 
@@ -2899,23 +2860,25 @@
             svg.appendChild(g);
 
             // Calculate scales
-            const x = sortedStations.map((_, i) => i * (width / sortedStations.length));
-            const barWidth = width / sortedStations.length - 20; // Wider bars for 3 items
+            const barHeight = Math.min(30, (height / topStations.length) * 0.8);
+            const y = topStations.map((_, i) => i * (height / topStations.length) + barHeight);
             
-            const maxCost = Math.max(...sortedStations.map(s => stationData[s].cost));
-            const y = (cost) => height * (1 - cost / maxCost);
+            const metric = sortTop10By === 'qty' ? 'count' : 'cost';
+            const maxValue = Math.max(...topStations.map(s => stationData[s][metric]));
+            const x = (value) => width * (value / maxValue);
 
             // Create bars
-            sortedStations.forEach((station, i) => {
-                const barHeight = height - y(stationData[station].cost);
+            topStations.forEach((station, i) => {
+                const value = stationData[station][metric];
+                const barWidth = x(value);
                 
                 const bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                bar.setAttribute('x', x[i] + 10); // Center the wider bars
-                bar.setAttribute('y', y(stationData[station].cost));
+                bar.setAttribute('x', 0);
+                bar.setAttribute('y', y[i] - barHeight);
                 bar.setAttribute('width', barWidth);
                 bar.setAttribute('height', barHeight);
                 bar.setAttribute('fill', colors[i % colors.length]);
-                bar.classList.add('bar');
+                bar.classList.add('horizontal-bar');
                 
                 // Add tooltip on hover
                 bar.addEventListener('mouseover', (e) => {
@@ -2923,8 +2886,8 @@
                     tooltip.className = 'tooltip';
                     tooltip.innerHTML = `
                         <strong>${station}</strong><br>
-                        Cost: R${stationData[station].cost.toFixed(2)}<br>
-                        Count: ${stationData[station].count}
+                        Count: ${stationData[station].count}<br>
+                        Cost: R${stationData[station].cost.toFixed(2)}
                     `;
                     tooltip.style.left = `${e.pageX + 10}px`;
                     tooltip.style.top = `${e.pageY - 30}px`;
@@ -2948,24 +2911,295 @@
                 
                 g.appendChild(bar);
                 
-                // Add label below bar
-                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                label.setAttribute('x', x[i] + barWidth / 2 + 10); // Adjust for centered bars
-                label.setAttribute('y', height + 12);
-                label.setAttribute('text-anchor', 'middle');
-                label.setAttribute('transform', `rotate(45, ${x[i] + barWidth / 2 + 10}, ${height + 12})`);
-                label.textContent = station.length > 18 ? station.substring(0, 16) + '...' : station;
-                label.classList.add('bar-label');
-                g.appendChild(label);
+                // Add label to the left of bar
+                const nameLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                nameLabel.setAttribute('x', -5);
+                nameLabel.setAttribute('y', y[i] - barHeight/2);
+                nameLabel.setAttribute('text-anchor', 'end');
+                nameLabel.setAttribute('dominant-baseline', 'middle');
+                nameLabel.textContent = station.length > 18 ? station.substring(0, 16) + '...' : station;
+                nameLabel.classList.add('horizontal-bar-label');
+                g.appendChild(nameLabel);
                 
-                // Add cost on top of bar
-                const costLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                costLabel.setAttribute('x', x[i] + barWidth / 2 + 10); // Adjust for centered bars
-                costLabel.setAttribute('y', y(stationData[station].cost) - 5);
-                costLabel.setAttribute('text-anchor', 'middle');
-                costLabel.textContent = 'R' + stationData[station].cost.toFixed(0);
-                costLabel.classList.add('bar-label');
-                g.appendChild(costLabel);
+                // Add value to the right of bar
+                const valueLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                valueLabel.setAttribute('x', barWidth + 5);
+                valueLabel.setAttribute('y', y[i] - barHeight/2);
+                valueLabel.setAttribute('dominant-baseline', 'middle');
+                
+                // Format value based on type
+                const valueText = sortTop10By === 'qty' 
+                    ? value
+                    : 'R' + value.toFixed(0);
+                
+                valueLabel.textContent = valueText;
+                valueLabel.classList.add('horizontal-bar-label');
+                g.appendChild(valueLabel);
+            });
+        }
+
+        // Create daily trend chart with box and whisker plot
+        function createDailyTrendChart() {
+            const container = chartContainers.trend;
+            
+            let dataToUse = filteredData;
+            
+            // Apply action filter if selected
+            if (selectedAction !== 'All') {
+                dataToUse = dataToUse.filter(item => item.ActionSelection === selectedAction);
+            }
+            
+            // Apply reject reason filter if selected
+            if (selectedRejectReason !== null) {
+                dataToUse = dataToUse.filter(item => item.RejectReason === selectedRejectReason);
+            }
+            
+            // Apply station filter if selected
+            if (selectedStation !== null) {
+                dataToUse = dataToUse.filter(item => item.Station === selectedStation);
+            }
+            
+            if (dataToUse.length === 0) {
+                container.innerHTML = '<div class="no-data">No data available</div>';
+                return;
+            }
+
+            // Group data by date
+            const dateGroups = {};
+            dataToUse.forEach(item => {
+                const date = item.ProductionDate;
+                if (!dateGroups[date]) {
+                    dateGroups[date] = {
+                        count: 0,
+                        cost: 0
+                    };
+                }
+                dateGroups[date].count += (item.QTY || 0);
+                dateGroups[date].cost += (item.Cost || 0);
+            });
+
+            // Get date range from filter
+            const dateFrom = filterElements.dateFrom.value ? new Date(filterElements.dateFrom.value) : null;
+            const dateTo = filterElements.dateTo.value ? new Date(filterElements.dateTo.value) : null;
+            
+            // Get all dates in the filter range
+            const datesInRange = [];
+            if (dateFrom && dateTo) {
+                const currentDate = new Date(dateFrom);
+                while (currentDate <= dateTo) {
+                    datesInRange.push(formatDateForInput(currentDate));
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+            }
+
+            // Create SVG for box and whisker plot
+            const margin = { top: 30, right: 40, bottom: 50, left: 60 };
+            const width = container.clientWidth - margin.left - margin.right;
+            const height = container.clientHeight - margin.top - margin.bottom;
+
+            container.innerHTML = '';
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', '100%');
+            svg.setAttribute('height', '100%');
+            svg.setAttribute('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
+            container.appendChild(svg);
+
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
+            svg.appendChild(g);
+
+            // Get the metric we're using based on sort selection
+            const metric = sortTop10By === 'qty' ? 'count' : 'cost';
+            
+            // Create box plot
+            const boxWidth = width * 0.5;
+            const boxLeft = (width - boxWidth) / 2;
+            const boxRight = boxLeft + boxWidth;
+            
+            // Calculate y-scale based on min-max
+            const { min, max, median, q1, q3 } = globalDataMetrics;
+            const yScale = (value) => height * (1 - (value - min) / (max - min || 1));
+            
+            // Add y-axis labels
+            const yTicks = [min, q1, median, q3, max].filter((v, i, arr) => arr.indexOf(v) === i);
+            yTicks.forEach(tick => {
+                // Line
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', 0);
+                line.setAttribute('x2', width);
+                line.setAttribute('y1', yScale(tick));
+                line.setAttribute('y2', yScale(tick));
+                line.setAttribute('stroke', '#eee');
+                line.setAttribute('stroke-width', '1');
+                g.appendChild(line);
+                
+                // Label
+                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                label.setAttribute('x', -5);
+                label.setAttribute('y', yScale(tick));
+                label.setAttribute('text-anchor', 'end');
+                label.setAttribute('dominant-baseline', 'middle');
+                
+                // Format value based on type
+                const labelText = sortTop10By === 'qty' 
+                    ? Math.round(tick)
+                    : 'R' + Math.round(tick);
+                
+                label.textContent = labelText;
+                label.classList.add('axis');
+                g.appendChild(label);
+            });
+            
+            // Draw box
+            const box = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            box.setAttribute('x', boxLeft);
+            box.setAttribute('y', yScale(q3));
+            box.setAttribute('width', boxWidth);
+            box.setAttribute('height', yScale(q1) - yScale(q3));
+            box.setAttribute('class', 'box-plot');
+            g.appendChild(box);
+            
+            // Draw median line
+            const medianLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            medianLine.setAttribute('x1', boxLeft);
+            medianLine.setAttribute('x2', boxRight);
+            medianLine.setAttribute('y1', yScale(median));
+            medianLine.setAttribute('y2', yScale(median));
+            medianLine.setAttribute('class', 'median-line');
+            g.appendChild(medianLine);
+            
+            // Draw whiskers
+            // Top whisker
+            const topWhiskerLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            topWhiskerLine.setAttribute('x1', boxLeft + boxWidth/2);
+            topWhiskerLine.setAttribute('x2', boxLeft + boxWidth/2);
+            topWhiskerLine.setAttribute('y1', yScale(q3));
+            topWhiskerLine.setAttribute('y2', yScale(max));
+            topWhiskerLine.setAttribute('class', 'whisker-line');
+            g.appendChild(topWhiskerLine);
+            
+            const topWhiskerCap = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            topWhiskerCap.setAttribute('x1', boxLeft + boxWidth/4);
+            topWhiskerCap.setAttribute('x2', boxRight - boxWidth/4);
+            topWhiskerCap.setAttribute('y1', yScale(max));
+            topWhiskerCap.setAttribute('y2', yScale(max));
+            topWhiskerCap.setAttribute('class', 'whisker-line');
+            g.appendChild(topWhiskerCap);
+            
+            // Bottom whisker
+            const bottomWhiskerLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            bottomWhiskerLine.setAttribute('x1', boxLeft + boxWidth/2);
+            bottomWhiskerLine.setAttribute('x2', boxLeft + boxWidth/2);
+            bottomWhiskerLine.setAttribute('y1', yScale(q1));
+            bottomWhiskerLine.setAttribute('y2', yScale(min));
+            bottomWhiskerLine.setAttribute('class', 'whisker-line');
+            g.appendChild(bottomWhiskerLine);
+            
+            const bottomWhiskerCap = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            bottomWhiskerCap.setAttribute('x1', boxLeft + boxWidth/4);
+            bottomWhiskerCap.setAttribute('x2', boxRight - boxWidth/4);
+            bottomWhiskerCap.setAttribute('y1', yScale(min));
+            bottomWhiskerCap.setAttribute('y2', yScale(min));
+            bottomWhiskerCap.setAttribute('class', 'whisker-line');
+            g.appendChild(bottomWhiskerCap);
+            
+            // Add annotations for each date in the range
+            if (datesInRange.length > 0) {
+                // Determine layout based on number of dates
+                const markerWidth = boxWidth / (datesInRange.length + 1);
+                
+                datesInRange.forEach((date, i) => {
+                    // Only show if we have data for this date
+                    if (dateGroups[date]) {
+                        const value = dateGroups[date][metric];
+                        const x = boxLeft + (i + 1) * markerWidth;
+                        const y = yScale(value);
+                        
+                        // Draw marker
+                        const marker = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                        marker.setAttribute('points', 
+                            `${x},${y+10} ${x-5},${y} ${x+5},${y}`
+                        );
+                        marker.setAttribute('class', 'date-marker');
+                        g.appendChild(marker);
+                        
+                        // Add date label
+                        const dateObj = new Date(date);
+                        const dayLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                        dayLabel.setAttribute('x', x);
+                        dayLabel.setAttribute('y', y + 20);
+                        dayLabel.setAttribute('text-anchor', 'middle');
+                        dayLabel.textContent = dateObj.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+                        dayLabel.classList.add('bar-label');
+                        g.appendChild(dayLabel);
+                        
+                        // Add tooltip on hover for the marker
+                        marker.addEventListener('mouseover', (e) => {
+                            const tooltip = document.createElement('div');
+                            tooltip.className = 'tooltip';
+                            tooltip.innerHTML = `
+                                <strong>${formatDate(date)}</strong><br>
+                                Count: ${dateGroups[date].count}<br>
+                                Cost: R${dateGroups[date].cost.toFixed(2)}
+                            `;
+                            tooltip.style.left = `${e.pageX + 10}px`;
+                            tooltip.style.top = `${e.pageY - 30}px`;
+                            document.body.appendChild(tooltip);
+                        });
+                        
+                        marker.addEventListener('mousemove', (e) => {
+                            const tooltip = document.querySelector('.tooltip');
+                            if (tooltip) {
+                                tooltip.style.left = `${e.pageX + 10}px`;
+                                tooltip.style.top = `${e.pageY - 30}px`;
+                            }
+                        });
+                        
+                        marker.addEventListener('mouseout', () => {
+                            const tooltip = document.querySelector('.tooltip');
+                            if (tooltip) {
+                                tooltip.remove();
+                            }
+                        });
+                    }
+                });
+            }
+            
+            // Add legend and title
+            const title = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            title.setAttribute('x', width / 2);
+            title.setAttribute('y', -10);
+            title.setAttribute('text-anchor', 'middle');
+            title.textContent = sortTop10By === 'qty' ? 'Daily Quantity Distribution' : 'Daily Cost Distribution';
+            title.style.fontWeight = 'bold';
+            g.appendChild(title);
+            
+            // Add x-axis label
+            const xAxisLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            xAxisLabel.setAttribute('x', width / 2);
+            xAxisLabel.setAttribute('y', height + 35);
+            xAxisLabel.setAttribute('text-anchor', 'middle');
+            xAxisLabel.textContent = 'Date Range';
+            g.appendChild(xAxisLabel);
+            
+            // Add box plot labels
+            const boxLabels = [
+                { text: 'Max', y: yScale(max) - 15 },
+                { text: 'Q3', y: yScale(q3) - 10 },
+                { text: 'Median', y: yScale(median) },
+                { text: 'Q1', y: yScale(q1) + 10 },
+                { text: 'Min', y: yScale(min) + 15 }
+            ];
+            
+            boxLabels.forEach(label => {
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', width + 5);
+                text.setAttribute('y', label.y);
+                text.setAttribute('text-anchor', 'start');
+                text.setAttribute('dominant-baseline', 'middle');
+                text.textContent = label.text;
+                text.classList.add('axis');
+                g.appendChild(text);
             });
         }
 
@@ -3001,6 +3235,6 @@
                 createStationCostChart();
             }
         });
-  </script>
+    </script>
 </body>
 </html>
