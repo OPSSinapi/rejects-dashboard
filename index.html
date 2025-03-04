@@ -33,90 +33,90 @@
         header {
             background-color: #2c3e50;
             color: white;
-            padding: 10px 0;
-            margin-bottom: 10px;
-            border-radius: 8px;
+            padding: 8px 0;
+            margin-bottom: 5px;
+            border-radius: 6px;
             flex: 0 0 auto;
         }
 
         h1 {
             text-align: center;
-            font-size: 1.8rem;
+            font-size: 1.5rem;
         }
 
         h2 {
-            margin: 5px 0;
+            margin: 3px 0;
             color: #2c3e50;
             border-bottom: 2px solid #e67e22;
-            padding-bottom: 3px;
-            font-size: 1.2rem;
+            padding-bottom: 2px;
+            font-size: 1rem;
         }
 
         /* Filter Section */
         .filters {
             background-color: white;
-            padding: 10px;
-            border-radius: 8px;
+            padding: 8px;
+            border-radius: 6px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            margin-bottom: 10px;
-            flex: 0 0 auto;
-        }
-
-        .filter-section {
-            margin-bottom: 8px;
-        }
-
-        .filter-section-label {
-            font-weight: bold;
             margin-bottom: 5px;
-            color: #555;
-            display: block;
+            flex: 0 0 auto;
         }
 
         .filter-row {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 8px;
+            margin-bottom: 5px;
+            align-items: center;
+        }
+
+        .date-filter-row {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 8px;
             margin-bottom: 8px;
+            align-items: center;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
         }
 
         .filter-group {
-            flex: 1;
-            min-width: 150px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
 
         .filter-group label {
-            display: block;
-            margin-bottom: 3px;
             font-weight: bold;
             color: #555;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
+            white-space: nowrap;
         }
 
         .filter-group select,
         .filter-group input {
-            width: 100%;
-            padding: 6px;
+            padding: 5px;
             border: 1px solid #ddd;
             border-radius: 4px;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
+            width: auto;
         }
 
         .filter-buttons {
             display: flex;
-            justify-content: flex-end;
-            gap: 10px;
+            gap: 5px;
+            margin-left: auto;
         }
 
         button {
-            padding: 6px 12px;
+            padding: 4px 8px;
             background-color: #3498db;
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
             transition: background-color 0.3s;
-            font-size: 0.9rem;
+            font-size: 0.75rem;
         }
 
         button:hover {
@@ -131,7 +131,7 @@
             background-color: #c0392b;
         }
 
-        /* Dashboard Grid Layout */
+        /* Dashboard Content */
         .dashboard-content {
             flex: 1;
             display: flex;
@@ -141,42 +141,42 @@
 
         .summary-and-top10 {
             display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
+            gap: 5px;
+            margin-bottom: 5px;
             flex: 0 0 auto;
         }
 
         .summary-stats {
             flex: 1;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 10px;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 5px;
         }
 
         .stat-card {
             background-color: white;
-            border-radius: 8px;
-            padding: 10px;
+            border-radius: 6px;
+            padding: 8px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             text-align: center;
         }
 
         .stat-value {
-            font-size: 1.5rem;
+            font-size: 1.3rem;
             font-weight: bold;
             color: #e67e22;
         }
 
         .stat-label {
-            font-size: 0.8rem;
+            font-size: 0.7rem;
             color: #7f8c8d;
         }
 
         .top10-container {
             flex: 2;
             background-color: white;
-            border-radius: 8px;
-            padding: 10px;
+            border-radius: 6px;
+            padding: 8px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
 
@@ -190,12 +190,13 @@
         .sort-toggle {
             display: flex;
             gap: 5px;
-            font-size: 0.8rem;
+            font-size: 0.7rem;
+            align-items: center;
         }
 
         .sort-toggle button {
-            padding: 3px 8px;
-            font-size: 0.8rem;
+            padding: 2px 6px;
+            font-size: 0.7rem;
         }
 
         .sort-toggle button.active {
@@ -207,14 +208,14 @@
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             grid-template-rows: repeat(2, 1fr);
-            gap: 10px;
+            gap: 5px;
             min-height: 0;
         }
 
         .card {
             background-color: white;
-            border-radius: 8px;
-            padding: 10px;
+            border-radius: 6px;
+            padding: 8px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             display: flex;
             flex-direction: column;
@@ -240,13 +241,13 @@
         }
 
         th, td {
-            padding: 6px;
+            padding: 4px;
             text-align: left;
             border-bottom: 1px solid #ddd;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            font-size: 0.85rem;
+            font-size: 0.75rem;
         }
 
         th {
@@ -274,7 +275,7 @@
         }
 
         .bar-label {
-            font-size: 10px;
+            font-size: 9px;
             text-anchor: middle;
             fill: #333;
         }
@@ -284,7 +285,7 @@
         }
 
         .axis text {
-            font-size: 10px;
+            font-size: 9px;
             fill: #666;
         }
 
@@ -294,18 +295,18 @@
             justify-content: center;
             align-items: center;
             height: 100%;
-            font-size: 1rem;
+            font-size: 0.9rem;
             color: #7f8c8d;
         }
 
         .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
             border-radius: 50%;
-            width: 20px;
-            height: 20px;
+            width: 16px;
+            height: 16px;
             animation: spin 1s linear infinite;
-            margin-right: 10px;
+            margin-right: 8px;
         }
 
         @keyframes spin {
@@ -317,9 +318,9 @@
         .legend {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 8px;
             margin-top: 5px;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
         }
 
         .legend-item {
@@ -328,23 +329,23 @@
         }
 
         .legend-color {
-            width: 12px;
-            height: 12px;
-            margin-right: 4px;
+            width: 10px;
+            height: 10px;
+            margin-right: 3px;
             border-radius: 2px;
         }
 
         /* Tooltip Styles */
         .tooltip {
             position: absolute;
-            padding: 6px;
+            padding: 5px;
             background-color: rgba(0, 0, 0, 0.8);
             color: white;
             border-radius: 4px;
             pointer-events: none;
             z-index: 100;
-            font-size: 0.75rem;
-            max-width: 180px;
+            font-size: 0.7rem;
+            max-width: 160px;
             box-shadow: 0 3px 14px rgba(0, 0, 0, 0.4);
         }
 
@@ -356,7 +357,7 @@
             height: 100%;
             color: #7f8c8d;
             font-style: italic;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
         }
     </style>
 </head>
@@ -367,71 +368,61 @@
         </header>
 
         <section class="filters">
-            <div class="filter-section">
-                <span class="filter-section-label">Primary Filters</span>
-                <div class="filter-row">
-                    <div class="filter-group">
-                        <label for="date-from">From Date:</label>
-                        <input type="date" id="date-from">
-                    </div>
-                    <div class="filter-group">
-                        <label for="date-to">To Date:</label>
-                        <input type="date" id="date-to">
-                    </div>
+            <div class="date-filter-row">
+                <div class="filter-group">
+                    <label for="date-from">From:</label>
+                    <input type="date" id="date-from" style="width: 130px;">
+                </div>
+                <div class="filter-group">
+                    <label for="date-to">To:</label>
+                    <input type="date" id="date-to" style="width: 130px;">
+                </div>
+                <div class="filter-buttons">
+                    <button id="apply-date">Apply Dates</button>
+                    <button id="reset-date" class="reset">Reset Dates</button>
                 </div>
             </div>
 
-            <div class="filter-section">
-                <span class="filter-section-label">Secondary Filters</span>
-                <div class="filter-row">
-                    <div class="filter-group">
-                        <label for="supervisor">Supervisor:</label>
-                        <select id="supervisor">
-                            <option value="">All Supervisors</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label for="product">Product:</label>
-                        <select id="product">
-                            <option value="">All Products</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label for="variant">Variant:</label>
-                        <select id="variant">
-                            <option value="">All Variants</option>
-                        </select>
-                    </div>
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label for="supervisor">Supervisor:</label>
+                    <select id="supervisor">
+                        <option value="">All Supervisors</option>
+                    </select>
                 </div>
-            </div>
-
-            <div class="filter-section">
-                <span class="filter-section-label">Tertiary Filters</span>
-                <div class="filter-row">
-                    <div class="filter-group">
-                        <label for="batch">Batch Number:</label>
-                        <select id="batch">
-                            <option value="">All Batches</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label for="part">Part Name:</label>
-                        <select id="part">
-                            <option value="">All Parts</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label for="alias">Part Alias:</label>
-                        <select id="alias">
-                            <option value="">All Aliases</option>
-                        </select>
-                    </div>
+                <div class="filter-group">
+                    <label for="product">Product:</label>
+                    <select id="product">
+                        <option value="">All Products</option>
+                    </select>
                 </div>
-            </div>
-
-            <div class="filter-buttons">
-                <button id="apply-filters">Apply Filters</button>
-                <button id="reset-filters" class="reset">Reset Filters</button>
+                <div class="filter-group">
+                    <label for="variant">Variant:</label>
+                    <select id="variant">
+                        <option value="">All Variants</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="batch">Batch:</label>
+                    <select id="batch">
+                        <option value="">All Batches</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="part">Part:</label>
+                    <select id="part">
+                        <option value="">All Parts</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="alias">Alias:</label>
+                    <select id="alias">
+                        <option value="">All Aliases</option>
+                    </select>
+                </div>
+                <div class="filter-buttons">
+                    <button id="reset-all-filters" class="reset">Reset All</button>
+                </div>
             </div>
         </section>
 
@@ -528,7 +519,8 @@
     <script>
         // Global variables
         let rejectData = [];
-        let filteredData = [];
+        let dateFilteredData = []; // Data filtered by date range only
+        let filteredData = []; // Final filtered data
         const GITHUB_REPO = 'OPSSinapi/rejects-dashboard';
         const FILE_PATH = 'RejectsData.json';
         const DATA_URL = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/${FILE_PATH}`;
@@ -544,8 +536,9 @@
             batch: document.getElementById('batch'),
             part: document.getElementById('part'),
             alias: document.getElementById('alias'),
-            applyBtn: document.getElementById('apply-filters'),
-            resetBtn: document.getElementById('reset-filters')
+            applyDateBtn: document.getElementById('apply-date'),
+            resetDateBtn: document.getElementById('reset-date'),
+            resetAllBtn: document.getElementById('reset-all-filters')
         };
 
         const statElements = {
@@ -627,15 +620,21 @@
                 filterElements.dateTo.value = formatDateForInput(maxDate);
             }
 
-            // Populate filter dropdowns
-            populateFilterDropdowns();
-
-            // Apply initial filtering
-            applyFilters();
+            // Apply initial date filter to get the base data set
+            applyDateFilter();
 
             // Add event listeners
-            filterElements.applyBtn.addEventListener('click', applyFilters);
-            filterElements.resetBtn.addEventListener('click', resetFilters);
+            filterElements.applyDateBtn.addEventListener('click', applyDateFilter);
+            filterElements.resetDateBtn.addEventListener('click', resetDateFilter);
+            filterElements.resetAllBtn.addEventListener('click', resetAllFilters);
+            
+            // Add event listeners for cascading filters
+            filterElements.supervisor.addEventListener('change', updateCascadingFilters);
+            filterElements.product.addEventListener('change', updateCascadingFilters);
+            filterElements.variant.addEventListener('change', updateCascadingFilters);
+            filterElements.batch.addEventListener('change', updateCascadingFilters);
+            filterElements.part.addEventListener('change', updateCascadingFilters);
+            filterElements.alias.addEventListener('change', updateCascadingFilters);
             
             // Top 10 sort toggle
             top10Elements.sortByQty.addEventListener('click', () => {
@@ -653,9 +652,77 @@
             });
         }
 
+        // Apply date filter
+        function applyDateFilter() {
+            const dateFrom = filterElements.dateFrom.value ? new Date(filterElements.dateFrom.value) : null;
+            const dateTo = filterElements.dateTo.value ? new Date(filterElements.dateTo.value) : null;
+            
+            // Filter data by date range
+            dateFilteredData = rejectData.filter(item => {
+                if (!dateFrom || !dateTo) return true;
+                
+                const itemDate = new Date(item.ProductionDate);
+                return itemDate >= dateFrom && itemDate <= dateTo;
+            });
+            
+            // Reset other filters
+            resetOtherFilters(true);
+            
+            // Populate filter dropdowns based on date-filtered data
+            populateFilterDropdowns();
+            
+            // Set filtered data to date filtered data initially
+            filteredData = [...dateFilteredData];
+            
+            // Update dashboard
+            updateDashboard();
+        }
+
+        // Reset date filter
+        function resetDateFilter() {
+            // Find the date range of all data
+            const dates = rejectData.map(item => new Date(item.ProductionDate));
+            const minDate = new Date(Math.min(...dates));
+            const maxDate = new Date(Math.max(...dates));
+            
+            // Set date inputs
+            filterElements.dateFrom.value = formatDateForInput(minDate);
+            filterElements.dateTo.value = formatDateForInput(maxDate);
+
+            // Apply the date filter
+            applyDateFilter();
+        }
+
+        // Reset all other filters except date
+        function resetOtherFilters(skipUpdate = false) {
+            // Reset filter elements
+            filterElements.supervisor.value = '';
+            filterElements.product.value = '';
+            filterElements.variant.value = '';
+            filterElements.batch.value = '';
+            filterElements.part.value = '';
+            filterElements.alias.value = '';
+
+            if (!skipUpdate) {
+                // Set filtered data to date filtered data
+                filteredData = [...dateFilteredData];
+                
+                // Update dashboard
+                updateDashboard();
+                
+                // Update filter dropdowns (will be based on date-filtered data)
+                populateFilterDropdowns();
+            }
+        }
+
+        // Reset all filters
+        function resetAllFilters() {
+            resetDateFilter();
+        }
+
         // Populate filter dropdowns with unique values from the data
         function populateFilterDropdowns() {
-            // Get unique values for each filter
+            // Get unique values for each filter from date-filtered data
             const uniqueValues = {
                 supervisor: new Set(),
                 product: new Set(),
@@ -665,7 +732,7 @@
                 alias: new Set()
             };
 
-            rejectData.forEach(item => {
+            dateFilteredData.forEach(item => {
                 if (item.LineSupervisor) uniqueValues.supervisor.add(item.LineSupervisor);
                 if (item.Product) uniqueValues.product.add(item.Product);
                 if (item.Variant) uniqueValues.variant.add(item.Variant);
@@ -686,17 +753,20 @@
                 }
             });
 
-            // Populate dropdowns
-            populateSelect(filterElements.supervisor, [...uniqueValues.supervisor].sort());
-            populateSelect(filterElements.product, [...uniqueValues.product].sort());
-            populateSelect(filterElements.variant, [...uniqueValues.variant].sort());
-            populateSelect(filterElements.batch, [...uniqueValues.batch].sort());
-            populateSelect(filterElements.part, [...uniqueValues.part].sort());
-            populateSelect(filterElements.alias, [...uniqueValues.alias].sort());
+            // Populate dropdowns based on current filter values
+            populateSelect(filterElements.supervisor, [...uniqueValues.supervisor].sort(), true);
+            populateSelect(filterElements.product, [...uniqueValues.product].sort(), true);
+            populateSelect(filterElements.variant, [...uniqueValues.variant].sort(), true);
+            populateSelect(filterElements.batch, [...uniqueValues.batch].sort(), true);
+            populateSelect(filterElements.part, [...uniqueValues.part].sort(), true);
+            populateSelect(filterElements.alias, [...uniqueValues.alias].sort(), true);
         }
 
         // Helper function to populate a select element with options
-        function populateSelect(selectElement, options) {
+        function populateSelect(selectElement, options, keepValue = false) {
+            // Remember the current value if needed
+            const currentValue = keepValue ? selectElement.value : '';
+            
             // Keep the first option (usually "All X")
             const firstOption = selectElement.options[0];
             selectElement.innerHTML = '';
@@ -711,13 +781,24 @@
                     selectElement.appendChild(optionElement);
                 }
             });
+            
+            // Try to restore the previous value if it still exists
+            if (keepValue && currentValue) {
+                if (Array.from(selectElement.options).some(opt => opt.value === currentValue)) {
+                    selectElement.value = currentValue;
+                }
+            }
         }
 
-        // Apply filters to the data
-        function applyFilters() {
+        // Update cascading filters when any filter changes
+        function updateCascadingFilters(event) {
+            // Don't trigger this function from its own changes
+            if (event && event.target.hasAttribute('data-updating')) {
+                return;
+            }
+            
+            // Get current filter values
             const filters = {
-                dateFrom: filterElements.dateFrom.value ? new Date(filterElements.dateFrom.value) : null,
-                dateTo: filterElements.dateTo.value ? new Date(filterElements.dateTo.value) : null,
                 supervisor: filterElements.supervisor.value,
                 product: filterElements.product.value,
                 variant: filterElements.variant.value,
@@ -725,17 +806,12 @@
                 part: filterElements.part.value,
                 alias: filterElements.alias.value
             };
-
-            // Filter the data
-            filteredData = rejectData.filter(item => {
-                // Date range filter
-                if (filters.dateFrom && filters.dateTo) {
-                    const itemDate = new Date(item.ProductionDate);
-                    if (itemDate < filters.dateFrom || itemDate > filters.dateTo) {
-                        return false;
-                    }
-                }
-
+            
+            // Apply filters to get data for other dropdowns
+            filteredData = dateFilteredData.filter(item => {
+                // Skip if no date-filtered data
+                if (dateFilteredData.length === 0) return false;
+                
                 // Text filters
                 if (filters.supervisor && item.LineSupervisor !== filters.supervisor) return false;
                 if (filters.product && item.Product !== filters.product) return false;
@@ -766,32 +842,103 @@
                 
                 return true;
             });
-
+            
+            // Update dropdown options based on filtered data
+            updateDropdownOptions();
+            
             // Update dashboard with filtered data
             updateDashboard();
         }
 
-        // Reset all filters
-        function resetFilters() {
-            // Reset filter elements
-            filterElements.supervisor.value = '';
-            filterElements.product.value = '';
-            filterElements.variant.value = '';
-            filterElements.batch.value = '';
-            filterElements.part.value = '';
-            filterElements.alias.value = '';
+        // Update dropdown options based on filtered data
+        function updateDropdownOptions() {
+            // Get unique values for each filter from currently filtered data
+            const uniqueValues = {
+                supervisor: new Set(),
+                product: new Set(),
+                variant: new Set(),
+                batch: new Set(),
+                part: new Set(),
+                alias: new Set()
+            };
 
-            // Find the date range of all data
-            const dates = rejectData.map(item => new Date(item.ProductionDate));
-            const minDate = new Date(Math.min(...dates));
-            const maxDate = new Date(Math.max(...dates));
+            filteredData.forEach(item => {
+                if (item.LineSupervisor) uniqueValues.supervisor.add(item.LineSupervisor);
+                if (item.Product) uniqueValues.product.add(item.Product);
+                if (item.Variant) uniqueValues.variant.add(item.Variant);
+                if (item.BatchNumber) uniqueValues.batch.add(item.BatchNumber);
+                
+                // Handle parts (which might be arrays)
+                if (Array.isArray(item.Parts)) {
+                    item.Parts.forEach(part => uniqueValues.part.add(part.trim()));
+                } else if (typeof item.Parts === 'string') {
+                    item.Parts.split(',').forEach(part => uniqueValues.part.add(part.trim()));
+                }
+                
+                // Handle aliases (which might be arrays)
+                if (Array.isArray(item.Aliases)) {
+                    item.Aliases.forEach(alias => uniqueValues.alias.add(alias.trim()));
+                } else if (typeof item.Aliases === 'string') {
+                    item.Aliases.split(',').forEach(alias => uniqueValues.alias.add(alias.trim()));
+                }
+            });
+
+            // Mark elements as updating to prevent event loops
+            const selects = [
+                filterElements.supervisor,
+                filterElements.product,
+                filterElements.variant,
+                filterElements.batch,
+                filterElements.part,
+                filterElements.alias
+            ];
             
-            // Set date inputs
-            filterElements.dateFrom.value = formatDateForInput(minDate);
-            filterElements.dateTo.value = formatDateForInput(maxDate);
-
-            // Apply filters (which will be reset)
-            applyFilters();
+            selects.forEach(select => select.setAttribute('data-updating', 'true'));
+            
+            // Populate dropdowns with new options but keep selected values if valid
+            if (!filterElements.supervisor.value || uniqueValues.supervisor.has(filterElements.supervisor.value)) {
+                populateSelect(filterElements.supervisor, [...uniqueValues.supervisor].sort(), true);
+            } else {
+                populateSelect(filterElements.supervisor, [...uniqueValues.supervisor].sort());
+            }
+            
+            if (!filterElements.product.value || uniqueValues.product.has(filterElements.product.value)) {
+                populateSelect(filterElements.product, [...uniqueValues.product].sort(), true);
+            } else {
+                populateSelect(filterElements.product, [...uniqueValues.product].sort());
+            }
+            
+            if (!filterElements.variant.value || uniqueValues.variant.has(filterElements.variant.value)) {
+                populateSelect(filterElements.variant, [...uniqueValues.variant].sort(), true);
+            } else {
+                populateSelect(filterElements.variant, [...uniqueValues.variant].sort());
+            }
+            
+            if (!filterElements.batch.value || uniqueValues.batch.has(filterElements.batch.value)) {
+                populateSelect(filterElements.batch, [...uniqueValues.batch].sort(), true);
+            } else {
+                populateSelect(filterElements.batch, [...uniqueValues.batch].sort());
+            }
+            
+            // Part and alias are more complex as they might be in arrays
+            let keepPartValue = !filterElements.part.value;
+            let keepAliasValue = !filterElements.alias.value;
+            
+            if (filterElements.part.value) {
+                const partExists = uniqueValues.part.has(filterElements.part.value);
+                keepPartValue = partExists;
+            }
+            
+            if (filterElements.alias.value) {
+                const aliasExists = uniqueValues.alias.has(filterElements.alias.value);
+                keepAliasValue = aliasExists;
+            }
+            
+            populateSelect(filterElements.part, [...uniqueValues.part].sort(), keepPartValue);
+            populateSelect(filterElements.alias, [...uniqueValues.alias].sort(), keepAliasValue);
+            
+            // Remove updating attribute
+            selects.forEach(select => select.removeAttribute('data-updating'));
         }
 
         // Update dashboard with current filtered data
@@ -1160,7 +1307,7 @@
                 
                 g.appendChild(costPoint);
                 
-                // X-axis label
+                // X-axis label - limit number for readability
                 if (sortedDates.length <= 8 || i % Math.ceil(sortedDates.length / 8) === 0) {
                     const dateLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                     dateLabel.setAttribute('x', x[i]);
