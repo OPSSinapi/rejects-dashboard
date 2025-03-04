@@ -292,6 +292,18 @@
             align-items: center;
         }
 
+        .metrics-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .metrics-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
         .total-cost-container {
             display: flex;
             align-items: center;
@@ -831,7 +843,7 @@
         </section>
 
         <div class="metrics-bar">
-            <div class="total-cost-container">
+            <div class="metrics-left">
                 <div class="cost-display">
                     <div id="total-cost" class="total-cost">R0</div>
                     <div class="total-cost-label">Total Cost</div>
@@ -850,17 +862,34 @@
                         <span id="local-percent" class="type-percent">0%</span>
                     </div>
                 </div>
-            </div>
-            <div class="type-selector">
-                <div class="type-dropdown" id="action-dropdown">
-                    <button class="dropdown-btn">
-                        <span id="current-action">All Types</span>
-                        <span>▼</span>
-                    </button>
-                    <div class="dropdown-content" id="action-dropdown-content">
-                        <a href="#" class="dropdown-item active" data-action="All">All Types</a>
-                        <!-- Actions will be populated dynamically -->
+                <div class="parts-metrics">
+                    <div class="parts-metric">
+                        <span>Single Parts:</span>
+                        <span id="single-parts-count" class="parts-metric-value">0</span>
                     </div>
+                    <div class="parts-metric">
+                        <span>Assemblies:</span>
+                        <span id="assemblies-count" class="parts-metric-value">0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="metrics-right">
+                <div class="type-selector">
+                    <div class="type-dropdown" id="action-dropdown">
+                        <button class="dropdown-btn">
+                            <span id="current-action">All Types</span>
+                            <span>▼</span>
+                        </button>
+                        <div class="dropdown-content" id="action-dropdown-content">
+                            <a href="#" class="dropdown-item active" data-action="All">All Types</a>
+                            <!-- Actions will be populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+                <div class="sort-toggle">
+                    <span>Sort by:</span>
+                    <button id="sort-by-qty" class="active">Quantity</button>
+                    <button id="sort-by-cost">Cost</button>
                 </div>
             </div>
         </div>
@@ -872,21 +901,6 @@
                         <div class="top10-header">
                             <div class="top10-title">
                                 <h2>Top 10 Rejects</h2>
-                                <div class="parts-metrics">
-                                    <div class="parts-metric">
-                                        <span>Single Parts:</span>
-                                        <span id="single-parts-count" class="parts-metric-value">0</span>
-                                    </div>
-                                    <div class="parts-metric">
-                                        <span>Assemblies:</span>
-                                        <span id="assemblies-count" class="parts-metric-value">0</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="sort-toggle">
-                                <span>Sort by:</span>
-                                <button id="sort-by-qty" class="active">Quantity</button>
-                                <button id="sort-by-cost">Cost</button>
                             </div>
                         </div>
                         <div class="table-container">
@@ -968,6 +982,7 @@
         let rejectData = [];
         let dateFilteredData = []; // Data filtered by date range only
         let filteredData = []; // Final filtered data
+        let allData = []; // All data, used for calculating global metrics
         const GITHUB_REPO = 'OPSSinapi/rejects-dashboard';
         const FILE_PATH = 'RejectsData.json';
         const DATA_URL = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/${FILE_PATH}`;
@@ -1102,6 +1117,7 @@
 
             // Fetch data
             rejectData = await fetchData();
+            allData = [...rejectData]; // Keep a copy of all data
             
             if (rejectData.length === 0) {
                 Object.values(chartContainers).forEach(container => {
@@ -1143,6 +1159,7 @@
                 createRejectReasonsChart();
                 createTopProblemsChart();
                 createStationCostChart();
+                createDailyTrendChart();
             });
             
             top10Elements.sortByCost.addEventListener('click', () => {
@@ -1155,6 +1172,7 @@
                 createRejectReasonsChart();
                 createTopProblemsChart();
                 createStationCostChart();
+                createDailyTrendChart();
             });
 
             // Close popup menus when clicking outside
@@ -1178,11 +1196,11 @@
 
         // Calculate global data metrics for box and whisker plot
         function calculateGlobalDataMetrics() {
-            if (rejectData.length === 0) return;
+            if (allData.length === 0) return;
             
             // Group data by date
             const dateGroups = {};
-            rejectData.forEach(item => {
+            allData.forEach(item => {
                 const date = item.ProductionDate;
                 if (!dateGroups[date]) {
                     dateGroups[date] = {
@@ -2992,7 +3010,7 @@
                 }
             }
 
-            // Create SVG for box and whisker plot
+            // Create SVG for horizontal box and whisker plot
             const margin = { top: 30, right: 40, bottom: 50, left: 60 };
             const width = container.clientWidth - margin.left - margin.right;
             const height = container.clientHeight - margin.top - margin.bottom;
@@ -3007,38 +3025,40 @@
             const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
             g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
             svg.appendChild(g);
-
+            
             // Get the metric we're using based on sort selection
             const metric = sortTop10By === 'qty' ? 'count' : 'cost';
             
-            // Create box plot
-            const boxWidth = width * 0.5;
-            const boxLeft = (width - boxWidth) / 2;
-            const boxRight = boxLeft + boxWidth;
-            
-            // Calculate y-scale based on min-max
+            // Use global metrics for box plot (from all data, not just filtered)
             const { min, max, median, q1, q3 } = globalDataMetrics;
-            const yScale = (value) => height * (1 - (value - min) / (max - min || 1));
             
-            // Add y-axis labels
-            const yTicks = [min, q1, median, q3, max].filter((v, i, arr) => arr.indexOf(v) === i);
-            yTicks.forEach(tick => {
+            // Calculate x-scale for horizontal box plot
+            const xScale = (value) => width * (value - min) / (max - min || 1);
+            
+            // BOX PLOT IS NOW HORIZONTAL - MAJOR CHANGE
+            const boxHeight = height * 0.5;
+            const boxTop = (height - boxHeight) / 2;
+            const boxBottom = boxTop + boxHeight;
+            
+            // Add x-axis labels
+            const xTicks = [min, q1, median, q3, max].filter((v, i, arr) => arr.indexOf(v) === i);
+            xTicks.forEach(tick => {
                 // Line
                 const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                line.setAttribute('x1', 0);
-                line.setAttribute('x2', width);
-                line.setAttribute('y1', yScale(tick));
-                line.setAttribute('y2', yScale(tick));
+                line.setAttribute('x1', xScale(tick));
+                line.setAttribute('x2', xScale(tick));
+                line.setAttribute('y1', 0);
+                line.setAttribute('y2', height);
                 line.setAttribute('stroke', '#eee');
                 line.setAttribute('stroke-width', '1');
                 g.appendChild(line);
                 
                 // Label
                 const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                label.setAttribute('x', -5);
-                label.setAttribute('y', yScale(tick));
-                label.setAttribute('text-anchor', 'end');
-                label.setAttribute('dominant-baseline', 'middle');
+                label.setAttribute('x', xScale(tick));
+                label.setAttribute('y', height + 15);
+                label.setAttribute('text-anchor', 'middle');
+                label.setAttribute('dominant-baseline', 'hanging');
                 
                 // Format value based on type
                 const labelText = sortTop10By === 'qty' 
@@ -3052,73 +3072,73 @@
             
             // Draw box
             const box = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            box.setAttribute('x', boxLeft);
-            box.setAttribute('y', yScale(q3));
-            box.setAttribute('width', boxWidth);
-            box.setAttribute('height', yScale(q1) - yScale(q3));
+            box.setAttribute('x', xScale(q1));
+            box.setAttribute('y', boxTop);
+            box.setAttribute('width', xScale(q3) - xScale(q1));
+            box.setAttribute('height', boxHeight);
             box.setAttribute('class', 'box-plot');
             g.appendChild(box);
             
             // Draw median line
             const medianLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            medianLine.setAttribute('x1', boxLeft);
-            medianLine.setAttribute('x2', boxRight);
-            medianLine.setAttribute('y1', yScale(median));
-            medianLine.setAttribute('y2', yScale(median));
+            medianLine.setAttribute('x1', xScale(median));
+            medianLine.setAttribute('x2', xScale(median));
+            medianLine.setAttribute('y1', boxTop);
+            medianLine.setAttribute('y2', boxBottom);
             medianLine.setAttribute('class', 'median-line');
             g.appendChild(medianLine);
             
             // Draw whiskers
-            // Top whisker
-            const topWhiskerLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            topWhiskerLine.setAttribute('x1', boxLeft + boxWidth/2);
-            topWhiskerLine.setAttribute('x2', boxLeft + boxWidth/2);
-            topWhiskerLine.setAttribute('y1', yScale(q3));
-            topWhiskerLine.setAttribute('y2', yScale(max));
-            topWhiskerLine.setAttribute('class', 'whisker-line');
-            g.appendChild(topWhiskerLine);
+            // Left whisker
+            const leftWhiskerLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            leftWhiskerLine.setAttribute('x1', xScale(min));
+            leftWhiskerLine.setAttribute('x2', xScale(q1));
+            leftWhiskerLine.setAttribute('y1', boxTop + boxHeight/2);
+            leftWhiskerLine.setAttribute('y2', boxTop + boxHeight/2);
+            leftWhiskerLine.setAttribute('class', 'whisker-line');
+            g.appendChild(leftWhiskerLine);
             
-            const topWhiskerCap = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            topWhiskerCap.setAttribute('x1', boxLeft + boxWidth/4);
-            topWhiskerCap.setAttribute('x2', boxRight - boxWidth/4);
-            topWhiskerCap.setAttribute('y1', yScale(max));
-            topWhiskerCap.setAttribute('y2', yScale(max));
-            topWhiskerCap.setAttribute('class', 'whisker-line');
-            g.appendChild(topWhiskerCap);
+            const leftWhiskerCap = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            leftWhiskerCap.setAttribute('x1', xScale(min));
+            leftWhiskerCap.setAttribute('x2', xScale(min));
+            leftWhiskerCap.setAttribute('y1', boxTop + boxHeight/4);
+            leftWhiskerCap.setAttribute('y2', boxBottom - boxHeight/4);
+            leftWhiskerCap.setAttribute('class', 'whisker-line');
+            g.appendChild(leftWhiskerCap);
             
-            // Bottom whisker
-            const bottomWhiskerLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            bottomWhiskerLine.setAttribute('x1', boxLeft + boxWidth/2);
-            bottomWhiskerLine.setAttribute('x2', boxLeft + boxWidth/2);
-            bottomWhiskerLine.setAttribute('y1', yScale(q1));
-            bottomWhiskerLine.setAttribute('y2', yScale(min));
-            bottomWhiskerLine.setAttribute('class', 'whisker-line');
-            g.appendChild(bottomWhiskerLine);
+            // Right whisker
+            const rightWhiskerLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            rightWhiskerLine.setAttribute('x1', xScale(q3));
+            rightWhiskerLine.setAttribute('x2', xScale(max));
+            rightWhiskerLine.setAttribute('y1', boxTop + boxHeight/2);
+            rightWhiskerLine.setAttribute('y2', boxTop + boxHeight/2);
+            rightWhiskerLine.setAttribute('class', 'whisker-line');
+            g.appendChild(rightWhiskerLine);
             
-            const bottomWhiskerCap = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            bottomWhiskerCap.setAttribute('x1', boxLeft + boxWidth/4);
-            bottomWhiskerCap.setAttribute('x2', boxRight - boxWidth/4);
-            bottomWhiskerCap.setAttribute('y1', yScale(min));
-            bottomWhiskerCap.setAttribute('y2', yScale(min));
-            bottomWhiskerCap.setAttribute('class', 'whisker-line');
-            g.appendChild(bottomWhiskerCap);
+            const rightWhiskerCap = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            rightWhiskerCap.setAttribute('x1', xScale(max));
+            rightWhiskerCap.setAttribute('x2', xScale(max));
+            rightWhiskerCap.setAttribute('y1', boxTop + boxHeight/4);
+            rightWhiskerCap.setAttribute('y2', boxBottom - boxHeight/4);
+            rightWhiskerCap.setAttribute('class', 'whisker-line');
+            g.appendChild(rightWhiskerCap);
             
-            // Add annotations for each date in the range
+            // Add markers for dates in the range
             if (datesInRange.length > 0) {
-                // Determine layout based on number of dates
-                const markerWidth = boxWidth / (datesInRange.length + 1);
+                // Calculate marker positions based on number of dates
+                const dateSpacing = boxHeight / (datesInRange.length + 1);
                 
                 datesInRange.forEach((date, i) => {
                     // Only show if we have data for this date
                     if (dateGroups[date]) {
                         const value = dateGroups[date][metric];
-                        const x = boxLeft + (i + 1) * markerWidth;
-                        const y = yScale(value);
+                        const x = xScale(value);
+                        const y = boxTop + (i + 1) * dateSpacing;
                         
                         // Draw marker
                         const marker = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
                         marker.setAttribute('points', 
-                            `${x},${y+10} ${x-5},${y} ${x+5},${y}`
+                            `${x-10},${y} ${x},${y-5} ${x},${y+5}`
                         );
                         marker.setAttribute('class', 'date-marker');
                         g.appendChild(marker);
@@ -3126,9 +3146,10 @@
                         // Add date label
                         const dateObj = new Date(date);
                         const dayLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                        dayLabel.setAttribute('x', x);
-                        dayLabel.setAttribute('y', y + 20);
-                        dayLabel.setAttribute('text-anchor', 'middle');
+                        dayLabel.setAttribute('x', x - 20);
+                        dayLabel.setAttribute('y', y);
+                        dayLabel.setAttribute('text-anchor', 'end');
+                        dayLabel.setAttribute('dominant-baseline', 'middle');
                         dayLabel.textContent = dateObj.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
                         dayLabel.classList.add('bar-label');
                         g.appendChild(dayLabel);
@@ -3165,7 +3186,7 @@
                 });
             }
             
-            // Add legend and title
+            // Add title with dynamic metric type
             const title = document.createElementNS('http://www.w3.org/2000/svg', 'text');
             title.setAttribute('x', width / 2);
             title.setAttribute('y', -10);
@@ -3174,29 +3195,28 @@
             title.style.fontWeight = 'bold';
             g.appendChild(title);
             
-            // Add x-axis label
-            const xAxisLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            xAxisLabel.setAttribute('x', width / 2);
-            xAxisLabel.setAttribute('y', height + 35);
-            xAxisLabel.setAttribute('text-anchor', 'middle');
-            xAxisLabel.textContent = 'Date Range';
-            g.appendChild(xAxisLabel);
+            // Add y-axis label
+            const yAxisLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            yAxisLabel.setAttribute('x', width / 2);
+            yAxisLabel.setAttribute('y', height + 35);
+            yAxisLabel.setAttribute('text-anchor', 'middle');
+            yAxisLabel.textContent = sortTop10By === 'qty' ? 'Quantity' : 'Cost';
+            g.appendChild(yAxisLabel);
             
             // Add box plot labels
             const boxLabels = [
-                { text: 'Max', y: yScale(max) - 15 },
-                { text: 'Q3', y: yScale(q3) - 10 },
-                { text: 'Median', y: yScale(median) },
-                { text: 'Q1', y: yScale(q1) + 10 },
-                { text: 'Min', y: yScale(min) + 15 }
+                { text: 'Min', x: xScale(min), y: boxTop - 10 },
+                { text: 'Q1', x: xScale(q1), y: boxTop - 10 },
+                { text: 'Median', x: xScale(median), y: boxTop - 10 },
+                { text: 'Q3', x: xScale(q3), y: boxTop - 10 },
+                { text: 'Max', x: xScale(max), y: boxTop - 10 }
             ];
             
             boxLabels.forEach(label => {
                 const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                text.setAttribute('x', width + 5);
+                text.setAttribute('x', label.x);
                 text.setAttribute('y', label.y);
-                text.setAttribute('text-anchor', 'start');
-                text.setAttribute('dominant-baseline', 'middle');
+                text.setAttribute('text-anchor', 'middle');
                 text.textContent = label.text;
                 text.classList.add('axis');
                 g.appendChild(text);
