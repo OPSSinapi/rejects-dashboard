@@ -13,39 +13,6 @@
             font-family: Arial, Helvetica, sans-serif;
         }
 
-        // Helper function to format date for display
-        function formatDate(dateString) {
-            if (!dateString) return '';
-            const date = new Date(dateString);
-            return date.toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'short', 
-                day: 'numeric' 
-            });
-        }
-
-        // Helper function to format date for date input elements
-        function formatDateForInput(date) {
-            if (!date || !(date instanceof Date)) return '';
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        }
-
-        // Initialize the dashboard when the page loads
-        window.addEventListener('load', initDashboard);
-        
-        // Handle window resize
-        window.addEventListener('resize', () => {
-            if (filteredData.length > 0) {
-                createRejectReasonsChart();
-                createDailyTrendChart();
-                createTopProblemsChart();
-                createStationCostChart();
-            }
-        });
-
         body {
             background-color: #f5f5f5;
             color: #333;
@@ -1240,6 +1207,39 @@
             });
         }
 
+        // Helper function to format date for display
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+        }
+
+        // Helper function to format date for date input elements
+        function formatDateForInput(date) {
+            if (!date || !(date instanceof Date)) return '';
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // Initialize the dashboard when the page loads
+        window.addEventListener('load', initDashboard);
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (filteredData.length > 0) {
+                createRejectReasonsChart();
+                createDailyTrendChart();
+                createTopProblemsChart();
+                createStationCostChart();
+            }
+        });
+
         // Calculate global data metrics for box and whisker plot
         function calculateGlobalDataMetrics() {
             // Filter data based on current filters EXCEPT date range
@@ -1301,8 +1301,6 @@
                 q1,
                 q3
             };
-            
-            console.log('Global data metrics:', globalDataMetrics);
         }
         
         // Get data for global metrics calculation (applies all filters except date range)
@@ -1329,7 +1327,6 @@
             const hasSelections = Object.values(filterValues).some(values => values.length > 0);
             if (hasSelections) {
                 result = result.filter(item => {
-                    // For filters with selections, item must match at least one selected value
                     if (filterValues.supervisor.length > 0 && !filterValues.supervisor.includes(item.LineSupervisor)) {
                         return false;
                     }
@@ -1342,7 +1339,6 @@
                         return false;
                     }
                     
-                    // Check batch filter
                     if (filterValues.batch.length > 0) {
                         const batchStr = item.BatchNumber !== undefined && item.BatchNumber !== null 
                             ? String(item.BatchNumber) 
@@ -1353,7 +1349,6 @@
                         }
                     }
                     
-                    // Check part filter
                     if (filterValues.part.length > 0) {
                         let partFound = false;
                         let parts = [];
@@ -1364,13 +1359,11 @@
                             parts = item.Parts.split(',').map(p => p.trim());
                         }
                         
-                        // Check if any selected part is in this item's parts
                         partFound = parts.some(part => part && filterValues.part.includes(part.trim()));
                         
                         if (!partFound) return false;
                     }
                     
-                    // Check alias filter
                     if (filterValues.alias.length > 0) {
                         let aliasFound = false;
                         let aliases = [];
@@ -1381,7 +1374,6 @@
                             aliases = item.Aliases.split(',').map(a => a.trim());
                         }
                         
-                        // Check if any selected alias is in this item's aliases
                         aliasFound = aliases.some(alias => alias && filterValues.alias.includes(alias.trim()));
                         
                         if (!aliasFound) return false;
@@ -1396,30 +1388,25 @@
 
         // Initialize action dropdown
         function initActionDropdown() {
-            // Toggle dropdown on click
             top10Elements.actionDropdown.querySelector('.dropdown-btn').addEventListener('click', () => {
                 top10Elements.actionDropdownContent.classList.toggle('show');
             });
             
-            // Handle action selection
             top10Elements.actionDropdownContent.addEventListener('click', (e) => {
                 if (e.target.classList.contains('dropdown-item')) {
                     e.preventDefault();
                     
-                    // Update selected action
                     const newAction = e.target.getAttribute('data-action');
                     
                     if (newAction !== selectedAction) {
                         selectedAction = newAction;
                         top10Elements.currentAction.textContent = selectedAction === 'All' ? 'All Types' : selectedAction;
                         
-                        // Update active class
                         document.querySelectorAll('#action-dropdown-content .dropdown-item').forEach(item => {
                             item.classList.remove('active');
                         });
                         e.target.classList.add('active');
                         
-                        // Show/hide batch number & supplier columns based on action
                         if (selectedAction === 'RTS' || selectedAction === 'Local') {
                             top10Elements.batchHeader.style.display = '';
                             top10Elements.supplierHeader.style.display = '';
@@ -1428,15 +1415,12 @@
                             top10Elements.supplierHeader.style.display = 'none';
                         }
                         
-                        // Recalculate global metrics
                         calculateGlobalDataMetrics();
                         
-                        // Update the table and charts
                         updateTop10Table();
                         updateDashboardWithActionFilter();
                     }
                     
-                    // Close dropdown
                     top10Elements.actionDropdownContent.classList.remove('show');
                 }
             });
@@ -1444,7 +1428,6 @@
 
         // Initialize clickable headers for Reject Reason and Station
         function initClickableHeaders() {
-            // Reject Reason header click
             top10Elements.rejectReasonHeader.addEventListener('click', (e) => {
                 const rect = top10Elements.rejectReasonHeader.getBoundingClientRect();
                 top10Elements.rejectReasonMenu.style.top = `${rect.bottom}px`;
@@ -1454,7 +1437,6 @@
                 e.stopPropagation();
             });
             
-            // Station header click
             top10Elements.stationHeader.addEventListener('click', (e) => {
                 const rect = top10Elements.stationHeader.getBoundingClientRect();
                 top10Elements.stationMenu.style.top = `${rect.bottom}px`;
@@ -1470,14 +1452,12 @@
             const menu = top10Elements.rejectReasonMenu;
             menu.innerHTML = '';
             
-            // Add "All Reasons" option
             const allOption = document.createElement('div');
             allOption.className = `popup-menu-item ${selectedRejectReason === null ? 'active' : ''}`;
             allOption.textContent = 'All Reasons';
             allOption.addEventListener('click', () => {
                 selectedRejectReason = null;
                 
-                // Recalculate global metrics
                 calculateGlobalDataMetrics();
                 
                 updateTop10Table();
@@ -1486,16 +1466,13 @@
             });
             menu.appendChild(allOption);
             
-            // Get top reasons based on current sort
             const reasonCounts = {};
             let currentFilteredData = getFilteredDataForMenus();
             
-            // Apply action filter if selected
             if (selectedAction !== 'All') {
                 currentFilteredData = currentFilteredData.filter(item => item.ActionSelection === selectedAction);
             }
             
-            // Count reasons
             currentFilteredData.forEach(item => {
                 const reason = item.RejectReason || 'Unknown';
                 if (!reasonCounts[reason]) {
@@ -1508,17 +1485,14 @@
                 reasonCounts[reason].cost += (item.Cost || 0);
             });
             
-            // Sort reasons
             let sortedReasons = Object.keys(reasonCounts).sort((a, b) => 
                 sortTop10By === 'qty' 
                     ? reasonCounts[b].count - reasonCounts[a].count 
                     : reasonCounts[b].cost - reasonCounts[a].cost
             );
             
-            // Limit to top 10
             sortedReasons = sortedReasons.slice(0, 10);
             
-            // Add reason options
             sortedReasons.forEach(reason => {
                 const option = document.createElement('div');
                 option.className = `popup-menu-item ${selectedRejectReason === reason ? 'active' : ''}`;
@@ -1526,7 +1500,6 @@
                 option.addEventListener('click', () => {
                     selectedRejectReason = reason;
                     
-                    // Recalculate global metrics
                     calculateGlobalDataMetrics();
                     
                     updateTop10Table();
@@ -1542,14 +1515,12 @@
             const menu = top10Elements.stationMenu;
             menu.innerHTML = '';
             
-            // Add "All Stations" option
             const allOption = document.createElement('div');
             allOption.className = `popup-menu-item ${selectedStation === null ? 'active' : ''}`;
             allOption.textContent = 'All Stations';
             allOption.addEventListener('click', () => {
                 selectedStation = null;
                 
-                // Recalculate global metrics
                 calculateGlobalDataMetrics();
                 
                 updateTop10Table();
@@ -1558,21 +1529,17 @@
             });
             menu.appendChild(allOption);
             
-            // Get top stations based on current sort
             const stationData = {};
             let currentFilteredData = getFilteredDataForMenus();
             
-            // Apply action filter if selected
             if (selectedAction !== 'All') {
                 currentFilteredData = currentFilteredData.filter(item => item.ActionSelection === selectedAction);
             }
             
-            // Apply reject reason filter if selected
             if (selectedRejectReason !== null) {
                 currentFilteredData = currentFilteredData.filter(item => item.RejectReason === selectedRejectReason);
             }
             
-            // Count stations
             currentFilteredData.forEach(item => {
                 const station = item.Station || 'Unknown';
                 if (!stationData[station]) {
@@ -1585,17 +1552,14 @@
                 stationData[station].cost += (item.Cost || 0);
             });
             
-            // Sort stations
             let sortedStations = Object.keys(stationData).sort((a, b) => 
                 sortTop10By === 'qty' 
                     ? stationData[b].count - stationData[a].count 
                     : stationData[b].cost - stationData[a].cost
             );
             
-            // Limit to top 10
             sortedStations = sortedStations.slice(0, 10);
             
-            // Add station options
             sortedStations.forEach(station => {
                 const option = document.createElement('div');
                 option.className = `popup-menu-item ${selectedStation === station ? 'active' : ''}`;
@@ -1603,7 +1567,6 @@
                 option.addEventListener('click', () => {
                     selectedStation = station;
                     
-                    // Recalculate global metrics
                     calculateGlobalDataMetrics();
                     
                     updateTop10Table();
@@ -1616,38 +1579,29 @@
 
         // Get filtered data considering all multi-select filters
         function getFilteredDataForMenus() {
-            // If no selections, return all date-filtered data
             const hasSelections = Object.values(filterValues).some(values => values.length > 0);
             if (!hasSelections) {
                 return filteredData;
             }
             
-            // Apply only multi-select filters
             return filteredData;
         }
 
         // Update dashboard based on action selection
         function updateDashboardWithActionFilter() {
-            // Reset other selections if needed
-            // updateTop10Table(); - This is called by the individual filter functions
-            
-            // Update charts based on current filters
             createRejectReasonsChart();
             createDailyTrendChart();
             createTopProblemsChart();
             createStationCostChart();
             
-            // Update metrics
             updateMetrics();
         }
 
         // Initialize multi-select dropdowns
         function initMultiSelectDropdowns() {
-            // For each multi-select in the page
             Object.keys(filterElements.multiSelects).forEach(key => {
                 const multiSelect = filterElements.multiSelects[key];
                 
-                // Get elements
                 const header = multiSelect.querySelector('.multi-select-header');
                 const dropdown = multiSelect.querySelector('.multi-select-dropdown');
                 const headerText = multiSelect.querySelector('.multi-select-header-text');
@@ -1656,38 +1610,31 @@
                 const selectAllBtn = multiSelect.querySelector('.select-all');
                 const clearAllBtn = multiSelect.querySelector('.clear-all');
                 
-                // Toggle dropdown
                 header.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const isActive = dropdown.classList.contains('active');
                     
-                    // Close all other dropdowns
                     document.querySelectorAll('.multi-select-dropdown.active').forEach(el => {
                         if (el !== dropdown) {
                             el.classList.remove('active');
                         }
                     });
                     
-                    // Toggle this dropdown
                     dropdown.classList.toggle('active');
                     
-                    // Focus search if opening
                     if (!isActive) {
                         search.focus();
                     }
                 });
                 
-                // Close dropdown when clicking outside
                 document.addEventListener('click', () => {
                     dropdown.classList.remove('active');
                 });
                 
-                // Prevent dropdown closing when clicking inside
                 dropdown.addEventListener('click', (e) => {
                     e.stopPropagation();
                 });
                 
-                // Search functionality
                 search.addEventListener('input', () => {
                     const searchTerm = search.value.toLowerCase();
                     const options = optionsContainer.querySelectorAll('.multi-select-option');
@@ -1702,11 +1649,9 @@
                     });
                 });
                 
-                // Select all button
                 selectAllBtn.addEventListener('click', () => {
                     if (isUpdatingFilters) return;
                     
-                    // Get only visible and enabled options
                     const visibleOptions = Array.from(optionsContainer.querySelectorAll('.multi-select-option'))
                         .filter(option => option.style.display !== 'none' && !option.classList.contains('disabled'));
                     
@@ -1715,23 +1660,18 @@
                         checkbox.checked = true;
                     });
                     
-                    // Update selected values
                     const filterName = multiSelect.id.replace('-select', '');
                     filterValues[filterName] = Array.from(optionsContainer.querySelectorAll('input[type="checkbox"]:checked:not(:disabled)'))
                         .map(checkbox => checkbox.value);
                     
-                    // Update header text
                     updateHeaderText(multiSelect, filterName);
                     
-                    // Apply filters
                     applyDetailFilters(filterName);
                 });
                 
-                // Clear all button
                 clearAllBtn.addEventListener('click', () => {
                     if (isUpdatingFilters) return;
                     
-                    // Get only visible options
                     const visibleOptions = Array.from(optionsContainer.querySelectorAll('.multi-select-option'))
                         .filter(option => option.style.display !== 'none');
                     
@@ -1740,14 +1680,11 @@
                         checkbox.checked = false;
                     });
                     
-                    // Update selected values
                     const filterName = multiSelect.id.replace('-select', '');
                     filterValues[filterName] = [];
                     
-                    // Update header text
                     updateHeaderText(multiSelect, filterName);
                     
-                    // Apply filters
                     applyDetailFilters(filterName);
                 });
             });
@@ -1769,7 +1706,6 @@
 
         // Set default date range to the most recent 5 days with rejects
         function setDefaultDateRange() {
-            // Get all unique dates with rejects
             const uniqueDates = new Set();
             rejectData.forEach(item => {
                 if (item.ProductionDate) {
@@ -1777,23 +1713,19 @@
                 }
             });
             
-            // Convert to array, parse as dates, and sort descending
             const sortedDates = Array.from(uniqueDates)
                 .map(dateStr => new Date(dateStr))
                 .sort((a, b) => b - a);
             
-            // Get at most 5 most recent days with data
             const recentDates = sortedDates.slice(0, 5);
             
             if (recentDates.length > 0) {
-                // Set date range from most recent to oldest of the 5 (or fewer) dates
                 const toDate = recentDates[0];
                 const fromDate = recentDates[recentDates.length - 1];
                 
                 filterElements.dateFrom.value = formatDateForInput(fromDate);
                 filterElements.dateTo.value = formatDateForInput(toDate);
             } else {
-                // Fallback to current date if no data
                 const today = new Date();
                 const fiveDaysAgo = new Date();
                 fiveDaysAgo.setDate(today.getDate() - 4);
@@ -1808,7 +1740,6 @@
             const dateFrom = filterElements.dateFrom.value ? new Date(filterElements.dateFrom.value) : null;
             const dateTo = filterElements.dateTo.value ? new Date(filterElements.dateTo.value) : null;
             
-            // Filter data by date range
             dateFilteredData = rejectData.filter(item => {
                 if (!dateFrom || !dateTo) return true;
                 
@@ -1816,10 +1747,8 @@
                 return itemDate >= dateFrom && itemDate <= dateTo;
             });
             
-            // Reset other filters
             resetOtherFilters(true);
             
-            // Reset action selections and column visibility
             selectedAction = 'All';
             selectedRejectReason = null;
             selectedStation = null;
@@ -1827,25 +1756,18 @@
             top10Elements.batchHeader.style.display = 'none';
             top10Elements.supplierHeader.style.display = 'none';
             
-            // Update action dropdown with available actions
             updateActionDropdown();
             
-            // Calculate available options based on date-filtered data
             calculateAvailableFilterOptions();
             
-            // Build associations between filter values
             buildFilterAssociations();
             
-            // Populate multi-select dropdowns based on date-filtered data
             populateMultiSelectOptions();
             
-            // Set filtered data to date filtered data initially
             filteredData = [...dateFilteredData];
             
-            // Calculate global metrics
             calculateGlobalDataMetrics();
             
-            // Update dashboard
             updateDashboard();
         }
 
@@ -1854,7 +1776,6 @@
             const actions = new Set();
             let actionCounts = {};
             
-            // Collect all unique action types and count them
             dateFilteredData.forEach(item => {
                 if (item.ActionSelection) {
                     actions.add(item.ActionSelection);
@@ -1866,11 +1787,9 @@
                 }
             });
             
-            // Clear existing options except "All"
             const dropdownContent = top10Elements.actionDropdownContent;
             dropdownContent.innerHTML = '';
             
-            // Add "All Types" option
             const allOption = document.createElement('a');
             allOption.href = '#';
             allOption.className = 'dropdown-item ' + (selectedAction === 'All' ? 'active' : '');
@@ -1878,9 +1797,7 @@
             allOption.textContent = 'All Types';
             dropdownContent.appendChild(allOption);
             
-            // Add action options with counts > 0
             Array.from(actions).sort().forEach(action => {
-                // Skip if count is 0
                 if (actionCounts[action] === 0) return;
                 
                 const option = document.createElement('a');
@@ -1896,10 +1813,8 @@
                 dropdownContent.appendChild(option);
             });
             
-            // Check if Local type exists and has items
             const hasLocal = actions.has('Local') && actionCounts['Local'] > 0;
             
-            // Update metrics display (will handle visibility later in updateMetrics)
             if (hasLocal) {
                 metricElements.localMetric.style.display = '';
             } else {
@@ -1909,31 +1824,22 @@
 
         // Build associations between filter values
         function buildFilterAssociations() {
-            // Initialize associations structure
             filterAssociations = {};
             const filterNames = Object.keys(filterValues);
             filterNames.forEach(filterName => {
                 filterAssociations[filterName] = {};
             });
             
-            // Build associations from date-filtered data
             dateFilteredData.forEach(item => {
-                // Process supervisor
                 processAssociation(item, 'supervisor', 'LineSupervisor');
-                
-                // Process product
                 processAssociation(item, 'product', 'Product');
-                
-                // Process variant
                 processAssociation(item, 'variant', 'Variant');
                 
-                // Process batch
                 if (item.BatchNumber !== undefined && item.BatchNumber !== null) {
                     const batchStr = String(item.BatchNumber);
                     processAssociationValue(item, 'batch', batchStr);
                 }
                 
-                // Process parts (array or comma-separated string)
                 if (Array.isArray(item.Parts)) {
                     item.Parts.forEach(part => {
                         if (part && part.trim()) {
@@ -1948,7 +1854,6 @@
                     });
                 }
                 
-                // Process aliases (array or comma-separated string)
                 if (Array.isArray(item.Aliases)) {
                     item.Aliases.forEach(alias => {
                         if (alias && alias.trim()) {
@@ -1963,28 +1868,20 @@
                     });
                 }
             });
-            
-            // Log associations for debugging
-            console.log('Filter associations built:', filterAssociations);
         }
         
-        // Process association for a direct property
         function processAssociation(item, filterName, propertyName) {
             if (item[propertyName]) {
                 processAssociationValue(item, filterName, item[propertyName]);
             }
         }
         
-        // Process association for a specific filter value
         function processAssociationValue(item, filterName, filterValue) {
-            // Skip if value is undefined or null
             if (filterValue === undefined || filterValue === null) return;
             
-            // Initialize association for this value if needed
             if (!filterAssociations[filterName][filterValue]) {
                 filterAssociations[filterName][filterValue] = {};
                 
-                // Initialize associations with other filter types
                 Object.keys(filterValues).forEach(otherFilter => {
                     if (otherFilter !== filterName) {
                         filterAssociations[filterName][filterValue][otherFilter] = new Set();
@@ -1992,29 +1889,22 @@
                 });
             }
             
-            // Link this value to values in other filters
-            
-            // Supervisor
             if (item.LineSupervisor && filterName !== 'supervisor') {
                 filterAssociations[filterName][filterValue].supervisor.add(item.LineSupervisor);
             }
             
-            // Product
             if (item.Product && filterName !== 'product') {
                 filterAssociations[filterName][filterValue].product.add(item.Product);
             }
             
-            // Variant
             if (item.Variant && filterName !== 'variant') {
                 filterAssociations[filterName][filterValue].variant.add(item.Variant);
             }
             
-            // Batch
             if (item.BatchNumber !== undefined && item.BatchNumber !== null && filterName !== 'batch') {
                 filterAssociations[filterName][filterValue].batch.add(String(item.BatchNumber));
             }
             
-            // Parts
             if (filterName !== 'part') {
                 let parts = [];
                 if (Array.isArray(item.Parts)) {
@@ -2030,7 +1920,6 @@
                 });
             }
             
-            // Aliases
             if (filterName !== 'alias') {
                 let aliases = [];
                 if (Array.isArray(item.Aliases)) {
@@ -2049,27 +1938,21 @@
 
         // Calculate available options based on the current date-filtered data
         function calculateAvailableFilterOptions() {
-            // Reset available options
             Object.keys(availableFilterOptions).forEach(key => {
                 availableFilterOptions[key] = new Set();
             });
 
-            // Populate available options from date-filtered data
             dateFilteredData.forEach(item => {
-                // Add supervisor, product, variant data (if they exist)
                 if (item.LineSupervisor) availableFilterOptions.supervisor.add(item.LineSupervisor);
                 if (item.Product) availableFilterOptions.product.add(item.Product);
                 if (item.Variant) availableFilterOptions.variant.add(item.Variant);
                 
-                // Add action selection if it exists
                 if (item.ActionSelection) availableFilterOptions.action.add(item.ActionSelection);
                 
-                // Handle batch number properly (convert to string to ensure consistency)
                 if (item.BatchNumber !== undefined && item.BatchNumber !== null) {
                     availableFilterOptions.batch.add(String(item.BatchNumber));
                 }
                 
-                // Handle parts (which might be arrays)
                 if (Array.isArray(item.Parts)) {
                     item.Parts.forEach(part => {
                         if (part && part.trim()) availableFilterOptions.part.add(part.trim());
@@ -2080,7 +1963,6 @@
                     });
                 }
                 
-                // Handle aliases (which might be arrays)
                 if (Array.isArray(item.Aliases)) {
                     item.Aliases.forEach(alias => {
                         if (alias && alias.trim()) availableFilterOptions.alias.add(alias.trim());
@@ -2091,26 +1973,14 @@
                     });
                 }
             });
-
-            console.log('Available options calculated:', {
-                supervisor: availableFilterOptions.supervisor.size,
-                product: availableFilterOptions.product.size,
-                variant: availableFilterOptions.variant.size,
-                batch: availableFilterOptions.batch.size,
-                part: availableFilterOptions.part.size,
-                alias: availableFilterOptions.alias.size,
-                action: availableFilterOptions.action.size
-            });
         }
 
         // Reset all filters except date
         function resetOtherFilters(skipUpdate = false) {
-            // Reset filter values
             Object.keys(filterValues).forEach(key => {
                 filterValues[key] = [];
             });
             
-            // Reset other selections
             selectedAction = 'All';
             selectedRejectReason = null;
             selectedStation = null;
@@ -2118,7 +1988,6 @@
             top10Elements.batchHeader.style.display = 'none';
             top10Elements.supplierHeader.style.display = 'none';
             
-            // Update active classes in action dropdown
             document.querySelectorAll('#action-dropdown-content .dropdown-item').forEach(item => {
                 item.classList.remove('active');
                 if (item.getAttribute('data-action') === 'All') {
@@ -2126,28 +1995,21 @@
                 }
             });
             
-            // Update header texts
             Object.keys(filterElements.multiSelects).forEach(key => {
                 updateHeaderText(filterElements.multiSelects[key], key);
             });
 
             if (!skipUpdate) {
-                // Set filtered data to date filtered data
                 filteredData = [...dateFilteredData];
                 
-                // Calculate global metrics
                 calculateGlobalDataMetrics();
                 
-                // Update dashboard
                 updateDashboard();
                 
-                // Build filter associations
                 buildFilterAssociations();
                 
-                // Update filter dropdowns
                 populateMultiSelectOptions();
                 
-                // Update action dropdown
                 updateActionDropdown();
             }
         }
@@ -2164,10 +2026,8 @@
             isUpdatingFilters = true;
             
             try {
-                // Clear all selections for this filter
                 filterValues[filterName] = [value];
                 
-                // Update all checkboxes in this filter
                 const multiSelect = filterElements.multiSelects[filterName];
                 const checkboxes = multiSelect.querySelectorAll('input[type="checkbox"]');
                 
@@ -2175,21 +2035,16 @@
                     checkbox.checked = checkbox.value === value;
                 });
                 
-                // Update header text
                 updateHeaderText(multiSelect, filterName);
                 
-                // Get associated values for other filters
                 const associations = filterAssociations[filterName][value];
                 
-                // Update other filter values based on associations
                 if (associations) {
                     Object.keys(filterValues).forEach(otherFilter => {
                         if (otherFilter !== filterName) {
-                            // Update filter values based on associations
                             const associatedValues = Array.from(associations[otherFilter] || []);
                             filterValues[otherFilter] = associatedValues;
                             
-                            // Update checkboxes in the other filter's dropdown
                             const otherMultiSelect = filterElements.multiSelects[otherFilter];
                             const otherCheckboxes = otherMultiSelect.querySelectorAll('input[type="checkbox"]');
                             
@@ -2197,14 +2052,13 @@
                                 checkbox.checked = associatedValues.includes(checkbox.value);
                             });
                             
-                            // Update header text
                             updateHeaderText(otherMultiSelect, otherFilter);
                         }
                     });
                 }
                 
-                // Apply filters
-                applyDetailFilters(filterName, true);
+                // Apply filters and update dropdowns
+                applyDetailFilters(filterName, false);
             } finally {
                 isUpdatingFilters = false;
             }
@@ -2214,31 +2068,25 @@
         function getAvailableOptionsForFilters() {
             const result = {};
             
-            // Start with all options enabled
             Object.keys(availableFilterOptions).forEach(filterName => {
                 result[filterName] = new Set(availableFilterOptions[filterName]);
             });
             
-            // If no filters are selected, return all options
             const hasSelections = Object.values(filterValues).some(values => values.length > 0);
             if (!hasSelections) {
                 return result;
             }
             
-            // For each filter with selections, restrict options in other filters
             Object.keys(filterValues).forEach(filterName => {
                 if (filterValues[filterName].length > 0) {
-                    // Get all associated values for each selected value in this filter
                     const associatedValues = {};
                     
-                    // Initialize associated values
                     Object.keys(filterValues).forEach(otherFilter => {
                         if (otherFilter !== filterName) {
                             associatedValues[otherFilter] = new Set();
                         }
                     });
                     
-                    // Collect all associated values
                     filterValues[filterName].forEach(value => {
                         const associations = filterAssociations[filterName][value];
                         if (associations) {
@@ -2250,9 +2098,7 @@
                         }
                     });
                     
-                    // Restrict options in other filters to only associated values
                     Object.keys(associatedValues).forEach(otherFilter => {
-                        // If the other filter also has selections, we don't restrict it
                         if (filterValues[otherFilter].length === 0) {
                             result[otherFilter] = new Set(associatedValues[otherFilter]);
                         }
@@ -2265,17 +2111,14 @@
 
         // Populate multi-select options based on available options
         function populateMultiSelectOptions() {
-            // Get available options based on current filter state
             const availableOptions = getAvailableOptionsForFilters();
             
-            // Populate each multi-select dropdown
             Object.keys(filterElements.multiSelects).forEach(key => {
                 const multiSelect = filterElements.multiSelects[key];
                 const optionsContainer = multiSelect.querySelector('.multi-select-options');
                 const allValues = [...availableFilterOptions[key]].filter(val => val).sort();
                 const availableValues = new Set(availableOptions[key]);
                 
-                // Clear existing options
                 optionsContainer.innerHTML = '';
                 
                 if (allValues.length === 0) {
@@ -2286,12 +2129,10 @@
                     noOptions.style.color = '#999';
                     optionsContainer.appendChild(noOptions);
                 } else {
-                    // Add options
                     allValues.forEach(value => {
                         const option = document.createElement('div');
                         option.className = 'multi-select-option';
                         
-                        // Check if this value is available based on other filter selections
                         const isAvailable = availableValues.has(value);
                         if (!isAvailable) {
                             option.classList.add('disabled');
@@ -2319,31 +2160,25 @@
                         option.appendChild(onlyBtn);
                         optionsContainer.appendChild(option);
                         
-                        // Add event listener to checkbox
                         checkbox.addEventListener('change', () => {
                             if (isUpdatingFilters) return;
                             
                             if (checkbox.checked) {
-                                // Add to selected values if not already there
                                 if (!filterValues[key].includes(value)) {
                                     filterValues[key].push(value);
                                 }
                             } else {
-                                // Remove from selected values
                                 const index = filterValues[key].indexOf(value);
                                 if (index !== -1) {
                                     filterValues[key].splice(index, 1);
                                 }
                             }
                             
-                            // Update header text
                             updateHeaderText(multiSelect, key);
                             
-                            // Apply filters
                             applyDetailFilters(key);
                         });
                         
-                        // Add event listener to "Only" button
                         onlyBtn.addEventListener('click', (e) => {
                             e.stopPropagation();
                             selectOnlyThisOption(key, value);
@@ -2351,7 +2186,6 @@
                     });
                 }
                 
-                // Update header text
                 updateHeaderText(multiSelect, key);
             });
         }
@@ -2363,28 +2197,22 @@
             isUpdatingFilters = true;
             
             try {
-                // Check if any filter has selections
                 const hasSelections = Object.values(filterValues).some(values => values.length > 0);
                 
-                // If no selections, show all date-filtered data
                 if (!hasSelections) {
                     filteredData = [...dateFilteredData];
                     
-                    // Recalculate global metrics
                     calculateGlobalDataMetrics();
                     
                     updateDashboard();
                     
                     if (!skipPopulate) {
-                        // Update filter dropdowns to reset state
                         populateMultiSelectOptions();
                     }
                     return;
                 }
                 
-                // Apply filters to get data
                 filteredData = dateFilteredData.filter(item => {
-                    // For filters with selections, item must match at least one selected value
                     if (filterValues.supervisor.length > 0 && !filterValues.supervisor.includes(item.LineSupervisor)) {
                         return false;
                     }
@@ -2397,7 +2225,6 @@
                         return false;
                     }
                     
-                    // Check batch filter - convert item.BatchNumber to string for comparison
                     if (filterValues.batch.length > 0) {
                         const batchStr = item.BatchNumber !== undefined && item.BatchNumber !== null 
                             ? String(item.BatchNumber) 
@@ -2408,7 +2235,6 @@
                         }
                     }
                     
-                    // Check part filter
                     if (filterValues.part.length > 0) {
                         let partFound = false;
                         let parts = [];
@@ -2419,13 +2245,11 @@
                             parts = item.Parts.split(',').map(p => p.trim());
                         }
                         
-                        // Check if any selected part is in this item's parts
                         partFound = parts.some(part => part && filterValues.part.includes(part.trim()));
                         
                         if (!partFound) return false;
                     }
                     
-                    // Check alias filter
                     if (filterValues.alias.length > 0) {
                         let aliasFound = false;
                         let aliases = [];
@@ -2436,7 +2260,6 @@
                             aliases = item.Aliases.split(',').map(a => a.trim());
                         }
                         
-                        // Check if any selected alias is in this item's aliases
                         aliasFound = aliases.some(alias => alias && filterValues.alias.includes(alias.trim()));
                         
                         if (!aliasFound) return false;
@@ -2445,18 +2268,14 @@
                     return true;
                 });
                 
-                // Recalculate global metrics
                 calculateGlobalDataMetrics();
                 
-                // Update dashboard with filtered data
                 updateDashboard();
                 
-                // Update reject reason and station filters
                 updateRejectReasonMenu();
                 updateStationMenu();
                 
                 if (!skipPopulate) {
-                    // Update filter dropdowns based on current selections
                     populateMultiSelectOptions();
                 }
             } finally {
@@ -2466,13 +2285,8 @@
 
         // Update dashboard with current filtered data
         function updateDashboard() {
-            // Update metrics
             updateMetrics();
-            
-            // Update Top 10 table
             updateTop10Table();
-            
-            // Update charts
             createRejectReasonsChart();
             createDailyTrendChart();
             createTopProblemsChart();
@@ -2483,25 +2297,20 @@
         function updateMetrics() {
             let dataToUse = filteredData;
             
-            // Apply action filter if selected
             if (selectedAction !== 'All') {
                 dataToUse = dataToUse.filter(item => item.ActionSelection === selectedAction);
             }
             
-            // Apply reject reason filter if selected
             if (selectedRejectReason !== null) {
                 dataToUse = dataToUse.filter(item => item.RejectReason === selectedRejectReason);
             }
             
-            // Apply station filter if selected
             if (selectedStation !== null) {
                 dataToUse = dataToUse.filter(item => item.Station === selectedStation);
             }
             
-            // Calculate total cost and counts
             const totalCost = dataToUse.reduce((sum, item) => sum + (item.Cost || 0), 0);
             
-            // Calculate counts by action type
             const scrapCount = dataToUse.filter(item => item.ActionSelection === 'Scrap')
                 .reduce((sum, item) => sum + (item.QTY || 0), 0);
             
@@ -2513,17 +2322,14 @@
             
             const totalQty = dataToUse.reduce((sum, item) => sum + (item.QTY || 0), 0);
             
-            // Calculate percentages
             const scrapPercent = totalQty > 0 ? Math.round((scrapCount / totalQty) * 100) : 0;
             const rtsPercent = totalQty > 0 ? Math.round((rtsCount / totalQty) * 100) : 0;
             const localPercent = totalQty > 0 ? Math.round((localCount / totalQty) * 100) : 0;
             
-            // Count single parts vs assemblies
             let singlePartsCount = 0;
             let assembliesCount = 0;
             
             dataToUse.forEach(item => {
-                // Get parts as array
                 let parts = [];
                 if (Array.isArray(item.Parts)) {
                     parts = item.Parts.filter(p => p && p.trim());
@@ -2533,7 +2339,6 @@
                         .filter(p => p);
                 }
                 
-                // Count based on number of parts
                 if (parts.length <= 1) {
                     singlePartsCount += (item.QTY || 0);
                 } else {
@@ -2541,18 +2346,15 @@
                 }
             });
             
-            // Update the display
             metricElements.totalCost.textContent = `R${totalCost.toFixed(2)}`;
             metricElements.scrapPercent.textContent = `${scrapPercent}%`;
             metricElements.rtsPercent.textContent = `${rtsPercent}%`;
             metricElements.localPercent.textContent = `${localPercent}%`;
             
-            // Show/hide metrics based on percentages
             metricElements.scrapMetric.style.display = scrapPercent > 0 ? '' : 'none';
             metricElements.rtsMetric.style.display = rtsPercent > 0 ? '' : 'none';
             metricElements.localMetric.style.display = localPercent > 0 ? '' : 'none';
             
-            // Update parts counts
             metricElements.singlePartsCount.textContent = singlePartsCount;
             metricElements.assembliesCount.textContent = assembliesCount;
         }
@@ -2561,7 +2363,6 @@
         function updateTop10Table() {
             top10Elements.tableBody.innerHTML = '';
             
-            // Show/hide batch number & supplier columns based on action selection
             if (selectedAction === 'RTS' || selectedAction === 'Local') {
                 top10Elements.batchHeader.style.display = '';
                 top10Elements.supplierHeader.style.display = '';
@@ -2572,17 +2373,14 @@
             
             let dataToUse = filteredData;
             
-            // Apply action filter if selected
             if (selectedAction !== 'All') {
                 dataToUse = dataToUse.filter(item => item.ActionSelection === selectedAction);
             }
             
-            // Apply reject reason filter if selected
             if (selectedRejectReason !== null) {
                 dataToUse = dataToUse.filter(item => item.RejectReason === selectedRejectReason);
             }
             
-            // Apply station filter if selected
             if (selectedStation !== null) {
                 dataToUse = dataToUse.filter(item => item.Station === selectedStation);
             }
@@ -2595,14 +2393,12 @@
                 return;
             }
             
-            // Group data by reject reason and station
             const groupedData = {};
             
             dataToUse.forEach(item => {
                 const key = `${item.Station || 'Unknown'}-${item.RejectReason || 'Unknown'}`;
                 
                 if (!groupedData[key]) {
-                    // Get parts as array
                     let parts = [];
                     if (Array.isArray(item.Parts)) {
                         parts = item.Parts.filter(p => p);
@@ -2623,10 +2419,8 @@
                         cost: 0
                     };
                 } else {
-                    // Add item to group
                     groupedData[key].items.push(item);
                     
-                    // Add parts to the set
                     let parts = [];
                     if (Array.isArray(item.Parts)) {
                         parts = item.Parts.filter(p => p);
@@ -2645,7 +2439,6 @@
                 groupedData[key].cost += (item.Cost || 0);
             });
             
-            // Convert to array and sort
             let top10Data = Object.values(groupedData);
             
             if (sortTop10By === 'qty') {
@@ -2654,23 +2447,18 @@
                 top10Data.sort((a, b) => b.cost - a.cost);
             }
             
-            // Get top 10
             top10Data = top10Data.slice(0, 10);
             
-            // Create table rows
             top10Data.forEach(item => {
                 const row = document.createElement('tr');
                 
-                // Convert parts set to comma-separated string
                 const partsString = Array.from(item.parts).join(', ');
                 
-                // Create cells based on action selection
                 let cells = `
                     <td title="${item.station}">${item.station}</td>
                     <td class="truncated" title="${partsString}">${partsString}</td>
                 `;
                 
-                // Add batch number and supplier if showing RTS or Local items
                 if (selectedAction === 'RTS' || selectedAction === 'Local') {
                     const batchNumber = item.batchNumber !== undefined && item.batchNumber !== null ? item.batchNumber : '';
                     cells += `
@@ -2679,7 +2467,6 @@
                     `;
                 }
                 
-                // Add remaining columns
                 cells += `
                     <td title="${item.rejectReason}">${item.rejectReason}</td>
                     <td>${item.qty}</td>
@@ -2697,17 +2484,14 @@
             
             let dataToUse = filteredData;
             
-            // Apply action filter if selected
             if (selectedAction !== 'All') {
                 dataToUse = dataToUse.filter(item => item.ActionSelection === selectedAction);
             }
             
-            // Apply reject reason filter if selected
             if (selectedRejectReason !== null) {
                 dataToUse = dataToUse.filter(item => item.RejectReason === selectedRejectReason);
             }
             
-            // Apply station filter if selected
             if (selectedStation !== null) {
                 dataToUse = dataToUse.filter(item => item.Station === selectedStation);
             }
@@ -2717,7 +2501,6 @@
                 return;
             }
 
-            // Group data by reject reason
             const reasonCounts = {};
             dataToUse.forEach(item => {
                 const reason = item.RejectReason || 'Unknown';
@@ -2731,17 +2514,14 @@
                 reasonCounts[reason].cost += (item.Cost || 0);
             });
 
-            // Sort by the selected sort type
             const sortedReasons = Object.keys(reasonCounts).sort((a, b) => 
                 sortTop10By === 'qty' 
                     ? reasonCounts[b].count - reasonCounts[a].count 
                     : reasonCounts[b].cost - reasonCounts[a].cost
             );
 
-            // Limit to top 3 reasons
             const topReasons = sortedReasons.slice(0, 3);
 
-            // Create SVG for horizontal bar chart
             const margin = { top: 10, right: 80, bottom: 20, left: 120 };
             const width = container.clientWidth - margin.left - margin.right;
             const height = container.clientHeight - margin.top - margin.bottom;
@@ -2757,7 +2537,6 @@
             g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
             svg.appendChild(g);
 
-            // Calculate scales
             const barHeight = Math.min(30, (height / topReasons.length) * 0.8);
             const y = topReasons.map((_, i) => i * (height / topReasons.length) + barHeight);
             
@@ -2765,7 +2544,6 @@
             const maxValue = Math.max(...topReasons.map(r => reasonCounts[r][metric]));
             const x = (value) => width * (value / maxValue);
 
-            // Create bars
             topReasons.forEach((reason, i) => {
                 const value = reasonCounts[reason][metric];
                 const barWidth = x(value);
@@ -2778,7 +2556,6 @@
                 bar.setAttribute('fill', colors[i % colors.length]);
                 bar.classList.add('horizontal-bar');
                 
-                // Add tooltip on hover
                 bar.addEventListener('mouseover', (e) => {
                     const tooltip = document.createElement('div');
                     tooltip.className = 'tooltip';
@@ -2809,7 +2586,6 @@
                 
                 g.appendChild(bar);
                 
-                // Add label to the left of bar
                 const nameLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                 nameLabel.setAttribute('x', -5);
                 nameLabel.setAttribute('y', y[i] - barHeight/2);
@@ -2819,13 +2595,11 @@
                 nameLabel.classList.add('horizontal-bar-label');
                 g.appendChild(nameLabel);
                 
-                // Add value to the right of bar
                 const valueLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                 valueLabel.setAttribute('x', barWidth + 5);
                 valueLabel.setAttribute('y', y[i] - barHeight/2);
                 valueLabel.setAttribute('dominant-baseline', 'middle');
                 
-                // Format value based on type
                 const valueText = sortTop10By === 'qty' 
                     ? value
                     : 'R' + value.toFixed(0);
@@ -2836,23 +2610,20 @@
             });
         }
 
-        // Create top problems chart
-        function createTopProblemsChart() {
-            const container = chartContainers.parts;
+        // Create daily trend chart with box plot
+        function createDailyTrendChart() {
+            const container = chartContainers.trend;
             
             let dataToUse = filteredData;
             
-            // Apply action filter if selected
             if (selectedAction !== 'All') {
                 dataToUse = dataToUse.filter(item => item.ActionSelection === selectedAction);
             }
             
-            // Apply reject reason filter if selected
             if (selectedRejectReason !== null) {
                 dataToUse = dataToUse.filter(item => item.RejectReason === selectedRejectReason);
             }
             
-            // Apply station filter if selected
             if (selectedStation !== null) {
                 dataToUse = dataToUse.filter(item => item.Station === selectedStation);
             }
@@ -2862,11 +2633,193 @@
                 return;
             }
 
-            // Get all parts with their frequency
+            // Group data by date
+            const dailyData = {};
+            dataToUse.forEach(item => {
+                const date = item.ProductionDate || 'Unknown';
+                if (!dailyData[date]) {
+                    dailyData[date] = { qty: 0, cost: 0 };
+                }
+                dailyData[date].qty += (item.QTY || 0);
+                dailyData[date].cost += (item.Cost || 0);
+            });
+
+            const dates = Object.keys(dailyData).sort();
+            const metric = sortTop10By === 'qty' ? 'qty' : 'cost';
+            const values = dates.map(date => dailyData[date][metric]);
+
+            // Define chart dimensions with increased margins to prevent overlap
+            const margin = { top: 40, right: 50, bottom: 40, left: 50 };
+            const width = container.clientWidth - margin.left - margin.right;
+            const height = container.clientHeight - margin.top - margin.bottom;
+
+            // Clear existing content
+            container.innerHTML = '';
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', '100%');
+            svg.setAttribute('height', '100%');
+            svg.setAttribute('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
+            container.appendChild(svg);
+
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
+            svg.appendChild(g);
+
+            // Scales
+            const xScale = (index) => (index * width) / (dates.length - 1 || 1);
+            const yMax = Math.max(
+                Math.max(...values, 0),
+                globalDataMetrics.max
+            ) * 1.2; // Add padding to top
+            const yScale = (value) => height - (value / yMax) * height;
+
+            // Draw daily data points
+            dates.forEach((date, i) => {
+                const value = dailyData[date][metric];
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', xScale(i));
+                circle.setAttribute('cy', yScale(value));
+                circle.setAttribute('r', 4);
+                circle.setAttribute('fill', '#3498db');
+                circle.classList.add('date-marker');
+
+                circle.addEventListener('mouseover', (e) => {
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'tooltip';
+                    tooltip.innerHTML = `
+                        <strong>${formatDate(date)}</strong><br>
+                        ${sortTop10By === 'qty' ? 'Qty' : 'Cost'}: ${sortTop10By === 'qty' ? value : 'R' + value.toFixed(2)}
+                    `;
+                    tooltip.style.left = `${e.pageX + 10}px`;
+                    tooltip.style.top = `${e.pageY - 30}px`;
+                    document.body.appendChild(tooltip);
+                });
+
+                circle.addEventListener('mousemove', (e) => {
+                    const tooltip = document.querySelector('.tooltip');
+                    if (tooltip) {
+                        tooltip.style.left = `${e.pageX + 10}px`;
+                        tooltip.style.top = `${e.pageY - 30}px`;
+                    }
+                });
+
+                circle.addEventListener('mouseout', () => {
+                    const tooltip = document.querySelector('.tooltip');
+                    if (tooltip) tooltip.remove();
+                });
+
+                g.appendChild(circle);
+            });
+
+            // Draw box plot on the right side with sufficient spacing
+            const boxWidth = 40;
+            const boxX = width - boxWidth - 20; // Offset from right edge to prevent overlap
+
+            // Whiskers
+            const whiskerTop = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            whiskerTop.setAttribute('x1', boxX + boxWidth / 2);
+            whiskerTop.setAttribute('y1', yScale(globalDataMetrics.max));
+            whiskerTop.setAttribute('x2', boxX + boxWidth / 2);
+            whiskerTop.setAttribute('y2', yScale(globalDataMetrics.q3));
+            whiskerTop.classList.add('whisker-line');
+            g.appendChild(whiskerTop);
+
+            const whiskerBottom = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            whiskerBottom.setAttribute('x1', boxX + boxWidth / 2);
+            whiskerBottom.setAttribute('y1', yScale(globalDataMetrics.q1));
+            whiskerBottom.setAttribute('x2', boxX + boxWidth / 2);
+            whiskerBottom.setAttribute('y2', yScale(globalDataMetrics.min));
+            whiskerBottom.classList.add('whisker-line');
+            g.appendChild(whiskerBottom);
+
+            // Box
+            const box = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            box.setAttribute('x', boxX);
+            box.setAttribute('y', yScale(globalDataMetrics.q3));
+            box.setAttribute('width', boxWidth);
+            box.setAttribute('height', yScale(globalDataMetrics.q1) - yScale(globalDataMetrics.q3));
+            box.classList.add('box-plot');
+            g.appendChild(box);
+
+            // Median line
+            const medianLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            medianLine.setAttribute('x1', boxX);
+            medianLine.setAttribute('y1', yScale(globalDataMetrics.median));
+            medianLine.setAttribute('x2', boxX + boxWidth);
+            medianLine.setAttribute('y2', yScale(globalDataMetrics.median));
+            medianLine.classList.add('median-line');
+            g.appendChild(medianLine);
+
+            // Labels for box plot with adjusted positions to avoid overlap
+            const labels = [
+                { value: globalDataMetrics.max, text: 'Max' },
+                { value: globalDataMetrics.q3, text: 'Q3' },
+                { value: globalDataMetrics.median, text: 'Median' },
+                { value: globalDataMetrics.q1, text: 'Q1' },
+                { value: globalDataMetrics.min, text: 'Min' }
+            ];
+
+            labels.forEach((label, i) => {
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', boxX + boxWidth + 5); // Position to the right of box
+                text.setAttribute('y', yScale(label.value) + (i % 2 === 0 ? -5 : 10)); // Offset to prevent overlap
+                text.setAttribute('text-anchor', 'start');
+                text.textContent = `${label.text}: ${sortTop10By === 'qty' ? label.value : 'R' + label.value.toFixed(2)}`;
+                text.classList.add('box-plot-label');
+                g.appendChild(text);
+            });
+
+            // X-axis
+            dates.forEach((date, i) => {
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', xScale(i));
+                text.setAttribute('y', height + 15);
+                text.setAttribute('text-anchor', 'middle');
+                text.textContent = formatDate(date).split(' ')[1]; // Short date
+                text.classList.add('axis');
+                g.appendChild(text);
+            });
+
+            // Y-axis
+            const yTicks = [0, yMax / 2, yMax];
+            yTicks.forEach(tick => {
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', -5);
+                text.setAttribute('y', yScale(tick));
+                text.setAttribute('text-anchor', 'end');
+                text.setAttribute('dominant-baseline', 'middle');
+                text.textContent = sortTop10By === 'qty' ? tick.toFixed(0) : `R${tick.toFixed(0)}`;
+                text.classList.add('axis');
+                g.appendChild(text);
+            });
+        }
+
+        // Create top problems chart
+        function createTopProblemsChart() {
+            const container = chartContainers.parts;
+            
+            let dataToUse = filteredData;
+            
+            if (selectedAction !== 'All') {
+                dataToUse = dataToUse.filter(item => item.ActionSelection === selectedAction);
+            }
+            
+            if (selectedRejectReason !== null) {
+                dataToUse = dataToUse.filter(item => item.RejectReason === selectedRejectReason);
+            }
+            
+            if (selectedStation !== null) {
+                dataToUse = dataToUse.filter(item => item.Station === selectedStation);
+            }
+            
+            if (dataToUse.length === 0) {
+                container.innerHTML = '<div class="no-data">No data available</div>';
+                return;
+            }
+
             const partCounts = {};
             
             dataToUse.forEach(item => {
-                // Get parts from the item (might be array or string)
                 let parts = [];
                 if (Array.isArray(item.Parts)) {
                     parts = item.Parts;
@@ -2874,7 +2827,6 @@
                     parts = item.Parts.split(',').map(p => p.trim());
                 }
                 
-                // Count each part
                 parts.forEach(part => {
                     if (!part) return;
                     if (!partCounts[part]) {
@@ -2884,24 +2836,19 @@
                         };
                     }
                     partCounts[part].count += (item.QTY || 0);
-                    
-                    // Distribute cost evenly among parts
                     const partCount = parts.length || 1;
                     partCounts[part].cost += ((item.Cost || 0) / partCount);
                 });
             });
 
-            // Sort by the selected sort type
             const sortedParts = Object.keys(partCounts).sort((a, b) => 
                 sortTop10By === 'qty' 
                     ? partCounts[b].count - partCounts[a].count 
                     : partCounts[b].cost - partCounts[a].cost
             );
 
-            // Get top 3
             const topParts = sortedParts.slice(0, 3);
 
-            // Create SVG for horizontal bar chart
             const margin = { top: 10, right: 80, bottom: 20, left: 120 };
             const width = container.clientWidth - margin.left - margin.right;
             const height = container.clientHeight - margin.top - margin.bottom;
@@ -2917,7 +2864,6 @@
             g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
             svg.appendChild(g);
 
-            // Calculate scales
             const barHeight = Math.min(30, (height / topParts.length) * 0.8);
             const y = topParts.map((_, i) => i * (height / topParts.length) + barHeight);
             
@@ -2925,7 +2871,6 @@
             const maxValue = Math.max(...topParts.map(p => partCounts[p][metric]));
             const x = (value) => width * (value / maxValue);
 
-            // Create bars
             topParts.forEach((part, i) => {
                 const value = partCounts[part][metric];
                 const barWidth = x(value);
@@ -2938,7 +2883,6 @@
                 bar.setAttribute('fill', colors[i % colors.length]);
                 bar.classList.add('horizontal-bar');
                 
-                // Add tooltip on hover
                 bar.addEventListener('mouseover', (e) => {
                     const tooltip = document.createElement('div');
                     tooltip.className = 'tooltip';
@@ -2969,7 +2913,6 @@
                 
                 g.appendChild(bar);
                 
-                // Add label to the left of bar
                 const nameLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                 nameLabel.setAttribute('x', -5);
                 nameLabel.setAttribute('y', y[i] - barHeight/2);
@@ -2979,13 +2922,11 @@
                 nameLabel.classList.add('horizontal-bar-label');
                 g.appendChild(nameLabel);
                 
-                // Add value to the right of bar
                 const valueLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                 valueLabel.setAttribute('x', barWidth + 5);
                 valueLabel.setAttribute('y', y[i] - barHeight/2);
                 valueLabel.setAttribute('dominant-baseline', 'middle');
                 
-                // Format value based on type
                 const valueText = sortTop10By === 'qty' 
                     ? value
                     : 'R' + value.toFixed(0);
@@ -3002,17 +2943,14 @@
             
             let dataToUse = filteredData;
             
-            // Apply action filter if selected
             if (selectedAction !== 'All') {
                 dataToUse = dataToUse.filter(item => item.ActionSelection === selectedAction);
             }
             
-            // Apply reject reason filter if selected
             if (selectedRejectReason !== null) {
                 dataToUse = dataToUse.filter(item => item.RejectReason === selectedRejectReason);
             }
             
-            // Apply station filter if selected
             if (selectedStation !== null) {
                 dataToUse = dataToUse.filter(item => item.Station === selectedStation);
             }
@@ -3022,7 +2960,6 @@
                 return;
             }
 
-            // Group data by station
             const stationData = {};
             dataToUse.forEach(item => {
                 const station = item["Station"] || 'Unknown';
@@ -3036,17 +2973,14 @@
                 stationData[station].cost += (item.Cost || 0);
             });
 
-            // Sort by the selected sort type
             const sortedStations = Object.keys(stationData).sort((a, b) => 
                 sortTop10By === 'qty' 
                     ? stationData[b].count - stationData[a].count 
                     : stationData[b].cost - stationData[a].cost
             );
 
-            // Get top 3
             const topStations = sortedStations.slice(0, 3);
 
-            // Create SVG for horizontal bar chart
             const margin = { top: 10, right: 80, bottom: 20, left: 120 };
             const width = container.clientWidth - margin.left - margin.right;
             const height = container.clientHeight - margin.top - margin.bottom;
@@ -3062,7 +2996,6 @@
             g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
             svg.appendChild(g);
 
-            // Calculate scales
             const barHeight = Math.min(30, (height / topStations.length) * 0.8);
             const y = topStations.map((_, i) => i * (height / topStations.length) + barHeight);
             
@@ -3070,7 +3003,6 @@
             const maxValue = Math.max(...topStations.map(s => stationData[s][metric]));
             const x = (value) => width * (value / maxValue);
 
-            // Create bars
             topStations.forEach((station, i) => {
                 const value = stationData[station][metric];
                 const barWidth = x(value);
@@ -3083,7 +3015,6 @@
                 bar.setAttribute('fill', colors[i % colors.length]);
                 bar.classList.add('horizontal-bar');
                 
-                // Add tooltip on hover
                 bar.addEventListener('mouseover', (e) => {
                     const tooltip = document.createElement('div');
                     tooltip.className = 'tooltip';
@@ -3114,7 +3045,6 @@
                 
                 g.appendChild(bar);
                 
-                // Add label to the left of bar
                 const nameLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                 nameLabel.setAttribute('x', -5);
                 nameLabel.setAttribute('y', y[i] - barHeight/2);
@@ -3124,13 +3054,11 @@
                 nameLabel.classList.add('horizontal-bar-label');
                 g.appendChild(nameLabel);
                 
-                // Add value to the right of bar
                 const valueLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                 valueLabel.setAttribute('x', barWidth + 5);
                 valueLabel.setAttribute('y', y[i] - barHeight/2);
                 valueLabel.setAttribute('dominant-baseline', 'middle');
                 
-                // Format value based on type
                 const valueText = sortTop10By === 'qty' 
                     ? value
                     : 'R' + value.toFixed(0);
@@ -3139,7 +3067,7 @@
                 valueLabel.classList.add('horizontal-bar-label');
                 g.appendChild(valueLabel);
             });
-
-            </script>
+        }
+    </script>
 </body>
 </html>
