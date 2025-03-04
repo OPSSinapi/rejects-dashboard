@@ -13,6 +13,39 @@
             font-family: Arial, Helvetica, sans-serif;
         }
 
+        // Helper function to format date for display
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+        }
+
+        // Helper function to format date for date input elements
+        function formatDateForInput(date) {
+            if (!date || !(date instanceof Date)) return '';
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // Initialize the dashboard when the page loads
+        window.addEventListener('load', initDashboard);
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (filteredData.length > 0) {
+                createRejectReasonsChart();
+                createDailyTrendChart();
+                createTopProblemsChart();
+                createStationCostChart();
+            }
+        });
+
         body {
             background-color: #f5f5f5;
             color: #333;
@@ -713,6 +746,12 @@
             position: relative;
             cursor: pointer;
         }
+        
+        /* Box plot label */
+        .box-plot-label {
+            font-size: 8px;
+            fill: #333;
+        }
     </style>
 </head>
 <body>
@@ -1128,9 +1167,6 @@
                 return;
             }
 
-            // Calculate global data metrics
-            calculateGlobalDataMetrics();
-
             // Initialize multi-select dropdowns
             initMultiSelectDropdowns();
 
@@ -1153,6 +1189,11 @@
                 sortTop10By = 'qty';
                 top10Elements.sortByQty.classList.add('active');
                 top10Elements.sortByCost.classList.remove('active');
+                
+                // Recalculate global metrics with new sort type
+                calculateGlobalDataMetrics();
+                
+                // Update all views
                 updateTop10Table();
                 updateRejectReasonMenu();
                 updateStationMenu();
@@ -1166,6 +1207,11 @@
                 sortTop10By = 'cost';
                 top10Elements.sortByCost.classList.add('active');
                 top10Elements.sortByQty.classList.remove('active');
+                
+                // Recalculate global metrics with new sort type
+                calculateGlobalDataMetrics();
+                
+                // Update all views
                 updateTop10Table();
                 updateRejectReasonMenu();
                 updateStationMenu();
@@ -1196,11 +1242,19 @@
 
         // Calculate global data metrics for box and whisker plot
         function calculateGlobalDataMetrics() {
-            if (allData.length === 0) return;
+            // Filter data based on current filters EXCEPT date range
+            let dataForMetrics = getGlobalMetricsData();
+            
+            if (dataForMetrics.length === 0) {
+                globalDataMetrics = {
+                    min: 0, max: 0, median: 0, q1: 0, q3: 0
+                };
+                return;
+            }
             
             // Group data by date
             const dateGroups = {};
-            allData.forEach(item => {
+            dataForMetrics.forEach(item => {
                 const date = item.ProductionDate;
                 if (!dateGroups[date]) {
                     dateGroups[date] = {
@@ -1217,18 +1271,28 @@
                 sortTop10By === 'qty' ? g.count : g.cost
             ).sort((a, b) => a - b);
             
+            // Filter out zero values
+            const nonZeroValues = metricValues.filter(val => val > 0);
+            
+            if (nonZeroValues.length === 0) {
+                globalDataMetrics = {
+                    min: 0, max: 0, median: 0, q1: 0, q3: 0
+                };
+                return;
+            }
+            
             // Calculate metrics
-            const min = metricValues[0] || 0;
-            const max = metricValues[metricValues.length - 1] || 0;
+            const min = nonZeroValues[0] || 0;
+            const max = nonZeroValues[nonZeroValues.length - 1] || 0;
             
             // Calculate quartiles
-            const q1Index = Math.floor(metricValues.length * 0.25);
-            const medianIndex = Math.floor(metricValues.length * 0.5);
-            const q3Index = Math.floor(metricValues.length * 0.75);
+            const q1Index = Math.floor(nonZeroValues.length * 0.25);
+            const medianIndex = Math.floor(nonZeroValues.length * 0.5);
+            const q3Index = Math.floor(nonZeroValues.length * 0.75);
             
-            const q1 = metricValues[q1Index] || 0;
-            const median = metricValues[medianIndex] || 0;
-            const q3 = metricValues[q3Index] || 0;
+            const q1 = nonZeroValues[q1Index] || 0;
+            const median = nonZeroValues[medianIndex] || 0;
+            const q3 = nonZeroValues[q3Index] || 0;
             
             globalDataMetrics = {
                 min,
@@ -1239,6 +1303,95 @@
             };
             
             console.log('Global data metrics:', globalDataMetrics);
+        }
+        
+        // Get data for global metrics calculation (applies all filters except date range)
+        function getGlobalMetricsData() {
+            // Start with all data
+            let result = allData;
+            
+            // Apply action filter if selected
+            if (selectedAction !== 'All') {
+                result = result.filter(item => item.ActionSelection === selectedAction);
+            }
+            
+            // Apply reject reason filter if selected
+            if (selectedRejectReason !== null) {
+                result = result.filter(item => item.RejectReason === selectedRejectReason);
+            }
+            
+            // Apply station filter if selected
+            if (selectedStation !== null) {
+                result = result.filter(item => item.Station === selectedStation);
+            }
+            
+            // Apply multi-select filters
+            const hasSelections = Object.values(filterValues).some(values => values.length > 0);
+            if (hasSelections) {
+                result = result.filter(item => {
+                    // For filters with selections, item must match at least one selected value
+                    if (filterValues.supervisor.length > 0 && !filterValues.supervisor.includes(item.LineSupervisor)) {
+                        return false;
+                    }
+                    
+                    if (filterValues.product.length > 0 && !filterValues.product.includes(item.Product)) {
+                        return false;
+                    }
+                    
+                    if (filterValues.variant.length > 0 && !filterValues.variant.includes(item.Variant)) {
+                        return false;
+                    }
+                    
+                    // Check batch filter
+                    if (filterValues.batch.length > 0) {
+                        const batchStr = item.BatchNumber !== undefined && item.BatchNumber !== null 
+                            ? String(item.BatchNumber) 
+                            : '';
+                        
+                        if (!filterValues.batch.includes(batchStr)) {
+                            return false;
+                        }
+                    }
+                    
+                    // Check part filter
+                    if (filterValues.part.length > 0) {
+                        let partFound = false;
+                        let parts = [];
+                        
+                        if (Array.isArray(item.Parts)) {
+                            parts = item.Parts;
+                        } else if (typeof item.Parts === 'string') {
+                            parts = item.Parts.split(',').map(p => p.trim());
+                        }
+                        
+                        // Check if any selected part is in this item's parts
+                        partFound = parts.some(part => part && filterValues.part.includes(part.trim()));
+                        
+                        if (!partFound) return false;
+                    }
+                    
+                    // Check alias filter
+                    if (filterValues.alias.length > 0) {
+                        let aliasFound = false;
+                        let aliases = [];
+                        
+                        if (Array.isArray(item.Aliases)) {
+                            aliases = item.Aliases;
+                        } else if (typeof item.Aliases === 'string') {
+                            aliases = item.Aliases.split(',').map(a => a.trim());
+                        }
+                        
+                        // Check if any selected alias is in this item's aliases
+                        aliasFound = aliases.some(alias => alias && filterValues.alias.includes(alias.trim()));
+                        
+                        if (!aliasFound) return false;
+                    }
+                    
+                    return true;
+                });
+            }
+            
+            return result;
         }
 
         // Initialize action dropdown
@@ -1274,6 +1427,9 @@
                             top10Elements.batchHeader.style.display = 'none';
                             top10Elements.supplierHeader.style.display = 'none';
                         }
+                        
+                        // Recalculate global metrics
+                        calculateGlobalDataMetrics();
                         
                         // Update the table and charts
                         updateTop10Table();
@@ -1320,6 +1476,10 @@
             allOption.textContent = 'All Reasons';
             allOption.addEventListener('click', () => {
                 selectedRejectReason = null;
+                
+                // Recalculate global metrics
+                calculateGlobalDataMetrics();
+                
                 updateTop10Table();
                 menu.classList.remove('active');
                 updateDashboardWithActionFilter();
@@ -1365,6 +1525,10 @@
                 option.textContent = reason;
                 option.addEventListener('click', () => {
                     selectedRejectReason = reason;
+                    
+                    // Recalculate global metrics
+                    calculateGlobalDataMetrics();
+                    
                     updateTop10Table();
                     menu.classList.remove('active');
                     updateDashboardWithActionFilter();
@@ -1384,6 +1548,10 @@
             allOption.textContent = 'All Stations';
             allOption.addEventListener('click', () => {
                 selectedStation = null;
+                
+                // Recalculate global metrics
+                calculateGlobalDataMetrics();
+                
                 updateTop10Table();
                 menu.classList.remove('active');
                 updateDashboardWithActionFilter();
@@ -1434,6 +1602,10 @@
                 option.textContent = station;
                 option.addEventListener('click', () => {
                     selectedStation = station;
+                    
+                    // Recalculate global metrics
+                    calculateGlobalDataMetrics();
+                    
                     updateTop10Table();
                     menu.classList.remove('active');
                     updateDashboardWithActionFilter();
@@ -1669,6 +1841,9 @@
             
             // Set filtered data to date filtered data initially
             filteredData = [...dateFilteredData];
+            
+            // Calculate global metrics
+            calculateGlobalDataMetrics();
             
             // Update dashboard
             updateDashboard();
@@ -1960,6 +2135,9 @@
                 // Set filtered data to date filtered data
                 filteredData = [...dateFilteredData];
                 
+                // Calculate global metrics
+                calculateGlobalDataMetrics();
+                
                 // Update dashboard
                 updateDashboard();
                 
@@ -2191,6 +2369,10 @@
                 // If no selections, show all date-filtered data
                 if (!hasSelections) {
                     filteredData = [...dateFilteredData];
+                    
+                    // Recalculate global metrics
+                    calculateGlobalDataMetrics();
+                    
                     updateDashboard();
                     
                     if (!skipPopulate) {
@@ -2262,6 +2444,9 @@
                     
                     return true;
                 });
+                
+                // Recalculate global metrics
+                calculateGlobalDataMetrics();
                 
                 // Update dashboard with filtered data
                 updateDashboard();
@@ -2954,307 +3139,3 @@
                 valueLabel.classList.add('horizontal-bar-label');
                 g.appendChild(valueLabel);
             });
-        }
-
-        // Create daily trend chart with box and whisker plot
-        function createDailyTrendChart() {
-            const container = chartContainers.trend;
-            
-            let dataToUse = filteredData;
-            
-            // Apply action filter if selected
-            if (selectedAction !== 'All') {
-                dataToUse = dataToUse.filter(item => item.ActionSelection === selectedAction);
-            }
-            
-            // Apply reject reason filter if selected
-            if (selectedRejectReason !== null) {
-                dataToUse = dataToUse.filter(item => item.RejectReason === selectedRejectReason);
-            }
-            
-            // Apply station filter if selected
-            if (selectedStation !== null) {
-                dataToUse = dataToUse.filter(item => item.Station === selectedStation);
-            }
-            
-            if (dataToUse.length === 0) {
-                container.innerHTML = '<div class="no-data">No data available</div>';
-                return;
-            }
-
-            // Group data by date
-            const dateGroups = {};
-            dataToUse.forEach(item => {
-                const date = item.ProductionDate;
-                if (!dateGroups[date]) {
-                    dateGroups[date] = {
-                        count: 0,
-                        cost: 0
-                    };
-                }
-                dateGroups[date].count += (item.QTY || 0);
-                dateGroups[date].cost += (item.Cost || 0);
-            });
-
-            // Get date range from filter
-            const dateFrom = filterElements.dateFrom.value ? new Date(filterElements.dateFrom.value) : null;
-            const dateTo = filterElements.dateTo.value ? new Date(filterElements.dateTo.value) : null;
-            
-            // Get all dates in the filter range
-            const datesInRange = [];
-            if (dateFrom && dateTo) {
-                const currentDate = new Date(dateFrom);
-                while (currentDate <= dateTo) {
-                    datesInRange.push(formatDateForInput(currentDate));
-                    currentDate.setDate(currentDate.getDate() + 1);
-                }
-            }
-
-            // Create SVG for horizontal box and whisker plot
-            const margin = { top: 30, right: 40, bottom: 50, left: 60 };
-            const width = container.clientWidth - margin.left - margin.right;
-            const height = container.clientHeight - margin.top - margin.bottom;
-
-            container.innerHTML = '';
-            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            svg.setAttribute('width', '100%');
-            svg.setAttribute('height', '100%');
-            svg.setAttribute('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
-            container.appendChild(svg);
-
-            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-            g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
-            svg.appendChild(g);
-            
-            // Get the metric we're using based on sort selection
-            const metric = sortTop10By === 'qty' ? 'count' : 'cost';
-            
-            // Use global metrics for box plot (from all data, not just filtered)
-            const { min, max, median, q1, q3 } = globalDataMetrics;
-            
-            // Calculate x-scale for horizontal box plot
-            const xScale = (value) => width * (value - min) / (max - min || 1);
-            
-            // BOX PLOT IS NOW HORIZONTAL - MAJOR CHANGE
-            const boxHeight = height * 0.5;
-            const boxTop = (height - boxHeight) / 2;
-            const boxBottom = boxTop + boxHeight;
-            
-            // Add x-axis labels
-            const xTicks = [min, q1, median, q3, max].filter((v, i, arr) => arr.indexOf(v) === i);
-            xTicks.forEach(tick => {
-                // Line
-                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                line.setAttribute('x1', xScale(tick));
-                line.setAttribute('x2', xScale(tick));
-                line.setAttribute('y1', 0);
-                line.setAttribute('y2', height);
-                line.setAttribute('stroke', '#eee');
-                line.setAttribute('stroke-width', '1');
-                g.appendChild(line);
-                
-                // Label
-                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                label.setAttribute('x', xScale(tick));
-                label.setAttribute('y', height + 15);
-                label.setAttribute('text-anchor', 'middle');
-                label.setAttribute('dominant-baseline', 'hanging');
-                
-                // Format value based on type
-                const labelText = sortTop10By === 'qty' 
-                    ? Math.round(tick)
-                    : 'R' + Math.round(tick);
-                
-                label.textContent = labelText;
-                label.classList.add('axis');
-                g.appendChild(label);
-            });
-            
-            // Draw box
-            const box = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            box.setAttribute('x', xScale(q1));
-            box.setAttribute('y', boxTop);
-            box.setAttribute('width', xScale(q3) - xScale(q1));
-            box.setAttribute('height', boxHeight);
-            box.setAttribute('class', 'box-plot');
-            g.appendChild(box);
-            
-            // Draw median line
-            const medianLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            medianLine.setAttribute('x1', xScale(median));
-            medianLine.setAttribute('x2', xScale(median));
-            medianLine.setAttribute('y1', boxTop);
-            medianLine.setAttribute('y2', boxBottom);
-            medianLine.setAttribute('class', 'median-line');
-            g.appendChild(medianLine);
-            
-            // Draw whiskers
-            // Left whisker
-            const leftWhiskerLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            leftWhiskerLine.setAttribute('x1', xScale(min));
-            leftWhiskerLine.setAttribute('x2', xScale(q1));
-            leftWhiskerLine.setAttribute('y1', boxTop + boxHeight/2);
-            leftWhiskerLine.setAttribute('y2', boxTop + boxHeight/2);
-            leftWhiskerLine.setAttribute('class', 'whisker-line');
-            g.appendChild(leftWhiskerLine);
-            
-            const leftWhiskerCap = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            leftWhiskerCap.setAttribute('x1', xScale(min));
-            leftWhiskerCap.setAttribute('x2', xScale(min));
-            leftWhiskerCap.setAttribute('y1', boxTop + boxHeight/4);
-            leftWhiskerCap.setAttribute('y2', boxBottom - boxHeight/4);
-            leftWhiskerCap.setAttribute('class', 'whisker-line');
-            g.appendChild(leftWhiskerCap);
-            
-            // Right whisker
-            const rightWhiskerLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            rightWhiskerLine.setAttribute('x1', xScale(q3));
-            rightWhiskerLine.setAttribute('x2', xScale(max));
-            rightWhiskerLine.setAttribute('y1', boxTop + boxHeight/2);
-            rightWhiskerLine.setAttribute('y2', boxTop + boxHeight/2);
-            rightWhiskerLine.setAttribute('class', 'whisker-line');
-            g.appendChild(rightWhiskerLine);
-            
-            const rightWhiskerCap = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            rightWhiskerCap.setAttribute('x1', xScale(max));
-            rightWhiskerCap.setAttribute('x2', xScale(max));
-            rightWhiskerCap.setAttribute('y1', boxTop + boxHeight/4);
-            rightWhiskerCap.setAttribute('y2', boxBottom - boxHeight/4);
-            rightWhiskerCap.setAttribute('class', 'whisker-line');
-            g.appendChild(rightWhiskerCap);
-            
-            // Add markers for dates in the range
-            if (datesInRange.length > 0) {
-                // Calculate marker positions based on number of dates
-                const dateSpacing = boxHeight / (datesInRange.length + 1);
-                
-                datesInRange.forEach((date, i) => {
-                    // Only show if we have data for this date
-                    if (dateGroups[date]) {
-                        const value = dateGroups[date][metric];
-                        const x = xScale(value);
-                        const y = boxTop + (i + 1) * dateSpacing;
-                        
-                        // Draw marker
-                        const marker = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-                        marker.setAttribute('points', 
-                            `${x-10},${y} ${x},${y-5} ${x},${y+5}`
-                        );
-                        marker.setAttribute('class', 'date-marker');
-                        g.appendChild(marker);
-                        
-                        // Add date label
-                        const dateObj = new Date(date);
-                        const dayLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                        dayLabel.setAttribute('x', x - 20);
-                        dayLabel.setAttribute('y', y);
-                        dayLabel.setAttribute('text-anchor', 'end');
-                        dayLabel.setAttribute('dominant-baseline', 'middle');
-                        dayLabel.textContent = dateObj.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
-                        dayLabel.classList.add('bar-label');
-                        g.appendChild(dayLabel);
-                        
-                        // Add tooltip on hover for the marker
-                        marker.addEventListener('mouseover', (e) => {
-                            const tooltip = document.createElement('div');
-                            tooltip.className = 'tooltip';
-                            tooltip.innerHTML = `
-                                <strong>${formatDate(date)}</strong><br>
-                                Count: ${dateGroups[date].count}<br>
-                                Cost: R${dateGroups[date].cost.toFixed(2)}
-                            `;
-                            tooltip.style.left = `${e.pageX + 10}px`;
-                            tooltip.style.top = `${e.pageY - 30}px`;
-                            document.body.appendChild(tooltip);
-                        });
-                        
-                        marker.addEventListener('mousemove', (e) => {
-                            const tooltip = document.querySelector('.tooltip');
-                            if (tooltip) {
-                                tooltip.style.left = `${e.pageX + 10}px`;
-                                tooltip.style.top = `${e.pageY - 30}px`;
-                            }
-                        });
-                        
-                        marker.addEventListener('mouseout', () => {
-                            const tooltip = document.querySelector('.tooltip');
-                            if (tooltip) {
-                                tooltip.remove();
-                            }
-                        });
-                    }
-                });
-            }
-            
-            // Add title with dynamic metric type
-            const title = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            title.setAttribute('x', width / 2);
-            title.setAttribute('y', -10);
-            title.setAttribute('text-anchor', 'middle');
-            title.textContent = sortTop10By === 'qty' ? 'Daily Quantity Distribution' : 'Daily Cost Distribution';
-            title.style.fontWeight = 'bold';
-            g.appendChild(title);
-            
-            // Add y-axis label
-            const yAxisLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            yAxisLabel.setAttribute('x', width / 2);
-            yAxisLabel.setAttribute('y', height + 35);
-            yAxisLabel.setAttribute('text-anchor', 'middle');
-            yAxisLabel.textContent = sortTop10By === 'qty' ? 'Quantity' : 'Cost';
-            g.appendChild(yAxisLabel);
-            
-            // Add box plot labels
-            const boxLabels = [
-                { text: 'Min', x: xScale(min), y: boxTop - 10 },
-                { text: 'Q1', x: xScale(q1), y: boxTop - 10 },
-                { text: 'Median', x: xScale(median), y: boxTop - 10 },
-                { text: 'Q3', x: xScale(q3), y: boxTop - 10 },
-                { text: 'Max', x: xScale(max), y: boxTop - 10 }
-            ];
-            
-            boxLabels.forEach(label => {
-                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                text.setAttribute('x', label.x);
-                text.setAttribute('y', label.y);
-                text.setAttribute('text-anchor', 'middle');
-                text.textContent = label.text;
-                text.classList.add('axis');
-                g.appendChild(text);
-            });
-        }
-
-        // Helper function to format date for display
-        function formatDate(dateString) {
-            if (!dateString) return '';
-            const date = new Date(dateString);
-            return date.toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'short', 
-                day: 'numeric' 
-            });
-        }
-
-        // Helper function to format date for date input elements
-        function formatDateForInput(date) {
-            if (!date || !(date instanceof Date)) return '';
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        }
-
-        // Initialize the dashboard when the page loads
-        window.addEventListener('load', initDashboard);
-        
-        // Handle window resize
-        window.addEventListener('resize', () => {
-            if (filteredData.length > 0) {
-                createRejectReasonsChart();
-                createDailyTrendChart();
-                createTopProblemsChart();
-                createStationCostChart();
-            }
-        });
-    </script>
-</body>
-</html>
