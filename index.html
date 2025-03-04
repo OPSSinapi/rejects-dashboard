@@ -265,54 +265,85 @@
             flex: 0 0 auto;
         }
 
-        .summary-stats {
+        .summary-metrics {
             flex: 1;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            display: flex;
+            flex-direction: column;
             gap: 5px;
         }
 
-        .stat-card {
+        .metrics-row {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        .metric-card {
             background-color: white;
             border-radius: 6px;
             padding: 8px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            text-align: center;
+            flex: 1;
         }
 
-        .stat-value {
+        .total-cost-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .total-cost {
             font-size: 1.3rem;
             font-weight: bold;
             color: #e67e22;
         }
 
-        .stat-label {
+        .total-cost-label {
             font-size: 0.7rem;
             color: #7f8c8d;
         }
 
-        .top10-container {
-            flex: 2;
-            background-color: white;
-            border-radius: 6px;
-            padding: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .top10-header {
+        .type-metrics {
             display: flex;
-            justify-content: space-between;
+            gap: 10px;
             align-items: center;
-            margin-bottom: 5px;
         }
 
-        .top10-title {
+        .type-metric {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 4px;
+            font-size: 0.8rem;
         }
 
-        .top10-dropdown {
+        .type-percent {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .parts-metrics {
+            display: flex;
+            gap: 10px;
+            margin-top: 5px;
+        }
+
+        .parts-metric {
+            font-size: 0.8rem;
+            color: #7f8c8d;
+        }
+
+        .parts-metric-value {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .type-selector {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .type-dropdown {
             position: relative;
             display: inline-block;
         }
@@ -361,6 +392,27 @@
         .dropdown-item.active {
             background-color: #e1f0fa;
             font-weight: bold;
+        }
+
+        .top10-container {
+            flex: 2;
+            background-color: white;
+            border-radius: 6px;
+            padding: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .top10-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .top10-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .sort-toggle {
@@ -725,22 +777,50 @@
 
         <div class="dashboard-content">
             <div class="summary-and-top10">
-                <div class="summary-stats">
-                    <div class="stat-card">
-                        <div id="total-rejects" class="stat-value">0</div>
-                        <div class="stat-label">Total Rejects</div>
-                    </div>
-                    <div class="stat-card">
-                        <div id="total-cost" class="stat-value">R0</div>
-                        <div class="stat-label">Total Cost</div>
-                    </div>
-                    <div class="stat-card">
-                        <div id="scrap-count" class="stat-value">0</div>
-                        <div class="stat-label">Scrap Count</div>
-                    </div>
-                    <div class="stat-card">
-                        <div id="rts-count" class="stat-value">0</div>
-                        <div class="stat-label">RTS Count</div>
+                <div class="summary-metrics">
+                    <div class="metric-card">
+                        <div class="total-cost-container">
+                            <div>
+                                <div id="total-cost" class="total-cost">R0</div>
+                                <div class="total-cost-label">Total Cost</div>
+                            </div>
+                            <div class="type-selector">
+                                <div class="type-metrics">
+                                    <div class="type-metric">
+                                        <span>Scrap:</span>
+                                        <span id="scrap-percent" class="type-percent">0%</span>
+                                    </div>
+                                    <div class="type-metric">
+                                        <span>RTS:</span>
+                                        <span id="rts-percent" class="type-percent">0%</span>
+                                    </div>
+                                    <div class="type-metric" id="local-metric" style="display: none;">
+                                        <span>Local:</span>
+                                        <span id="local-percent" class="type-percent">0%</span>
+                                    </div>
+                                </div>
+                                <div class="type-dropdown" id="action-dropdown">
+                                    <button class="dropdown-btn">
+                                        <span id="current-action">All Types</span>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="dropdown-content" id="action-dropdown-content">
+                                        <a href="#" class="dropdown-item active" data-action="All">All Types</a>
+                                        <!-- Actions will be populated dynamically -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="parts-metrics">
+                            <div class="parts-metric">
+                                <span>Single Parts:</span>
+                                <span id="single-parts-count" class="parts-metric-value">0</span>
+                            </div>
+                            <div class="parts-metric">
+                                <span>Assemblies:</span>
+                                <span id="assemblies-count" class="parts-metric-value">0</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
@@ -748,16 +828,6 @@
                     <div class="top10-header">
                         <div class="top10-title">
                             <h2>Top 10 Rejects</h2>
-                            <div class="top10-dropdown" id="action-dropdown">
-                                <button class="dropdown-btn">
-                                    <span id="current-action">All Actions</span>
-                                    <span>▼</span>
-                                </button>
-                                <div class="dropdown-content" id="action-dropdown-content">
-                                    <a href="#" class="dropdown-item active" data-action="All">All Actions</a>
-                                    <!-- Actions will be populated dynamically -->
-                                </div>
-                            </div>
                         </div>
                         <div class="sort-toggle">
                             <span>Sort by:</span>
@@ -769,13 +839,13 @@
                         <table id="top10-table">
                             <thead>
                                 <tr>
-                                    <th class="clickable" id="reject-reason-header">Reject Reason</th>
                                     <th class="clickable" id="station-header">Station</th>
-                                    <th>QTY</th>
-                                    <th>Cost (R)</th>
-                                    <th>Action</th>
                                     <th id="parts-header">Parts</th>
                                     <th id="batch-header" style="display: none;">Batch Nr</th>
+                                    <th id="supplier-header" style="display: none;">Supplier</th>
+                                    <th class="clickable" id="reject-reason-header">Reject Reason</th>
+                                    <th>QTY</th>
+                                    <th>Cost (R)</th>
                                 </tr>
                             </thead>
                             <tbody id="top10-table-body">
@@ -796,7 +866,7 @@
 
             <div class="charts-grid">
                 <div class="card">
-                    <h2>Reject Reasons Distribution</h2>
+                    <h2>Reject Reasons Distribution (Top 3)</h2>
                     <div id="reasons-chart" class="chart-container">
                         <div class="loading">
                             <div class="spinner"></div>
@@ -814,7 +884,7 @@
                     </div>
                 </div>
                 <div class="card">
-                    <h2>Top Problem Parts</h2>
+                    <h2>Top Problem Parts (Top 3)</h2>
                     <div id="parts-chart" class="chart-container">
                         <div class="loading">
                             <div class="spinner"></div>
@@ -823,7 +893,7 @@
                     </div>
                 </div>
                 <div class="card">
-                    <h2>Cost by Station</h2>
+                    <h2>Cost by Station (Top 3)</h2>
                     <div id="station-chart" class="chart-container">
                         <div class="loading">
                             <div class="spinner"></div>
@@ -893,11 +963,14 @@
             }
         };
 
-        const statElements = {
-            totalRejects: document.getElementById('total-rejects'),
+        const metricElements = {
             totalCost: document.getElementById('total-cost'),
-            scrapCount: document.getElementById('scrap-count'),
-            rtsCount: document.getElementById('rts-count')
+            scrapPercent: document.getElementById('scrap-percent'),
+            rtsPercent: document.getElementById('rts-percent'),
+            localMetric: document.getElementById('local-metric'),
+            localPercent: document.getElementById('local-percent'),
+            singlePartsCount: document.getElementById('single-parts-count'),
+            assembliesCount: document.getElementById('assemblies-count')
         };
 
         const chartContainers = {
@@ -919,7 +992,8 @@
             rejectReasonMenu: document.getElementById('reject-reason-menu'),
             stationMenu: document.getElementById('station-menu'),
             partsHeader: document.getElementById('parts-header'),
-            batchHeader: document.getElementById('batch-header')
+            batchHeader: document.getElementById('batch-header'),
+            supplierHeader: document.getElementById('supplier-header')
         };
 
         // Color schemes
@@ -1041,7 +1115,7 @@
                     
                     if (newAction !== selectedAction) {
                         selectedAction = newAction;
-                        top10Elements.currentAction.textContent = selectedAction === 'All' ? 'All Actions' : selectedAction;
+                        top10Elements.currentAction.textContent = selectedAction === 'All' ? 'All Types' : selectedAction;
                         
                         // Update active class
                         document.querySelectorAll('#action-dropdown-content .dropdown-item').forEach(item => {
@@ -1049,11 +1123,13 @@
                         });
                         e.target.classList.add('active');
                         
-                        // Show/hide batch number column based on action
+                        // Show/hide batch number & supplier columns based on action
                         if (selectedAction === 'RTS' || selectedAction === 'Local') {
                             top10Elements.batchHeader.style.display = '';
+                            top10Elements.supplierHeader.style.display = '';
                         } else {
                             top10Elements.batchHeader.style.display = 'none';
+                            top10Elements.supplierHeader.style.display = 'none';
                         }
                         
                         // Update the table and charts
@@ -1109,15 +1185,15 @@
             
             // Get top reasons based on current sort
             const reasonCounts = {};
-            let actionFilteredData = filteredData;
+            let currentFilteredData = getFilteredDataForMenus();
             
             // Apply action filter if selected
             if (selectedAction !== 'All') {
-                actionFilteredData = filteredData.filter(item => item.ActionSelection === selectedAction);
+                currentFilteredData = currentFilteredData.filter(item => item.ActionSelection === selectedAction);
             }
             
             // Count reasons
-            actionFilteredData.forEach(item => {
+            currentFilteredData.forEach(item => {
                 const reason = item.RejectReason || 'Unknown';
                 if (!reasonCounts[reason]) {
                     reasonCounts[reason] = {
@@ -1173,20 +1249,20 @@
             
             // Get top stations based on current sort
             const stationData = {};
-            let actionFilteredData = filteredData;
+            let currentFilteredData = getFilteredDataForMenus();
             
             // Apply action filter if selected
             if (selectedAction !== 'All') {
-                actionFilteredData = filteredData.filter(item => item.ActionSelection === selectedAction);
+                currentFilteredData = currentFilteredData.filter(item => item.ActionSelection === selectedAction);
             }
             
             // Apply reject reason filter if selected
             if (selectedRejectReason !== null) {
-                actionFilteredData = actionFilteredData.filter(item => item.RejectReason === selectedRejectReason);
+                currentFilteredData = currentFilteredData.filter(item => item.RejectReason === selectedRejectReason);
             }
             
             // Count stations
-            actionFilteredData.forEach(item => {
+            currentFilteredData.forEach(item => {
                 const station = item.Station || 'Unknown';
                 if (!stationData[station]) {
                     stationData[station] = {
@@ -1223,6 +1299,18 @@
             });
         }
 
+        // Get filtered data considering all multi-select filters
+        function getFilteredDataForMenus() {
+            // If no selections, return all date-filtered data
+            const hasSelections = Object.values(filterValues).some(values => values.length > 0);
+            if (!hasSelections) {
+                return filteredData;
+            }
+            
+            // Apply only multi-select filters
+            return filteredData;
+        }
+
         // Update dashboard based on action selection
         function updateDashboardWithActionFilter() {
             // Reset other selections if needed
@@ -1233,6 +1321,9 @@
             createDailyTrendChart();
             createTopProblemsChart();
             createStationCostChart();
+            
+            // Update metrics
+            updateMetrics();
         }
 
         // Initialize multi-select dropdowns
@@ -1417,8 +1508,9 @@
             selectedAction = 'All';
             selectedRejectReason = null;
             selectedStation = null;
-            top10Elements.currentAction.textContent = 'All Actions';
+            top10Elements.currentAction.textContent = 'All Types';
             top10Elements.batchHeader.style.display = 'none';
+            top10Elements.supplierHeader.style.display = 'none';
             
             // Update action dropdown with available actions
             updateActionDropdown();
@@ -1473,6 +1565,13 @@
                 
                 dropdownContent.appendChild(option);
             });
+            
+            // Check if Local type exists
+            if (actions.has('Local')) {
+                metricElements.localMetric.style.display = '';
+            } else {
+                metricElements.localMetric.style.display = 'none';
+            }
         }
 
         // Build associations between filter values
@@ -1682,8 +1781,9 @@
             selectedAction = 'All';
             selectedRejectReason = null;
             selectedStation = null;
-            top10Elements.currentAction.textContent = 'All Actions';
+            top10Elements.currentAction.textContent = 'All Types';
             top10Elements.batchHeader.style.display = 'none';
+            top10Elements.supplierHeader.style.display = 'none';
             
             // Update active classes in action dropdown
             document.querySelectorAll('#action-dropdown-content .dropdown-item').forEach(item => {
@@ -2023,8 +2123,8 @@
 
         // Update dashboard with current filtered data
         function updateDashboard() {
-            // Update summary statistics
-            updateSummaryStats();
+            // Update metrics
+            updateMetrics();
             
             // Update Top 10 table
             updateTop10Table();
@@ -2036,8 +2136,8 @@
             createStationCostChart();
         }
 
-        // Update summary statistics
-        function updateSummaryStats() {
+        // Update metrics display
+        function updateMetrics() {
             let dataToUse = filteredData;
             
             // Apply action filter if selected
@@ -2055,30 +2155,78 @@
                 dataToUse = dataToUse.filter(item => item.Station === selectedStation);
             }
             
-            const totalQty = dataToUse.reduce((sum, item) => sum + (item.QTY || 0), 0);
+            // Calculate total cost and counts
             const totalCost = dataToUse.reduce((sum, item) => sum + (item.Cost || 0), 0);
             
+            // Calculate counts by action type
             const scrapCount = dataToUse.filter(item => item.ActionSelection === 'Scrap')
                 .reduce((sum, item) => sum + (item.QTY || 0), 0);
             
-            const rtsCount = dataToUse.filter(item => item.ActionSelection === 'RTS' || item.ActionSelection === 'Local')
+            const rtsCount = dataToUse.filter(item => item.ActionSelection === 'RTS')
                 .reduce((sum, item) => sum + (item.QTY || 0), 0);
             
-            statElements.totalRejects.textContent = totalQty;
-            statElements.totalCost.textContent = `R${totalCost.toFixed(2)}`;
-            statElements.scrapCount.textContent = scrapCount;
-            statElements.rtsCount.textContent = rtsCount;
+            const localCount = dataToUse.filter(item => item.ActionSelection === 'Local')
+                .reduce((sum, item) => sum + (item.QTY || 0), 0);
+            
+            const totalQty = dataToUse.reduce((sum, item) => sum + (item.QTY || 0), 0);
+            
+            // Calculate percentages
+            const scrapPercent = totalQty > 0 ? Math.round((scrapCount / totalQty) * 100) : 0;
+            const rtsPercent = totalQty > 0 ? Math.round((rtsCount / totalQty) * 100) : 0;
+            const localPercent = totalQty > 0 ? Math.round((localCount / totalQty) * 100) : 0;
+            
+            // Count single parts vs assemblies
+            let singlePartsCount = 0;
+            let assembliesCount = 0;
+            
+            dataToUse.forEach(item => {
+                // Get parts as array
+                let parts = [];
+                if (Array.isArray(item.Parts)) {
+                    parts = item.Parts.filter(p => p && p.trim());
+                } else if (typeof item.Parts === 'string') {
+                    parts = item.Parts.split(',')
+                        .map(p => p.trim())
+                        .filter(p => p);
+                }
+                
+                // Count based on number of parts
+                if (parts.length <= 1) {
+                    singlePartsCount += (item.QTY || 0);
+                } else {
+                    assembliesCount += (item.QTY || 0);
+                }
+            });
+            
+            // Update the display
+            metricElements.totalCost.textContent = `R${totalCost.toFixed(2)}`;
+            metricElements.scrapPercent.textContent = `${scrapPercent}%`;
+            metricElements.rtsPercent.textContent = `${rtsPercent}%`;
+            metricElements.localPercent.textContent = `${localPercent}%`;
+            
+            // Show/hide local metric based on data
+            if (localCount > 0) {
+                metricElements.localMetric.style.display = '';
+            } else {
+                metricElements.localMetric.style.display = 'none';
+            }
+            
+            // Update parts counts
+            metricElements.singlePartsCount.textContent = singlePartsCount;
+            metricElements.assembliesCount.textContent = assembliesCount;
         }
 
         // Update Top 10 rejects table
         function updateTop10Table() {
             top10Elements.tableBody.innerHTML = '';
             
-            // Show/hide batch number column based on action selection
+            // Show/hide batch number & supplier columns based on action selection
             if (selectedAction === 'RTS' || selectedAction === 'Local') {
                 top10Elements.batchHeader.style.display = '';
+                top10Elements.supplierHeader.style.display = '';
             } else {
                 top10Elements.batchHeader.style.display = 'none';
+                top10Elements.supplierHeader.style.display = 'none';
             }
             
             let dataToUse = filteredData;
@@ -2100,7 +2248,8 @@
             
             if (dataToUse.length === 0) {
                 const row = document.createElement('tr');
-                row.innerHTML = `<td colspan="7" class="no-data">No data available</td>`;
+                const colSpan = selectedAction === 'RTS' || selectedAction === 'Local' ? 7 : 5;
+                row.innerHTML = `<td colspan="${colSpan}" class="no-data">No data available</td>`;
                 top10Elements.tableBody.appendChild(row);
                 return;
             }
@@ -2109,7 +2258,7 @@
             const groupedData = {};
             
             dataToUse.forEach(item => {
-                const key = `${item.RejectReason || 'Unknown'}-${item.Station || 'Unknown'}`;
+                const key = `${item.Station || 'Unknown'}-${item.RejectReason || 'Unknown'}`;
                 
                 if (!groupedData[key]) {
                     // Get parts as array
@@ -2123,10 +2272,10 @@
                     }
                     
                     groupedData[key] = {
-                        rejectReason: item.RejectReason || 'Unknown',
                         station: item.Station || 'Unknown',
-                        action: item.ActionSelection || 'Unknown',
+                        rejectReason: item.RejectReason || 'Unknown',
                         batchNumber: item.BatchNumber,
+                        supplier: item.Supplier || 'Unknown',
                         parts: new Set(parts),
                         items: [item],
                         qty: 0,
@@ -2174,20 +2323,27 @@
                 // Convert parts set to comma-separated string
                 const partsString = Array.from(item.parts).join(', ');
                 
-                // Create cells
+                // Create cells based on action selection
                 let cells = `
-                    <td title="${item.rejectReason}">${item.rejectReason}</td>
                     <td title="${item.station}">${item.station}</td>
-                    <td>${item.qty}</td>
-                    <td>R${item.cost.toFixed(2)}</td>
-                    <td>${item.action}</td>
                     <td class="truncated" title="${partsString}">${partsString}</td>
                 `;
                 
-                // Add batch number if showing RTS items
+                // Add batch number and supplier if showing RTS or Local items
                 if (selectedAction === 'RTS' || selectedAction === 'Local') {
-                    cells += `<td>${item.batchNumber !== undefined && item.batchNumber !== null ? item.batchNumber : ''}</td>`;
+                    const batchNumber = item.batchNumber !== undefined && item.batchNumber !== null ? item.batchNumber : '';
+                    cells += `
+                        <td>${batchNumber}</td>
+                        <td>${item.supplier}</td>
+                    `;
                 }
+                
+                // Add remaining columns
+                cells += `
+                    <td title="${item.rejectReason}">${item.rejectReason}</td>
+                    <td>${item.qty}</td>
+                    <td>R${item.cost.toFixed(2)}</td>
+                `;
                 
                 row.innerHTML = cells;
                 top10Elements.tableBody.appendChild(row);
@@ -2255,12 +2411,12 @@
             g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
             svg.appendChild(g);
 
-            // Limit to top 10 reasons
-            const topReasons = sortedReasons.slice(0, 10);
+            // Limit to top 3 reasons
+            const topReasons = sortedReasons.slice(0, 3);
 
             // Calculate scales
             const x = topReasons.map((_, i) => i * (width / topReasons.length));
-            const barWidth = width / topReasons.length - 6;
+            const barWidth = width / topReasons.length - 20; // Wider bars for 3 items
             
             const maxCount = Math.max(...topReasons.map(r => reasonCounts[r].count));
             const y = (count) => height * (1 - count / maxCount);
@@ -2270,7 +2426,7 @@
                 const barHeight = height - y(reasonCounts[reason].count);
                 
                 const bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                bar.setAttribute('x', x[i]);
+                bar.setAttribute('x', x[i] + 10); // Center the wider bars
                 bar.setAttribute('y', y(reasonCounts[reason].count));
                 bar.setAttribute('width', barWidth);
                 bar.setAttribute('height', barHeight);
@@ -2310,17 +2466,17 @@
                 
                 // Add label below bar
                 const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                label.setAttribute('x', x[i] + barWidth / 2);
+                label.setAttribute('x', x[i] + barWidth / 2 + 10); // Adjust for centered bars
                 label.setAttribute('y', height + 12);
                 label.setAttribute('text-anchor', 'middle');
-                label.setAttribute('transform', `rotate(45, ${x[i] + barWidth / 2}, ${height + 12})`);
-                label.textContent = reason.length > 12 ? reason.substring(0, 10) + '...' : reason;
+                label.setAttribute('transform', `rotate(45, ${x[i] + barWidth / 2 + 10}, ${height + 12})`);
+                label.textContent = reason.length > 18 ? reason.substring(0, 16) + '...' : reason;
                 label.classList.add('bar-label');
                 g.appendChild(label);
                 
                 // Add count on top of bar
                 const countLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                countLabel.setAttribute('x', x[i] + barWidth / 2);
+                countLabel.setAttribute('x', x[i] + barWidth / 2 + 10); // Adjust for centered bars
                 countLabel.setAttribute('y', y(reasonCounts[reason].count) - 5);
                 countLabel.setAttribute('text-anchor', 'middle');
                 countLabel.textContent = reasonCounts[reason].count;
@@ -2589,10 +2745,10 @@
                 });
             });
 
-            // Sort by count descending and get top 10
+            // Sort by count descending and get top 3
             const topParts = Object.keys(partCounts)
                 .sort((a, b) => partCounts[b].count - partCounts[a].count)
-                .slice(0, 10);
+                .slice(0, 3);
 
             // Create SVG
             const margin = { top: 20, right: 20, bottom: 70, left: 40 };
@@ -2612,7 +2768,7 @@
 
             // Calculate scales
             const x = topParts.map((_, i) => i * (width / topParts.length));
-            const barWidth = width / topParts.length - 6;
+            const barWidth = width / topParts.length - 20; // Wider bars for 3 items
             
             const maxCount = Math.max(...topParts.map(part => partCounts[part].count));
             const y = (count) => height * (1 - count / maxCount);
@@ -2622,7 +2778,7 @@
                 const barHeight = height - y(partCounts[part].count);
                 
                 const bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                bar.setAttribute('x', x[i]);
+                bar.setAttribute('x', x[i] + 10); // Center the wider bars
                 bar.setAttribute('y', y(partCounts[part].count));
                 bar.setAttribute('width', barWidth);
                 bar.setAttribute('height', barHeight);
@@ -2662,17 +2818,17 @@
                 
                 // Add label below bar
                 const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                label.setAttribute('x', x[i] + barWidth / 2);
+                label.setAttribute('x', x[i] + barWidth / 2 + 10); // Adjust for centered bars
                 label.setAttribute('y', height + 12);
                 label.setAttribute('text-anchor', 'middle');
-                label.setAttribute('transform', `rotate(45, ${x[i] + barWidth / 2}, ${height + 12})`);
-                label.textContent = part.length > 12 ? part.substring(0, 10) + '...' : part;
+                label.setAttribute('transform', `rotate(45, ${x[i] + barWidth / 2 + 10}, ${height + 12})`);
+                label.textContent = part.length > 18 ? part.substring(0, 16) + '...' : part;
                 label.classList.add('bar-label');
                 g.appendChild(label);
                 
                 // Add count on top of bar
                 const countLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                countLabel.setAttribute('x', x[i] + barWidth / 2);
+                countLabel.setAttribute('x', x[i] + barWidth / 2 + 10); // Adjust for centered bars
                 countLabel.setAttribute('y', y(partCounts[part].count) - 5);
                 countLabel.setAttribute('text-anchor', 'middle');
                 countLabel.textContent = partCounts[part].count;
@@ -2721,10 +2877,10 @@
                 stationData[station].cost += (item.Cost || 0);
             });
 
-            // Sort by cost descending and take top 10
+            // Sort by cost descending and take top 3
             const sortedStations = Object.keys(stationData)
                 .sort((a, b) => stationData[b].cost - stationData[a].cost)
-                .slice(0, 10);
+                .slice(0, 3);
 
             // Create SVG
             const margin = { top: 20, right: 20, bottom: 70, left: 40 };
@@ -2744,7 +2900,7 @@
 
             // Calculate scales
             const x = sortedStations.map((_, i) => i * (width / sortedStations.length));
-            const barWidth = width / sortedStations.length - 6;
+            const barWidth = width / sortedStations.length - 20; // Wider bars for 3 items
             
             const maxCost = Math.max(...sortedStations.map(s => stationData[s].cost));
             const y = (cost) => height * (1 - cost / maxCost);
@@ -2754,7 +2910,7 @@
                 const barHeight = height - y(stationData[station].cost);
                 
                 const bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                bar.setAttribute('x', x[i]);
+                bar.setAttribute('x', x[i] + 10); // Center the wider bars
                 bar.setAttribute('y', y(stationData[station].cost));
                 bar.setAttribute('width', barWidth);
                 bar.setAttribute('height', barHeight);
@@ -2794,17 +2950,17 @@
                 
                 // Add label below bar
                 const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                label.setAttribute('x', x[i] + barWidth / 2);
+                label.setAttribute('x', x[i] + barWidth / 2 + 10); // Adjust for centered bars
                 label.setAttribute('y', height + 12);
                 label.setAttribute('text-anchor', 'middle');
-                label.setAttribute('transform', `rotate(45, ${x[i] + barWidth / 2}, ${height + 12})`);
-                label.textContent = station.length > 12 ? station.substring(0, 10) + '...' : station;
+                label.setAttribute('transform', `rotate(45, ${x[i] + barWidth / 2 + 10}, ${height + 12})`);
+                label.textContent = station.length > 18 ? station.substring(0, 16) + '...' : station;
                 label.classList.add('bar-label');
                 g.appendChild(label);
                 
                 // Add cost on top of bar
                 const costLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                costLabel.setAttribute('x', x[i] + barWidth / 2);
+                costLabel.setAttribute('x', x[i] + barWidth / 2 + 10); // Adjust for centered bars
                 costLabel.setAttribute('y', y(stationData[station].cost) - 5);
                 costLabel.setAttribute('text-anchor', 'middle');
                 costLabel.textContent = 'R' + stationData[station].cost.toFixed(0);
@@ -2845,6 +3001,3 @@
                 createStationCostChart();
             }
         });
-    </script>
-</body>
-</html>
