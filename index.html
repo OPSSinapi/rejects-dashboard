@@ -84,6 +84,13 @@
             align-items: center;
         }
 
+        .date-filter-row {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 8px;
+            align-items: center;
+        }
+
         .filter-group {
             display: flex;
             align-items: center;
@@ -568,29 +575,30 @@
             fill: #666;
         }
 
-        /* Line Graph Styles */
-        .line {
-            fill: none;
+        /* Box and Whisker Plot */
+        .box-plot {
+            stroke: #333;
+            stroke-width: 1;
+            fill: #e8f4fb;
+        }
+
+        .median-line {
+            stroke: #2c3e50;
             stroke-width: 2;
         }
 
-        .mean-line {
-            stroke: #2ecc71;
-            stroke-dasharray: 5,5;
+        .whisker-line {
+            stroke: #333;
+            stroke-width: 1;
         }
 
-        .max-line {
+        .outlier {
+            fill: #e74c3c;
+        }
+
+        .date-marker {
             stroke: #e74c3c;
-            stroke-dasharray: 2,2;
-        }
-
-        .min-line {
-            stroke: #3498db;
-            stroke-dasharray: 2,2;
-        }
-
-        .daily-line {
-            stroke: #f39c12;
+            stroke-width: 2;
         }
 
         /* Loading Indicator */
@@ -616,6 +624,27 @@
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+
+        /* Legend Styles */
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 5px;
+            font-size: 0.75rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+        }
+
+        .legend-color {
+            width: 10px;
+            height: 10px;
+            margin-right: 3px;
+            border-radius: 2px;
         }
 
         /* Tooltip Styles */
@@ -686,8 +715,8 @@
             cursor: pointer;
         }
         
-        /* Line graph label */
-        .line-label {
+        /* Box plot label */
+        .box-plot-label {
             font-size: 8px;
             fill: #333;
         }
@@ -958,19 +987,21 @@
     <script>
         // Global variables
         let rejectData = [];
-        let dateFilteredData = [];
-        let filteredData = [];
-        let allData = [];
+        let dateFilteredData = []; // Data filtered by date range only
+        let filteredData = []; // Final filtered data
+        let allData = []; // All data, used for calculating global metrics
         const GITHUB_REPO = 'OPSSinapi/rejects-dashboard';
         const FILE_PATH = 'RejectsData.json';
         const DATA_URL = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/${FILE_PATH}`;
-        let sortTop10By = 'qty';
-        let selectedAction = 'All';
-        let selectedRejectReason = null;
-        let selectedStation = null;
+        let sortTop10By = 'qty'; // 'qty' or 'cost'
+        let selectedAction = 'All'; // For action selection filtering
+        let selectedRejectReason = null; // For reject reason filtering
+        let selectedStation = null; // For station filtering
+        
+        // Track if we're currently updating filters to prevent recursive updates
         let isUpdatingFilters = false;
 
-        // Available filter options
+        // Available filter options (all possible values from date-filtered data)
         let availableFilterOptions = {
             supervisor: new Set(),
             product: new Set(),
@@ -978,10 +1009,10 @@
             batch: new Set(),
             part: new Set(),
             alias: new Set(),
-            action: new Set()
+            action: new Set() // For action selection dropdown
         };
 
-        // Multi-select filter values
+        // Multi-select filter values (selected values)
         const filterValues = {
             supervisor: [],
             product: [],
@@ -991,8 +1022,19 @@
             alias: []
         };
         
-        // Filter associations
-        let filterAssociations = {};
+        // Store associations between filter values
+        let filterAssociations = {
+            // Structure: { filterName: { value: { otherFilterName: [associated values] } } }
+        };
+
+        // Store data metrics for box and whisker plot
+        let globalDataMetrics = {
+            min: 0,
+            max: 0,
+            median: 0,
+            q1: 0, 
+            q3: 0
+        };
 
         // DOM elements
         const filterElements = {
@@ -1012,6 +1054,9 @@
 
         const metricElements = {
             totalCost: document.getElementById('total-cost'),
+            scrapMetric: document.getElementById('scrap-metric'),
+            rtsMetric: document.getElementById('rts-metric'),
+            localMetric: document.getElementById('local-metric'),
             scrapPercent: document.getElementById('scrap-percent'),
             rtsPercent: document.getElementById('rts-percent'),
             localPercent: document.getElementById('local-percent'),
@@ -1044,15 +1089,18 @@
 
         // Color schemes
         const colors = [
-            '#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6',
-            '#1abc9c', '#e67e22', '#34495e', '#16a085', '#d35400'
+            '#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', 
+            '#1abc9c', '#e67e22', '#34495e', '#16a085', '#d35400', 
+            '#8e44ad', '#27ae60', '#c0392b', '#2980b9', '#f1c40f'
         ];
 
         // Fetch data from GitHub
         async function fetchData() {
             try {
                 const response = await fetch(DATA_URL);
-                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
                 const data = await response.json();
                 return data.rejectData || [];
             } catch (error) {
@@ -1064,63 +1112,114 @@
 
         // Initialize the dashboard
         async function initDashboard() {
+            // Show loading indicators
             Object.values(chartContainers).forEach(container => {
-                container.innerHTML = '<div class="loading"><div class="spinner"></div><span>Loading data...</span></div>';
+                container.innerHTML = `
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <span>Loading data...</span>
+                    </div>
+                `;
             });
 
+            // Fetch data
             rejectData = await fetchData();
-            allData = [...rejectData];
+            allData = [...rejectData]; // Keep a copy of all data
             
             if (rejectData.length === 0) {
                 Object.values(chartContainers).forEach(container => {
-                    container.innerHTML = '<div class="no-data">No data available</div>';
+                    container.innerHTML = `
+                        <div class="no-data">No data available</div>
+                    `;
                 });
                 return;
             }
 
+            // Initialize multi-select dropdowns
             initMultiSelectDropdowns();
+
+            // Initialize action dropdown and clickable headers
             initActionDropdown();
             initClickableHeaders();
+
+            // Set initial date range to last 5 days with rejects
             setDefaultDateRange();
+
+            // Apply initial date filter to get the base data set
             applyDateFilter();
 
+            // Add event listeners
             filterElements.applyDateBtn.addEventListener('click', applyDateFilter);
             filterElements.resetAllBtn.addEventListener('click', resetAllFilters);
             
+            // Top 10 sort toggle
             top10Elements.sortByQty.addEventListener('click', () => {
                 sortTop10By = 'qty';
                 top10Elements.sortByQty.classList.add('active');
                 top10Elements.sortByCost.classList.remove('active');
-                updateDashboard();
+                
+                // Recalculate global metrics with new sort type
+                calculateGlobalDataMetrics();
+                
+                // Update all views
+                updateTop10Table();
+                updateRejectReasonMenu();
+                updateStationMenu();
+                createRejectReasonsChart();
+                createTopProblemsChart();
+                createStationCostChart();
+                createDailyTrendChart();
             });
             
             top10Elements.sortByCost.addEventListener('click', () => {
                 sortTop10By = 'cost';
                 top10Elements.sortByCost.classList.add('active');
                 top10Elements.sortByQty.classList.remove('active');
-                updateDashboard();
+                
+                // Recalculate global metrics with new sort type
+                calculateGlobalDataMetrics();
+                
+                // Update all views
+                updateTop10Table();
+                updateRejectReasonMenu();
+                updateStationMenu();
+                createRejectReasonsChart();
+                createTopProblemsChart();
+                createStationCostChart();
+                createDailyTrendChart();
             });
 
+            // Close popup menus when clicking outside
             document.addEventListener('click', (e) => {
-                if (!top10Elements.rejectReasonHeader.contains(e.target) && !top10Elements.rejectReasonMenu.contains(e.target)) {
+                if (!top10Elements.rejectReasonHeader.contains(e.target) && 
+                    !top10Elements.rejectReasonMenu.contains(e.target)) {
                     top10Elements.rejectReasonMenu.classList.remove('active');
                 }
-                if (!top10Elements.stationHeader.contains(e.target) && !top10Elements.stationMenu.contains(e.target)) {
+                
+                if (!top10Elements.stationHeader.contains(e.target) && 
+                    !top10Elements.stationMenu.contains(e.target)) {
                     top10Elements.stationMenu.classList.remove('active');
                 }
+                
+                // Close action dropdown if clicking outside
                 if (!top10Elements.actionDropdown.contains(e.target)) {
                     top10Elements.actionDropdownContent.classList.remove('show');
                 }
             });
         }
 
-        // Format date functions
+        // Helper function to format date for display
         function formatDate(dateString) {
             if (!dateString) return '';
             const date = new Date(dateString);
-            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+            return date.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+            });
         }
 
+        // Helper function to format date for date input elements
         function formatDateForInput(date) {
             if (!date || !(date instanceof Date)) return '';
             const year = date.getFullYear();
@@ -1129,7 +1228,10 @@
             return `${year}-${month}-${day}`;
         }
 
+        // Initialize the dashboard when the page loads
         window.addEventListener('load', initDashboard);
+        
+        // Handle window resize
         window.addEventListener('resize', () => {
             if (filteredData.length > 0) {
                 createRejectReasonsChart();
@@ -1139,30 +1241,131 @@
             }
         });
 
-        // Get data for global metrics (outside date range)
-        function getGlobalMetricsData() {
-            let result = allData;
-            if (selectedAction !== 'All') result = result.filter(item => item.ActionSelection === selectedAction);
-            if (selectedRejectReason !== null) result = result.filter(item => item.RejectReason === selectedRejectReason);
-            if (selectedStation !== null) result = result.filter(item => item.Station === selectedStation);
+        // Calculate global data metrics for horizontal box plot
+        function calculateGlobalDataMetrics() {
+            // Filter data based on current filters EXCEPT date range
+            let dataForMetrics = getGlobalMetricsData();
             
+            if (dataForMetrics.length === 0) {
+                globalDataMetrics = {
+                    min: 0, max: 0, median: 0, q1: 0, q3: 0
+                };
+                return;
+            }
+            
+            // Group data by date
+            const dateGroups = {};
+            dataForMetrics.forEach(item => {
+                const date = item.ProductionDate;
+                if (!dateGroups[date]) {
+                    dateGroups[date] = {
+                        count: 0,
+                        cost: 0
+                    };
+                }
+                dateGroups[date].count += (item.QTY || 0);
+                dateGroups[date].cost += (item.Cost || 0);
+            });
+            
+            // Get metrics by the current sort type
+            const metricValues = Object.values(dateGroups).map(g => 
+                sortTop10By === 'qty' ? g.count : g.cost
+            ).sort((a, b) => a - b);
+            
+            // Filter out zero values
+            const nonZeroValues = metricValues.filter(val => val > 0);
+            
+            if (nonZeroValues.length === 0) {
+                globalDataMetrics = {
+                    min: 0, max: 0, median: 0, q1: 0, q3: 0
+                };
+                return;
+            }
+            
+            // Calculate metrics
+            const min = nonZeroValues[0] || 0;
+            const max = nonZeroValues[nonZeroValues.length - 1] || 0;
+            
+            // Calculate quartiles
+            const q1Index = Math.floor(nonZeroValues.length * 0.25);
+            const medianIndex = Math.floor(nonZeroValues.length * 0.5);
+            const q3Index = Math.floor(nonZeroValues.length * 0.75);
+            
+            const q1 = nonZeroValues[q1Index] || 0;
+            const median = nonZeroValues[medianIndex] || 0;
+            const q3 = nonZeroValues[q3Index] || 0;
+            
+            globalDataMetrics = {
+                min,
+                max,
+                median,
+                q1,
+                q3
+            };
+        }
+        
+        // Get data for global metrics calculation (applies all filters except date range)
+        function getGlobalMetricsData() {
+            // Start with all data
+            let result = allData;
+            
+            // Apply action filter if selected
+            if (selectedAction !== 'All') {
+                result = result.filter(item => item.ActionSelection === selectedAction);
+            }
+            
+            // Apply reject reason filter if selected
+            if (selectedRejectReason !== null) {
+                result = result.filter(item => item.RejectReason === selectedRejectReason);
+            }
+            
+            // Apply station filter if selected
+            if (selectedStation !== null) {
+                result = result.filter(item => item.Station === selectedStation);
+            }
+            
+            // Apply multi-select filters
             const hasSelections = Object.values(filterValues).some(values => values.length > 0);
             if (hasSelections) {
                 result = result.filter(item => {
-                    if (filterValues.supervisor.length > 0 && !filterValues.supervisor.includes(item.LineSupervisor)) return false;
-                    if (filterValues.product.length > 0 && !filterValues.product.includes(item.Product)) return false;
-                    if (filterValues.variant.length > 0 && !filterValues.variant.includes(item.Variant)) return false;
+                    if (filterValues.supervisor.length > 0 && !filterValues.supervisor.includes(item.LineSupervisor)) {
+                        return false;
+                    }
+                    if (filterValues.product.length > 0 && !filterValues.product.includes(item.Product)) {
+                        return false;
+                    }
+                    if (filterValues.variant.length > 0 && !filterValues.variant.includes(item.Variant)) {
+                        return false;
+                    }
                     if (filterValues.batch.length > 0) {
-                        const batchStr = String(item.BatchNumber || '');
-                        if (!filterValues.batch.includes(batchStr)) return false;
+                        const batchStr = item.BatchNumber !== undefined && item.BatchNumber !== null 
+                            ? String(item.BatchNumber) 
+                            : '';
+                        if (!filterValues.batch.includes(batchStr)) {
+                            return false;
+                        }
                     }
                     if (filterValues.part.length > 0) {
-                        let parts = Array.isArray(item.Parts) ? item.Parts : (item.Parts || '').split(',').map(p => p.trim());
-                        if (!parts.some(part => part && filterValues.part.includes(part))) return false;
+                        let partFound = false;
+                        let parts = [];
+                        if (Array.isArray(item.Parts)) {
+                            parts = item.Parts;
+                        } else if (typeof item.Parts === 'string') {
+                            parts = item.Parts.split(',').map(p => p.trim());
+                        }
+                        partFound = parts.some(part => part && filterValues.part.includes(part.trim()));
+                        if (!partFound) return false;
                     }
                     if (filterValues.alias.length > 0) {
-                        let aliases = Array.isArray(item.Aliases) ? item.Aliases : (item.Aliases || '').split(',').map(a => a.trim());
-                        if (!aliases.some(alias => alias && filterValues.alias.includes(alias))) return false;
+                        let aliasFound = false;
+                        let aliases = [];
+                        if (Array.isArray(item.Aliases)) {
+                            aliases = item.Aliases;
+                        } else if (typeof item.Aliases === 'string') {
+                            aliases = item.Aliases.split(',').map(a => a.trim());
+                        }
+                        aliasFound = aliases.some(alias => alias && filterValues.alias.includes(alias.trim()));
+                        if (!aliasFound) return false;
                     }
                     return true;
                 });
@@ -1187,16 +1390,23 @@
                             item.classList.remove('active');
                         });
                         e.target.classList.add('active');
-                        top10Elements.batchHeader.style.display = (selectedAction === 'RTS' || selectedAction === 'Local') ? '' : 'none';
-                        top10Elements.supplierHeader.style.display = (selectedAction === 'RTS' || selectedAction === 'Local') ? '' : 'none';
-                        updateDashboard();
+                        if (selectedAction === 'RTS' || selectedAction === 'Local') {
+                            top10Elements.batchHeader.style.display = '';
+                            top10Elements.supplierHeader.style.display = '';
+                        } else {
+                            top10Elements.batchHeader.style.display = 'none';
+                            top10Elements.supplierHeader.style.display = 'none';
+                        }
+                        calculateGlobalDataMetrics();
+                        updateTop10Table();
+                        updateDashboardWithActionFilter();
                     }
                     top10Elements.actionDropdownContent.classList.remove('show');
                 }
             });
         }
 
-        // Initialize clickable headers
+        // Initialize clickable headers for Reject Reason and Station
         function initClickableHeaders() {
             top10Elements.rejectReasonHeader.addEventListener('click', (e) => {
                 const rect = top10Elements.rejectReasonHeader.getBoundingClientRect();
@@ -1217,52 +1427,123 @@
             });
         }
 
-        // Update popup menus
+        // Update the Reject Reason popup menu
         function updateRejectReasonMenu() {
             const menu = top10Elements.rejectReasonMenu;
             menu.innerHTML = '';
-            menu.innerHTML += `<div class="popup-menu-item ${selectedRejectReason === null ? 'active' : ''}" onclick="selectedRejectReason = null; updateDashboard(); this.parentNode.classList.remove('active')">All Reasons</div>`;
+            const allOption = document.createElement('div');
+            allOption.className = `popup-menu-item ${selectedRejectReason === null ? 'active' : ''}`;
+            allOption.textContent = 'All Reasons';
+            allOption.addEventListener('click', () => {
+                selectedRejectReason = null;
+                calculateGlobalDataMetrics();
+                updateTop10Table();
+                menu.classList.remove('active');
+                updateDashboardWithActionFilter();
+            });
+            menu.appendChild(allOption);
             const reasonCounts = {};
-            let data = getFilteredDataForMenus();
-            if (selectedAction !== 'All') data = data.filter(item => item.ActionSelection === selectedAction);
-            data.forEach(item => {
+            let currentFilteredData = getFilteredDataForMenus();
+            if (selectedAction !== 'All') {
+                currentFilteredData = currentFilteredData.filter(item => item.ActionSelection === selectedAction);
+            }
+            currentFilteredData.forEach(item => {
                 const reason = item.RejectReason || 'Unknown';
-                reasonCounts[reason] = (reasonCounts[reason] || { count: 0, cost: 0 });
+                if (!reasonCounts[reason]) {
+                    reasonCounts[reason] = { count: 0, cost: 0 };
+                }
                 reasonCounts[reason].count += (item.QTY || 0);
                 reasonCounts[reason].cost += (item.Cost || 0);
             });
-            const sortedReasons = Object.keys(reasonCounts).sort((a, b) => 
-                sortTop10By === 'qty' ? reasonCounts[b].count - reasonCounts[a].count : reasonCounts[b].cost - reasonCounts[a].cost
-            ).slice(0, 10);
+            let sortedReasons = Object.keys(reasonCounts).sort((a, b) => 
+                sortTop10By === 'qty' 
+                    ? reasonCounts[b].count - reasonCounts[a].count 
+                    : reasonCounts[b].cost - reasonCounts[a].cost
+            );
+            sortedReasons = sortedReasons.slice(0, 10);
             sortedReasons.forEach(reason => {
-                menu.innerHTML += `<div class="popup-menu-item ${selectedRejectReason === reason ? 'active' : ''}" onclick="selectedRejectReason = '${reason}'; updateDashboard(); this.parentNode.classList.remove('active')">${reason}</div>`;
+                const option = document.createElement('div');
+                option.className = `popup-menu-item ${selectedRejectReason === reason ? 'active' : ''}`;
+                option.textContent = reason;
+                option.addEventListener('click', () => {
+                    selectedRejectReason = reason;
+                    calculateGlobalDataMetrics();
+                    updateTop10Table();
+                    menu.classList.remove('active');
+                    updateDashboardWithActionFilter();
+                });
+                menu.appendChild(option);
             });
         }
 
+        // Update the Station popup menu
         function updateStationMenu() {
             const menu = top10Elements.stationMenu;
             menu.innerHTML = '';
-            menu.innerHTML += `<div class="popup-menu-item ${selectedStation === null ? 'active' : ''}" onclick="selectedStation = null; updateDashboard(); this.parentNode.classList.remove('active')">All Stations</div>`;
+            const allOption = document.createElement('div');
+            allOption.className = `popup-menu-item ${selectedStation === null ? 'active' : ''}`;
+            allOption.textContent = 'All Stations';
+            allOption.addEventListener('click', () => {
+                selectedStation = null;
+                calculateGlobalDataMetrics();
+                updateTop10Table();
+                menu.classList.remove('active');
+                updateDashboardWithActionFilter();
+            });
+            menu.appendChild(allOption);
             const stationData = {};
-            let data = getFilteredDataForMenus();
-            if (selectedAction !== 'All') data = data.filter(item => item.ActionSelection === selectedAction);
-            if (selectedRejectReason !== null) data = data.filter(item => item.RejectReason === selectedRejectReason);
-            data.forEach(item => {
+            let currentFilteredData = getFilteredDataForMenus();
+            if (selectedAction !== 'All') {
+                currentFilteredData = currentFilteredData.filter(item => item.ActionSelection === selectedAction);
+            }
+            if (selectedRejectReason !== null) {
+                currentFilteredData = currentFilteredData.filter(item => item.RejectReason === selectedRejectReason);
+            }
+            currentFilteredData.forEach(item => {
                 const station = item.Station || 'Unknown';
-                stationData[station] = (stationData[station] || { count: 0, cost: 0 });
+                if (!stationData[station]) {
+                    stationData[station] = { count: 0, cost: 0 };
+                }
                 stationData[station].count += (item.QTY || 0);
                 stationData[station].cost += (item.Cost || 0);
             });
-            const sortedStations = Object.keys(stationData).sort((a, b) => 
-                sortTop10By === 'qty' ? stationData[b].count - stationData[a].count : stationData[b].cost - stationData[a].cost
-            ).slice(0, 10);
+            let sortedStations = Object.keys(stationData).sort((a, b) => 
+                sortTop10By === 'qty' 
+                    ? stationData[b].count - stationData[a].count 
+                    : stationData[b].cost - stationData[a].cost
+            );
+            sortedStations = sortedStations.slice(0, 10);
             sortedStations.forEach(station => {
-                menu.innerHTML += `<div class="popup-menu-item ${selectedStation === station ? 'active' : ''}" onclick="selectedStation = '${station}'; updateDashboard(); this.parentNode.classList.remove('active')">${station}</div>`;
+                const option = document.createElement('div');
+                option.className = `popup-menu-item ${selectedStation === station ? 'active' : ''}`;
+                option.textContent = station;
+                option.addEventListener('click', () => {
+                    selectedStation = station;
+                    calculateGlobalDataMetrics();
+                    updateTop10Table();
+                    menu.classList.remove('active');
+                    updateDashboardWithActionFilter();
+                });
+                menu.appendChild(option);
             });
         }
 
+        // Get filtered data considering all multi-select filters
         function getFilteredDataForMenus() {
+            const hasSelections = Object.values(filterValues).some(values => values.length > 0);
+            if (!hasSelections) {
+                return filteredData;
+            }
             return filteredData;
+        }
+
+        // Update dashboard based on action selection
+        function updateDashboardWithActionFilter() {
+            createRejectReasonsChart();
+            createDailyTrendChart();
+            createTopProblemsChart();
+            createStationCostChart();
+            updateMetrics();
         }
 
         // Initialize multi-select dropdowns
@@ -1276,59 +1557,100 @@
                 const optionsContainer = multiSelect.querySelector('.multi-select-options');
                 const selectAllBtn = multiSelect.querySelector('.select-all');
                 const clearAllBtn = multiSelect.querySelector('.clear-all');
-
                 header.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const isActive = dropdown.classList.contains('active');
-                    document.querySelectorAll('.multi-select-dropdown.active').forEach(el => el !== dropdown && el.classList.remove('active'));
+                    document.querySelectorAll('.multi-select-dropdown.active').forEach(el => {
+                        if (el !== dropdown) {
+                            el.classList.remove('active');
+                        }
+                    });
                     dropdown.classList.toggle('active');
-                    if (!isActive) search.focus();
+                    if (!isActive) {
+                        search.focus();
+                    }
                 });
-
-                document.addEventListener('click', () => dropdown.classList.remove('active'));
-                dropdown.addEventListener('click', (e) => e.stopPropagation());
-
+                document.addEventListener('click', () => {
+                    dropdown.classList.remove('active');
+                });
+                dropdown.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                });
                 search.addEventListener('input', () => {
-                    const term = search.value.toLowerCase();
-                    optionsContainer.querySelectorAll('.multi-select-option').forEach(option => {
-                        option.style.display = option.textContent.toLowerCase().includes(term) ? '' : 'none';
+                    const searchTerm = search.value.toLowerCase();
+                    const options = optionsContainer.querySelectorAll('.multi-select-option');
+                    options.forEach(option => {
+                        const text = option.textContent.toLowerCase();
+                        if (text.includes(searchTerm)) {
+                            option.style.display = '';
+                        } else {
+                            option.style.display = 'none';
+                        }
                     });
                 });
-
                 selectAllBtn.addEventListener('click', () => {
                     if (isUpdatingFilters) return;
-                    optionsContainer.querySelectorAll('.multi-select-option:not(.disabled) input[type="checkbox"]').forEach(cb => cb.checked = true);
-                    filterValues[key] = Array.from(optionsContainer.querySelectorAll('input[type="checkbox"]:checked:not(:disabled)')).map(cb => cb.value);
-                    updateHeaderText(multiSelect, key);
-                    applyDetailFilters(key);
+                    const visibleOptions = Array.from(optionsContainer.querySelectorAll('.multi-select-option'))
+                        .filter(option => option.style.display !== 'none' && !option.classList.contains('disabled'));
+                    visibleOptions.forEach(option => {
+                        const checkbox = option.querySelector('input[type="checkbox"]');
+                        checkbox.checked = true;
+                    });
+                    const filterName = multiSelect.id.replace('-select', '');
+                    filterValues[filterName] = Array.from(optionsContainer.querySelectorAll('input[type="checkbox"]:checked:not(:disabled)'))
+                        .map(checkbox => checkbox.value);
+                    updateHeaderText(multiSelect, filterName);
+                    applyDetailFilters(filterName);
                 });
-
                 clearAllBtn.addEventListener('click', () => {
                     if (isUpdatingFilters) return;
-                    optionsContainer.querySelectorAll('.multi-select-option input[type="checkbox"]').forEach(cb => cb.checked = false);
-                    filterValues[key] = [];
-                    updateHeaderText(multiSelect, key);
-                    applyDetailFilters(key);
+                    const visibleOptions = Array.from(optionsContainer.querySelectorAll('.multi-select-option'))
+                        .filter(option => option.style.display !== 'none');
+                    visibleOptions.forEach(option => {
+                        const checkbox = option.querySelector('input[type="checkbox"]');
+                        checkbox.checked = false;
+                    });
+                    const filterName = multiSelect.id.replace('-select', '');
+                    filterValues[filterName] = [];
+                    updateHeaderText(multiSelect, filterName);
+                    applyDetailFilters(filterName);
                 });
             });
         }
 
+        // Update multi-select header text based on selections
         function updateHeaderText(multiSelect, filterName) {
             const headerText = multiSelect.querySelector('.multi-select-header-text');
-            const selected = filterValues[filterName];
-            headerText.textContent = selected.length === 0 ? `All ${filterName.charAt(0).toUpperCase() + filterName.slice(1)}s` : 
-                                     selected.length === 1 ? selected[0] : `${selected.length} selected`;
+            const selectedValues = filterValues[filterName];
+            if (selectedValues.length === 0) {
+                headerText.textContent = `All ${filterName.charAt(0).toUpperCase() + filterName.slice(1)}s`;
+            } else if (selectedValues.length === 1) {
+                headerText.textContent = selectedValues[0];
+            } else {
+                headerText.textContent = `${selectedValues.length} selected`;
+            }
         }
 
-        // Set default date range
+        // Set default date range to the most recent 5 days with rejects
         function setDefaultDateRange() {
-            const dates = [...new Set(rejectData.map(item => item.ProductionDate))].map(d => new Date(d)).sort((a, b) => b - a).slice(0, 5);
-            if (dates.length > 0) {
-                filterElements.dateFrom.value = formatDateForInput(dates[dates.length - 1]);
-                filterElements.dateTo.value = formatDateForInput(dates[0]);
+            const uniqueDates = new Set();
+            rejectData.forEach(item => {
+                if (item.ProductionDate) {
+                    uniqueDates.add(item.ProductionDate);
+                }
+            });
+            const sortedDates = Array.from(uniqueDates)
+                .map(dateStr => new Date(dateStr))
+                .sort((a, b) => b - a);
+            const recentDates = sortedDates.slice(0, 5);
+            if (recentDates.length > 0) {
+                const toDate = recentDates[0];
+                const fromDate = recentDates[recentDates.length - 1];
+                filterElements.dateFrom.value = formatDateForInput(fromDate);
+                filterElements.dateTo.value = formatDateForInput(toDate);
             } else {
                 const today = new Date();
-                const fiveDaysAgo = new Date(today);
+                const fiveDaysAgo = new Date();
                 fiveDaysAgo.setDate(today.getDate() - 4);
                 filterElements.dateFrom.value = formatDateForInput(fiveDaysAgo);
                 filterElements.dateTo.value = formatDateForInput(today);
@@ -1337,12 +1659,12 @@
 
         // Apply date filter
         function applyDateFilter() {
-            const from = filterElements.dateFrom.value ? new Date(filterElements.dateFrom.value) : null;
-            const to = filterElements.dateTo.value ? new Date(filterElements.dateTo.value) : null;
+            const dateFrom = filterElements.dateFrom.value ? new Date(filterElements.dateFrom.value) : null;
+            const dateTo = filterElements.dateTo.value ? new Date(filterElements.dateTo.value) : null;
             dateFilteredData = rejectData.filter(item => {
-                if (!from || !to) return true;
-                const date = new Date(item.ProductionDate);
-                return date >= from && date <= to;
+                if (!dateFrom || !dateTo) return true;
+                const itemDate = new Date(item.ProductionDate);
+                return itemDate >= dateFrom && itemDate <= dateTo;
             });
             resetOtherFilters(true);
             selectedAction = 'All';
@@ -1356,78 +1678,190 @@
             buildFilterAssociations();
             populateMultiSelectOptions();
             filteredData = [...dateFilteredData];
+            calculateGlobalDataMetrics();
             updateDashboard();
         }
 
+        // Update action dropdown with available actions
         function updateActionDropdown() {
-            const actions = new Set(dateFilteredData.map(item => item.ActionSelection).filter(Boolean));
-            const dropdownContent = top10Elements.actionDropdownContent;
-            dropdownContent.innerHTML = `<a href="#" class="dropdown-item ${selectedAction === 'All' ? 'active' : ''}" data-action="All">All Types</a>`;
-            actions.forEach(action => {
-                dropdownContent.innerHTML += `<a href="#" class="dropdown-item ${selectedAction === action ? 'active' : ''}" data-action="${action}">${action}</a>`;
+            const actions = new Set();
+            let actionCounts = {};
+            dateFilteredData.forEach(item => {
+                if (item.ActionSelection) {
+                    actions.add(item.ActionSelection);
+                    if (!actionCounts[item.ActionSelection]) {
+                        actionCounts[item.ActionSelection] = 0;
+                    }
+                    actionCounts[item.ActionSelection] += 1;
+                }
             });
+            const dropdownContent = top10Elements.actionDropdownContent;
+            dropdownContent.innerHTML = '';
+            const allOption = document.createElement('a');
+            allOption.href = '#';
+            allOption.className = 'dropdown-item ' + (selectedAction === 'All' ? 'active' : '');
+            allOption.setAttribute('data-action', 'All');
+            allOption.textContent = 'All Types';
+            dropdownContent.appendChild(allOption);
+            Array.from(actions).sort().forEach(action => {
+                if (actionCounts[action] === 0) return;
+                const option = document.createElement('a');
+                option.href = '#';
+                option.className = 'dropdown-item';
+                option.setAttribute('data-action', action);
+                option.textContent = action;
+                if (action === selectedAction) {
+                    option.classList.add('active');
+                }
+                dropdownContent.appendChild(option);
+            });
+            const hasLocal = actions.has('Local') && actionCounts['Local'] > 0;
+            if (hasLocal) {
+                metricElements.localMetric.style.display = '';
+            } else {
+                metricElements.localMetric.style.display = 'none';
+            }
         }
 
+        // Build associations between filter values
         function buildFilterAssociations() {
             filterAssociations = {};
             const filterNames = Object.keys(filterValues);
-            filterNames.forEach(name => filterAssociations[name] = {});
+            filterNames.forEach(filterName => {
+                filterAssociations[filterName] = {};
+            });
             dateFilteredData.forEach(item => {
-                ['supervisor', 'product', 'variant', 'batch', 'part', 'alias'].forEach(filter => {
-                    let value = filter === 'supervisor' ? item.LineSupervisor :
-                                filter === 'product' ? item.Product :
-                                filter === 'variant' ? item.Variant :
-                                filter === 'batch' ? String(item.BatchNumber || '') :
-                                filter === 'part' ? (Array.isArray(item.Parts) ? item.Parts : (item.Parts || '').split(',').map(p => p.trim())) :
-                                (Array.isArray(item.Aliases) ? item.Aliases : (item.Aliases || '').split(',').map(a => a.trim()));
-                    if (Array.isArray(value)) {
-                        value.forEach(v => v && processAssociationValue(item, filter, v));
-                    } else if (value) {
-                        processAssociationValue(item, filter, value);
-                    }
-                });
+                processAssociation(item, 'supervisor', 'LineSupervisor');
+                processAssociation(item, 'product', 'Product');
+                processAssociation(item, 'variant', 'Variant');
+                if (item.BatchNumber !== undefined && item.BatchNumber !== null) {
+                    const batchStr = String(item.BatchNumber);
+                    processAssociationValue(item, 'batch', batchStr);
+                }
+                if (Array.isArray(item.Parts)) {
+                    item.Parts.forEach(part => {
+                        if (part && part.trim()) {
+                            processAssociationValue(item, 'part', part.trim());
+                        }
+                    });
+                } else if (typeof item.Parts === 'string') {
+                    item.Parts.split(',').forEach(part => {
+                        if (part && part.trim()) {
+                            processAssociationValue(item, 'part', part.trim());
+                        }
+                    });
+                }
+                if (Array.isArray(item.Aliases)) {
+                    item.Aliases.forEach(alias => {
+                        if (alias && alias.trim()) {
+                            processAssociationValue(item, 'alias', alias.trim());
+                        }
+                    });
+                } else if (typeof item.Aliases === 'string') {
+                    item.Aliases.split(',').forEach(alias => {
+                        if (alias && alias.trim()) {
+                            processAssociationValue(item, 'alias', alias.trim());
+                        }
+                    });
+                }
             });
         }
 
-        function processAssociationValue(item, filterName, filterValue) {
-            if (!filterAssociations[filterName][filterValue]) {
-                filterAssociations[filterName][filterValue] = {};
-                Object.keys(filterValues).forEach(f => {
-                    if (f !== filterName) filterAssociations[filterName][filterValue][f] = new Set();
-                });
-            }
-            const assoc = filterAssociations[filterName][filterValue];
-            if (item.LineSupervisor && filterName !== 'supervisor') assoc.supervisor.add(item.LineSupervisor);
-            if (item.Product && filterName !== 'product') assoc.product.add(item.Product);
-            if (item.Variant && filterName !== 'variant') assoc.variant.add(item.Variant);
-            if (item.BatchNumber && filterName !== 'batch') assoc.batch.add(String(item.BatchNumber));
-            if (filterName !== 'part') {
-                let parts = Array.isArray(item.Parts) ? item.Parts : (item.Parts || '').split(',').map(p => p.trim());
-                parts.forEach(p => p && assoc.part.add(p));
-            }
-            if (filterName !== 'alias') {
-                let aliases = Array.isArray(item.Aliases) ? item.Aliases : (item.Aliases || '').split(',').map(a => a.trim());
-                aliases.forEach(a => a && assoc.alias.add(a));
+        function processAssociation(item, filterName, propertyName) {
+            if (item[propertyName]) {
+                processAssociationValue(item, filterName, item[propertyName]);
             }
         }
 
+        function processAssociationValue(item, filterName, filterValue) {
+            if (filterValue === undefined || filterValue === null) return;
+            if (!filterAssociations[filterName][filterValue]) {
+                filterAssociations[filterName][filterValue] = {};
+                Object.keys(filterValues).forEach(otherFilter => {
+                    if (otherFilter !== filterName) {
+                        filterAssociations[filterName][filterValue][otherFilter] = new Set();
+                    }
+                });
+            }
+            if (item.LineSupervisor && filterName !== 'supervisor') {
+                filterAssociations[filterName][filterValue].supervisor.add(item.LineSupervisor);
+            }
+            if (item.Product && filterName !== 'product') {
+                filterAssociations[filterName][filterValue].product.add(item.Product);
+            }
+            if (item.Variant && filterName !== 'variant') {
+                filterAssociations[filterName][filterValue].variant.add(item.Variant);
+            }
+            if (item.BatchNumber !== undefined && item.BatchNumber !== null && filterName !== 'batch') {
+                filterAssociations[filterName][filterValue].batch.add(String(item.BatchNumber));
+            }
+            if (filterName !== 'part') {
+                let parts = [];
+                if (Array.isArray(item.Parts)) {
+                    parts = item.Parts;
+                } else if (typeof item.Parts === 'string') {
+                    parts = item.Parts.split(',').map(p => p.trim());
+                }
+                parts.forEach(part => {
+                    if (part && part.trim()) {
+                        filterAssociations[filterName][filterValue].part.add(part.trim());
+                    }
+                });
+            }
+            if (filterName !== 'alias') {
+                let aliases = [];
+                if (Array.isArray(item.Aliases)) {
+                    aliases = item.Aliases;
+                } else if (typeof item.Aliases === 'string') {
+                    aliases = item.Aliases.split(',').map(a => a.trim());
+                }
+                aliases.forEach(alias => {
+                    if (alias && alias.trim()) {
+                        filterAssociations[filterName][filterValue].alias.add(alias.trim());
+                    }
+                });
+            }
+        }
+
+        // Calculate available options based on the current date-filtered data
         function calculateAvailableFilterOptions() {
-            Object.keys(availableFilterOptions).forEach(key => availableFilterOptions[key].clear());
+            Object.keys(availableFilterOptions).forEach(key => {
+                availableFilterOptions[key] = new Set();
+            });
             dateFilteredData.forEach(item => {
                 if (item.LineSupervisor) availableFilterOptions.supervisor.add(item.LineSupervisor);
                 if (item.Product) availableFilterOptions.product.add(item.Product);
                 if (item.Variant) availableFilterOptions.variant.add(item.Variant);
                 if (item.ActionSelection) availableFilterOptions.action.add(item.ActionSelection);
-                if (item.BatchNumber) availableFilterOptions.batch.add(String(item.BatchNumber));
-                let parts = Array.isArray(item.Parts) ? item.Parts : (item.Parts || '').split(',').map(p => p.trim());
-                parts.forEach(p => p && availableFilterOptions.part.add(p));
-                let aliases = Array.isArray(item.Aliases) ? item.Aliases : (item.Aliases || '').split(',').map(a => a.trim());
-                aliases.forEach(a => a && availableFilterOptions.alias.add(a));
+                if (item.BatchNumber !== undefined && item.BatchNumber !== null) {
+                    availableFilterOptions.batch.add(String(item.BatchNumber));
+                }
+                if (Array.isArray(item.Parts)) {
+                    item.Parts.forEach(part => {
+                        if (part && part.trim()) availableFilterOptions.part.add(part.trim());
+                    });
+                } else if (typeof item.Parts === 'string') {
+                    item.Parts.split(',').forEach(part => {
+                        if (part && part.trim()) availableFilterOptions.part.add(part.trim());
+                    });
+                }
+                if (Array.isArray(item.Aliases)) {
+                    item.Aliases.forEach(alias => {
+                        if (alias && alias.trim()) availableFilterOptions.alias.add(alias.trim());
+                    });
+                } else if (typeof item.Aliases === 'string') {
+                    item.Aliases.split(',').forEach(alias => {
+                        if (alias && alias.trim()) availableFilterOptions.alias.add(alias.trim());
+                    });
+                }
             });
         }
 
+        // Reset all filters except date
         function resetOtherFilters(skipUpdate = false) {
-            Object.keys(filterValues).forEach(key => filterValues[key] = []);
+            Object.keys(filterValues).forEach(key => {
+                filterValues[key] = [];
+            });
             selectedAction = 'All';
             selectedRejectReason = null;
             selectedStation = null;
@@ -1435,11 +1869,17 @@
             top10Elements.batchHeader.style.display = 'none';
             top10Elements.supplierHeader.style.display = 'none';
             document.querySelectorAll('#action-dropdown-content .dropdown-item').forEach(item => {
-                item.classList.toggle('active', item.getAttribute('data-action') === 'All');
+                item.classList.remove('active');
+                if (item.getAttribute('data-action') === 'All') {
+                    item.classList.add('active');
+                }
             });
-            Object.keys(filterElements.multiSelects).forEach(key => updateHeaderText(filterElements.multiSelects[key], key));
+            Object.keys(filterElements.multiSelects).forEach(key => {
+                updateHeaderText(filterElements.multiSelects[key], key);
+            });
             if (!skipUpdate) {
                 filteredData = [...dateFilteredData];
+                calculateGlobalDataMetrics();
                 updateDashboard();
                 buildFilterAssociations();
                 populateMultiSelectOptions();
@@ -1447,28 +1887,35 @@
             }
         }
 
+        // Reset all filters
         function resetAllFilters() {
             resetOtherFilters();
         }
 
+        // Select only one option in a filter
         function selectOnlyThisOption(filterName, value) {
             if (isUpdatingFilters) return;
             isUpdatingFilters = true;
             try {
                 filterValues[filterName] = [value];
                 const multiSelect = filterElements.multiSelects[filterName];
-                multiSelect.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = cb.value === value);
+                const checkboxes = multiSelect.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = checkbox.value === value;
+                });
                 updateHeaderText(multiSelect, filterName);
                 const associations = filterAssociations[filterName][value];
                 if (associations) {
-                    Object.keys(filterValues).forEach(other => {
-                        if (other !== filterName) {
-                            filterValues[other] = Array.from(associations[other] || []);
-                            const otherSelect = filterElements.multiSelects[other];
-                            otherSelect.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-                                cb.checked = filterValues[other].includes(cb.value);
+                    Object.keys(filterValues).forEach(otherFilter => {
+                        if (otherFilter !== filterName) {
+                            const associatedValues = Array.from(associations[otherFilter] || []);
+                            filterValues[otherFilter] = associatedValues;
+                            const otherMultiSelect = filterElements.multiSelects[otherFilter];
+                            const otherCheckboxes = otherMultiSelect.querySelectorAll('input[type="checkbox"]');
+                            otherCheckboxes.forEach(checkbox => {
+                                checkbox.checked = associatedValues.includes(checkbox.value);
                             });
-                            updateHeaderText(otherSelect, other);
+                            updateHeaderText(otherMultiSelect, otherFilter);
                         }
                     });
                 }
@@ -1478,93 +1925,181 @@
             }
         }
 
+        // Determine available options based on the current filter selections
         function getAvailableOptionsForFilters() {
             const result = {};
-            Object.keys(availableFilterOptions).forEach(name => result[name] = new Set(availableFilterOptions[name]));
-            const hasSelections = Object.values(filterValues).some(v => v.length > 0);
-            if (!hasSelections) return result;
-            Object.keys(filterValues).forEach(name => {
-                if (filterValues[name].length > 0) {
-                    const associated = {};
-                    Object.keys(filterValues).forEach(other => {
-                        if (other !== name) associated[other] = new Set();
-                    });
-                    filterValues[name].forEach(value => {
-                        const assoc = filterAssociations[name][value];
-                        if (assoc) {
-                            Object.keys(assoc).forEach(other => assoc[other].forEach(v => associated[other].add(v)));
+            Object.keys(availableFilterOptions).forEach(filterName => {
+                result[filterName] = new Set(availableFilterOptions[filterName]);
+            });
+            const hasSelections = Object.values(filterValues).some(values => values.length > 0);
+            if (!hasSelections) {
+                return result;
+            }
+            Object.keys(filterValues).forEach(filterName => {
+                if (filterValues[filterName].length > 0) {
+                    const associatedValues = {};
+                    Object.keys(filterValues).forEach(otherFilter => {
+                        if (otherFilter !== filterName) {
+                            associatedValues[otherFilter] = new Set();
                         }
                     });
-                    Object.keys(associated).forEach(other => {
-                        if (filterValues[other].length === 0) result[other] = new Set(associated[other]);
+                    filterValues[filterName].forEach(value => {
+                        const associations = filterAssociations[filterName][value];
+                        if (associations) {
+                            Object.keys(associations).forEach(otherFilter => {
+                                associations[otherFilter].forEach(v => {
+                                    associatedValues[otherFilter].add(v);
+                                });
+                            });
+                        }
+                    });
+                    Object.keys(associatedValues).forEach(otherFilter => {
+                        if (filterValues[otherFilter].length === 0) {
+                            result[otherFilter] = new Set(associatedValues[otherFilter]);
+                        }
                     });
                 }
             });
             return result;
         }
 
+        // Populate multi-select options based on available options
         function populateMultiSelectOptions() {
-            const available = getAvailableOptionsForFilters();
+            const availableOptions = getAvailableOptionsForFilters();
             Object.keys(filterElements.multiSelects).forEach(key => {
                 const multiSelect = filterElements.multiSelects[key];
                 const optionsContainer = multiSelect.querySelector('.multi-select-options');
-                const allValues = [...availableFilterOptions[key]].filter(Boolean).sort();
-                const availableValues = new Set(available[key]);
-                optionsContainer.innerHTML = allValues.length === 0 ? '<div class="multi-select-option" style="font-style: italic; color: #999;">No options available</div>' : '';
-                allValues.forEach(value => {
-                    const isAvailable = availableValues.has(value);
-                    const option = document.createElement('div');
-                    option.className = `multi-select-option ${isAvailable ? '' : 'disabled'}`;
-                    option.innerHTML = `
-                        <input type="checkbox" value="${value}" id="${key}-${value.replace(/[^a-zA-Z0-9]/g, '-')}" ${filterValues[key].includes(value) ? 'checked' : ''} ${isAvailable ? '' : 'disabled'}>
-                        <label for="${key}-${value.replace(/[^a-zA-Z0-9]/g, '-')}">${value}</label>
-                        <button class="only-btn" ${isAvailable ? '' : 'disabled'} title="Show only this option">Only</button>
-                    `;
-                    optionsContainer.appendChild(option);
-                    option.querySelector('input').addEventListener('change', (e) => {
-                        if (isUpdatingFilters) return;
-                        filterValues[key] = e.target.checked ? [...filterValues[key], value] : filterValues[key].filter(v => v !== value);
-                        updateHeaderText(multiSelect, key);
-                        applyDetailFilters(key);
+                const allValues = [...availableFilterOptions[key]].filter(val => val).sort();
+                const availableValues = new Set(availableOptions[key]);
+                optionsContainer.innerHTML = '';
+                if (allValues.length === 0) {
+                    const noOptions = document.createElement('div');
+                    noOptions.className = 'multi-select-option';
+                    noOptions.textContent = 'No options available';
+                    noOptions.style.fontStyle = 'italic';
+                    noOptions.style.color = '#999';
+                    optionsContainer.appendChild(noOptions);
+                } else {
+                    allValues.forEach(value => {
+                        const option = document.createElement('div');
+                        option.className = 'multi-select-option';
+                        const isAvailable = availableValues.has(value);
+                        if (!isAvailable) {
+                            option.classList.add('disabled');
+                        }
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.value = value;
+                        checkbox.id = `${key}-${value.toString().replace(/[^a-zA-Z0-9]/g, '-')}`;
+                        checkbox.checked = filterValues[key].includes(value);
+                        checkbox.disabled = !isAvailable;
+                        const label = document.createElement('label');
+                        label.htmlFor = checkbox.id;
+                        label.textContent = value;
+                        const onlyBtn = document.createElement('button');
+                        onlyBtn.className = 'only-btn';
+                        onlyBtn.textContent = 'Only';
+                        onlyBtn.setAttribute('title', 'Show only this option');
+                        onlyBtn.disabled = !isAvailable;
+                        option.appendChild(checkbox);
+                        option.appendChild(label);
+                        option.appendChild(onlyBtn);
+                        optionsContainer.appendChild(option);
+                        checkbox.addEventListener('change', () => {
+                            if (isUpdatingFilters) return;
+                            if (checkbox.checked) {
+                                if (!filterValues[key].includes(value)) {
+                                    filterValues[key].push(value);
+                                }
+                            } else {
+                                const index = filterValues[key].indexOf(value);
+                                if (index !== -1) {
+                                    filterValues[key].splice(index, 1);
+                                }
+                            }
+                            updateHeaderText(multiSelect, key);
+                            applyDetailFilters(key);
+                        });
+                        onlyBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            selectOnlyThisOption(key, value);
+                        });
                     });
-                    option.querySelector('.only-btn').addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        selectOnlyThisOption(key, value);
-                    });
-                });
+                }
                 updateHeaderText(multiSelect, key);
             });
         }
 
+        // Apply filters based on multi-select values
         function applyDetailFilters(changedFilter = null, skipPopulate = false) {
             if (isUpdatingFilters) return;
             isUpdatingFilters = true;
             try {
-                const hasSelections = Object.values(filterValues).some(v => v.length > 0);
-                filteredData = hasSelections ? dateFilteredData.filter(item => {
-                    if (filterValues.supervisor.length > 0 && !filterValues.supervisor.includes(item.LineSupervisor)) return false;
-                    if (filterValues.product.length > 0 && !filterValues.product.includes(item.Product)) return false;
-                    if (filterValues.variant.length > 0 && !filterValues.variant.includes(item.Variant)) return false;
-                    if (filterValues.batch.length > 0 && !filterValues.batch.includes(String(item.BatchNumber || ''))) return false;
+                const hasSelections = Object.values(filterValues).some(values => values.length > 0);
+                if (!hasSelections) {
+                    filteredData = [...dateFilteredData];
+                    calculateGlobalDataMetrics();
+                    updateDashboard();
+                    if (!skipPopulate) {
+                        populateMultiSelectOptions();
+                    }
+                    return;
+                }
+                filteredData = dateFilteredData.filter(item => {
+                    if (filterValues.supervisor.length > 0 && !filterValues.supervisor.includes(item.LineSupervisor)) {
+                        return false;
+                    }
+                    if (filterValues.product.length > 0 && !filterValues.product.includes(item.Product)) {
+                        return false;
+                    }
+                    if (filterValues.variant.length > 0 && !filterValues.variant.includes(item.Variant)) {
+                        return false;
+                    }
+                    if (filterValues.batch.length > 0) {
+                        const batchStr = item.BatchNumber !== undefined && item.BatchNumber !== null 
+                            ? String(item.BatchNumber) 
+                            : '';
+                        if (!filterValues.batch.includes(batchStr)) {
+                            return false;
+                        }
+                    }
                     if (filterValues.part.length > 0) {
-                        let parts = Array.isArray(item.Parts) ? item.Parts : (item.Parts || '').split(',').map(p => p.trim());
-                        if (!parts.some(p => p && filterValues.part.includes(p))) return false;
+                        let partFound = false;
+                        let parts = [];
+                        if (Array.isArray(item.Parts)) {
+                            parts = item.Parts;
+                        } else if (typeof item.Parts === 'string') {
+                            parts = item.Parts.split(',').map(p => p.trim());
+                        }
+                        partFound = parts.some(part => part && filterValues.part.includes(part.trim()));
+                        if (!partFound) return false;
                     }
                     if (filterValues.alias.length > 0) {
-                        let aliases = Array.isArray(item.Aliases) ? item.Aliases : (item.Aliases || '').split(',').map(a => a.trim());
-                        if (!aliases.some(a => a && filterValues.alias.includes(a))) return false;
+                        let aliasFound = false;
+                        let aliases = [];
+                        if (Array.isArray(item.Aliases)) {
+                            aliases = item.Aliases;
+                        } else if (typeof item.Aliases === 'string') {
+                            aliases = item.Aliases.split(',').map(a => a.trim());
+                        }
+                        aliasFound = aliases.some(alias => alias && filterValues.alias.includes(alias.trim()));
+                        if (!aliasFound) return false;
                     }
                     return true;
-                }) : [...dateFilteredData];
+                });
+                calculateGlobalDataMetrics();
                 updateDashboard();
                 updateRejectReasonMenu();
                 updateStationMenu();
-                if (!skipPopulate) populateMultiSelectOptions();
+                if (!skipPopulate) {
+                    populateMultiSelectOptions();
+                }
             } finally {
                 isUpdatingFilters = false;
             }
         }
 
+        // Update dashboard with current filtered data
         function updateDashboard() {
             updateMetrics();
             updateTop10Table();
@@ -1574,100 +2109,177 @@
             createStationCostChart();
         }
 
+        // Update metrics display
         function updateMetrics() {
-            let data = filteredData;
-            if (selectedAction !== 'All') data = data.filter(item => item.ActionSelection === selectedAction);
-            if (selectedRejectReason !== null) data = data.filter(item => item.RejectReason === selectedRejectReason);
-            if (selectedStation !== null) data = data.filter(item => item.Station === selectedStation);
-            const totalCost = data.reduce((sum, item) => sum + (item.Cost || 0), 0);
-            const totalQty = data.reduce((sum, item) => sum + (item.QTY || 0), 0);
-            const scrapCount = data.filter(item => item.ActionSelection === 'Scrap').reduce((sum, item) => sum + (item.QTY || 0), 0);
-            const rtsCount = data.filter(item => item.ActionSelection === 'RTS').reduce((sum, item) => sum + (item.QTY || 0), 0);
-            const localCount = data.filter(item => item.ActionSelection === 'Local').reduce((sum, item) => sum + (item.QTY || 0), 0);
-            metricElements.totalCost.textContent = `R${totalCost.toFixed(2)}`;
-            metricElements.scrapPercent.textContent = totalQty > 0 ? `${Math.round((scrapCount / totalQty) * 100)}%` : '0%';
-            metricElements.rtsPercent.textContent = totalQty > 0 ? `${Math.round((rtsCount / totalQty) * 100)}%` : '0%';
-            metricElements.localPercent.textContent = totalQty > 0 ? `${Math.round((localCount / totalQty) * 100)}%` : '0%';
-            let singlePartsCount = 0, assembliesCount = 0;
-            data.forEach(item => {
-                let parts = Array.isArray(item.Parts) ? item.Parts : (item.Parts || '').split(',').map(p => p.trim()).filter(Boolean);
-                (parts.length <= 1 ? singlePartsCount : assembliesCount) += (item.QTY || 0);
+            let dataToUse = filteredData;
+            if (selectedAction !== 'All') {
+                dataToUse = dataToUse.filter(item => item.ActionSelection === selectedAction);
+            }
+            if (selectedRejectReason !== null) {
+                dataToUse = dataToUse.filter(item => item.RejectReason === selectedRejectReason);
+            }
+            if (selectedStation !== null) {
+                dataToUse = dataToUse.filter(item => item.Station === selectedStation);
+            }
+            const totalCost = dataToUse.reduce((sum, item) => sum + (item.Cost || 0), 0);
+            const scrapCount = dataToUse.filter(item => item.ActionSelection === 'Scrap')
+                .reduce((sum, item) => sum + (item.QTY || 0), 0);
+            const rtsCount = dataToUse.filter(item => item.ActionSelection === 'RTS')
+                .reduce((sum, item) => sum + (item.QTY || 0), 0);
+            const localCount = dataToUse.filter(item => item.ActionSelection === 'Local')
+                .reduce((sum, item) => sum + (item.QTY || 0), 0);
+            const totalQty = dataToUse.reduce((sum, item) => sum + (item.QTY || 0), 0);
+            const scrapPercent = totalQty > 0 ? Math.round((scrapCount / totalQty) * 100) : 0;
+            const rtsPercent = totalQty > 0 ? Math.round((rtsCount / totalQty) * 100) : 0;
+            const localPercent = totalQty > 0 ? Math.round((localCount / totalQty) * 100) : 0;
+            let singlePartsCount = 0;
+            let assembliesCount = 0;
+            dataToUse.forEach(item => {
+                let parts = [];
+                if (Array.isArray(item.Parts)) {
+                    parts = item.Parts.filter(p => p && p.trim());
+                } else if (typeof item.Parts === 'string') {
+                    parts = item.Parts.split(',').map(p => p.trim()).filter(p => p);
+                }
+                if (parts.length <= 1) {
+                    singlePartsCount += (item.QTY || 0);
+                } else {
+                    assembliesCount += (item.QTY || 0);
+                }
             });
+            metricElements.totalCost.textContent = `R${totalCost.toFixed(2)}`;
+            metricElements.scrapPercent.textContent = `${scrapPercent}%`;
+            metricElements.rtsPercent.textContent = `${rtsPercent}%`;
+            metricElements.localPercent.textContent = `${localPercent}%`;
+            metricElements.scrapMetric.style.display = scrapPercent > 0 ? '' : 'none';
+            metricElements.rtsMetric.style.display = rtsPercent > 0 ? '' : 'none';
+            metricElements.localMetric.style.display = localPercent > 0 ? '' : 'none';
             metricElements.singlePartsCount.textContent = singlePartsCount;
             metricElements.assembliesCount.textContent = assembliesCount;
         }
 
+        // Update Top 10 rejects table
         function updateTop10Table() {
             top10Elements.tableBody.innerHTML = '';
-            top10Elements.batchHeader.style.display = (selectedAction === 'RTS' || selectedAction === 'Local') ? '' : 'none';
-            top10Elements.supplierHeader.style.display = (selectedAction === 'RTS' || selectedAction === 'Local') ? '' : 'none';
-            let data = filteredData;
-            if (selectedAction !== 'All') data = data.filter(item => item.ActionSelection === selectedAction);
-            if (selectedRejectReason !== null) data = data.filter(item => item.RejectReason === selectedRejectReason);
-            if (selectedStation !== null) data = data.filter(item => item.Station === selectedStation);
-            if (data.length === 0) {
-                top10Elements.tableBody.innerHTML = `<tr><td colspan="${selectedAction === 'RTS' || selectedAction === 'Local' ? 7 : 5}" class="no-data">No data available</td></tr>`;
+            if (selectedAction === 'RTS' || selectedAction === 'Local') {
+                top10Elements.batchHeader.style.display = '';
+                top10Elements.supplierHeader.style.display = '';
+            } else {
+                top10Elements.batchHeader.style.display = 'none';
+                top10Elements.supplierHeader.style.display = 'none';
+            }
+            let dataToUse = filteredData;
+            if (selectedAction !== 'All') {
+                dataToUse = dataToUse.filter(item => item.ActionSelection === selectedAction);
+            }
+            if (selectedRejectReason !== null) {
+                dataToUse = dataToUse.filter(item => item.RejectReason === selectedRejectReason);
+            }
+            if (selectedStation !== null) {
+                dataToUse = dataToUse.filter(item => item.Station === selectedStation);
+            }
+            if (dataToUse.length === 0) {
+                const row = document.createElement('tr');
+                const colSpan = selectedAction === 'RTS' || selectedAction === 'Local' ? 7 : 5;
+                row.innerHTML = `<td colspan="${colSpan}" class="no-data">No data available</td>`;
+                top10Elements.tableBody.appendChild(row);
                 return;
             }
-            const grouped = {};
-            data.forEach(item => {
+            const groupedData = {};
+            dataToUse.forEach(item => {
                 const key = `${item.Station || 'Unknown'}-${item.RejectReason || 'Unknown'}`;
-                if (!grouped[key]) {
-                    grouped[key] = {
+                if (!groupedData[key]) {
+                    let parts = [];
+                    if (Array.isArray(item.Parts)) {
+                        parts = item.Parts.filter(p => p);
+                    } else if (typeof item.Parts === 'string') {
+                        parts = item.Parts.split(',').map(p => p.trim()).filter(p => p);
+                    }
+                    groupedData[key] = {
                         station: item.Station || 'Unknown',
                         rejectReason: item.RejectReason || 'Unknown',
-                        batchNumber: item.BatchNumber || '',
+                        batchNumber: item.BatchNumber,
                         supplier: item.Supplier || 'Unknown',
-                        parts: new Set((Array.isArray(item.Parts) ? item.Parts : (item.Parts || '').split(',').map(p => p.trim())).filter(Boolean)),
+                        parts: new Set(parts),
+                        items: [item],
                         qty: 0,
                         cost: 0
                     };
+                } else {
+                    groupedData[key].items.push(item);
+                    let parts = [];
+                    if (Array.isArray(item.Parts)) {
+                        parts = item.Parts.filter(p => p);
+                    } else if (typeof item.Parts === 'string') {
+                        parts = item.Parts.split(',').map(p => p.trim()).filter(p => p);
+                    }
+                    parts.forEach(part => {
+                        if (part) groupedData[key].parts.add(part);
+                    });
                 }
-                grouped[key].qty += (item.QTY || 0);
-                grouped[key].cost += (item.Cost || 0);
-                (Array.isArray(item.Parts) ? item.Parts : (item.Parts || '').split(',').map(p => p.trim())).filter(Boolean).forEach(p => grouped[key].parts.add(p));
+                groupedData[key].qty += (item.QTY || 0);
+                groupedData[key].cost += (item.Cost || 0);
             });
-            const top10 = Object.values(grouped).sort((a, b) => sortTop10By === 'qty' ? b.qty - a.qty : b.cost - a.cost).slice(0, 10);
-            top10.forEach(item => {
-                const partsStr = Array.from(item.parts).join(', ');
+            let top10Data = Object.values(groupedData);
+            if (sortTop10By === 'qty') {
+                top10Data.sort((a, b) => b.qty - a.qty);
+            } else {
+                top10Data.sort((a, b) => b.cost - a.cost);
+            }
+            top10Data = top10Data.slice(0, 10);
+            top10Data.forEach(item => {
                 const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td title="${item.station}">${item.station}</td>
-                    <td class="truncated" title="${partsStr}">${partsStr}</td>
-                    ${selectedAction === 'RTS' || selectedAction === 'Local' ? `<td>${item.batchNumber}</td><td>${item.supplier}</td>` : ''}
-                    <td title="${item.rejectReason}">${item.rejectReason}</td>
-                    <td>${item.qty}</td>
-                    <td>R${item.cost.toFixed(2)}</td>
-                `;
+                const partsString = Array.from(item.parts).join(', ');
+                let cells = `<td title="${item.station}">${item.station}</td><td class="truncated" title="${partsString}">${partsString}</td>`;
+                if (selectedAction === 'RTS' || selectedAction === 'Local') {
+                    const batchNumber = item.batchNumber !== undefined && item.batchNumber !== null ? item.batchNumber : '';
+                    cells += `<td>${batchNumber}</td><td>${item.supplier}</td>`;
+                }
+                cells += `<td title="${item.rejectReason}">${item.rejectReason}</td><td>${item.qty}</td><td>R${item.cost.toFixed(2)}</td>`;
+                row.innerHTML = cells;
                 top10Elements.tableBody.appendChild(row);
             });
         }
 
+        // Create reject reasons chart
         function createRejectReasonsChart() {
             const container = chartContainers.reasons;
-            let data = filteredData;
-            if (selectedAction !== 'All') data = data.filter(item => item.ActionSelection === selectedAction);
-            if (selectedRejectReason !== null) data = data.filter(item => item.RejectReason === selectedRejectReason);
-            if (selectedStation !== null) data = data.filter(item => item.Station === selectedStation);
-            if (data.length === 0) {
+            let dataToUse = filteredData;
+            if (selectedAction !== 'All') {
+                dataToUse = dataToUse.filter(item => item.ActionSelection === selectedAction);
+            }
+            if (selectedRejectReason !== null) {
+                dataToUse = dataToUse.filter(item => item.RejectReason === selectedRejectReason);
+            }
+            if (selectedStation !== null) {
+                dataToUse = dataToUse.filter(item => item.Station === selectedStation);
+            }
+            if (dataToUse.length === 0) {
                 container.innerHTML = '<div class="no-data">No data available</div>';
                 return;
             }
             const reasonCounts = {};
-            data.forEach(item => {
+            dataToUse.forEach(item => {
                 const reason = item.RejectReason || 'Unknown';
-                reasonCounts[reason] = (reasonCounts[reason] || { count: 0, cost: 0 });
+                if (!reasonCounts[reason]) {
+                    reasonCounts[reason] = { count: 0, cost: 0 };
+                }
                 reasonCounts[reason].count += (item.QTY || 0);
                 reasonCounts[reason].cost += (item.Cost || 0);
             });
-            const topReasons = Object.keys(reasonCounts).sort((a, b) => 
-                sortTop10By === 'qty' ? reasonCounts[b].count - reasonCounts[a].count : reasonCounts[b].cost - reasonCounts[a].cost
-            ).slice(0, 3);
+            const sortedReasons = Object.keys(reasonCounts).sort((a, b) => 
+                sortTop10By === 'qty' 
+                    ? reasonCounts[b].count - reasonCounts[a].count 
+                    : reasonCounts[b].cost - reasonCounts[a].cost
+            );
+            const topReasons = sortedReasons.slice(0, 3);
             const margin = { top: 10, right: 80, bottom: 20, left: 120 };
             const width = container.clientWidth - margin.left - margin.right;
             const height = container.clientHeight - margin.top - margin.bottom;
             container.innerHTML = '';
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', '100%');
+            svg.setAttribute('height', '100%');
             svg.setAttribute('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
             container.appendChild(svg);
             const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
@@ -1677,157 +2289,236 @@
             const y = topReasons.map((_, i) => i * (height / topReasons.length) + barHeight);
             const metric = sortTop10By === 'qty' ? 'count' : 'cost';
             const maxValue = Math.max(...topReasons.map(r => reasonCounts[r][metric]));
+            const x = (value) => width * (value / maxValue);
             topReasons.forEach((reason, i) => {
                 const value = reasonCounts[reason][metric];
+                const barWidth = x(value);
                 const bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                bar.setAttribute('x', '0');
-                bar.setAttribute('y', `${y[i] - barHeight}`);
-                bar.setAttribute('width', `${width * (value / maxValue)}`);
+                bar.setAttribute('x', 0);
+                bar.setAttribute('y', y[i] - barHeight);
+                bar.setAttribute('width', barWidth);
                 bar.setAttribute('height', barHeight);
                 bar.setAttribute('fill', colors[i % colors.length]);
                 bar.classList.add('horizontal-bar');
-                bar.addEventListener('mouseover', (e) => showTooltip(e, `<strong>${reason}</strong><br>Count: ${reasonCounts[reason].count}<br>Cost: R${reasonCounts[reason].cost.toFixed(2)}`));
-                bar.addEventListener('mousemove', moveTooltip);
-                bar.addEventListener('mouseout', hideTooltip);
+                bar.addEventListener('mouseover', (e) => {
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'tooltip';
+                    tooltip.innerHTML = `<strong>${reason}</strong><br>Count: ${reasonCounts[reason].count}<br>Cost: R${reasonCounts[reason].cost.toFixed(2)}`;
+                    tooltip.style.left = `${e.pageX + 10}px`;
+                    tooltip.style.top = `${e.pageY - 30}px`;
+                    document.body.appendChild(tooltip);
+                });
+                bar.addEventListener('mousemove', (e) => {
+                    const tooltip = document.querySelector('.tooltip');
+                    if (tooltip) {
+                        tooltip.style.left = `${e.pageX + 10}px`;
+                        tooltip.style.top = `${e.pageY - 30}px`;
+                    }
+                });
+                bar.addEventListener('mouseout', () => {
+                    const tooltip = document.querySelector('.tooltip');
+                    if (tooltip) tooltip.remove();
+                });
                 g.appendChild(bar);
                 const nameLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                nameLabel.setAttribute('x', '-5');
-                nameLabel.setAttribute('y', `${y[i] - barHeight / 2}`);
+                nameLabel.setAttribute('x', -5);
+                nameLabel.setAttribute('y', y[i] - barHeight / 2);
                 nameLabel.setAttribute('text-anchor', 'end');
                 nameLabel.setAttribute('dominant-baseline', 'middle');
                 nameLabel.textContent = reason.length > 18 ? reason.substring(0, 16) + '...' : reason;
                 nameLabel.classList.add('horizontal-bar-label');
                 g.appendChild(nameLabel);
                 const valueLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                valueLabel.setAttribute('x', `${width * (value / maxValue) + 5}`);
-                valueLabel.setAttribute('y', `${y[i] - barHeight / 2}`);
+                valueLabel.setAttribute('x', barWidth + 5);
+                valueLabel.setAttribute('y', y[i] - barHeight / 2);
                 valueLabel.setAttribute('dominant-baseline', 'middle');
-                valueLabel.textContent = sortTop10By === 'qty' ? value : `R${value.toFixed(0)}`;
+                const valueText = sortTop10By === 'qty' ? value : 'R' + value.toFixed(0);
+                valueLabel.textContent = valueText;
                 valueLabel.classList.add('horizontal-bar-label');
                 g.appendChild(valueLabel);
             });
         }
 
+        // Create daily trend chart with horizontal box plot
         function createDailyTrendChart() {
             const container = chartContainers.trend;
-            let data = filteredData;
-            if (selectedAction !== 'All') data = data.filter(item => item.ActionSelection === selectedAction);
-            if (selectedRejectReason !== null) data = data.filter(item => item.RejectReason === selectedRejectReason);
-            if (selectedStation !== null) data = data.filter(item => item.Station === selectedStation);
-            if (data.length === 0) {
+            let dataToUse = filteredData;
+            if (selectedAction !== 'All') {
+                dataToUse = dataToUse.filter(item => item.ActionSelection === selectedAction);
+            }
+            if (selectedRejectReason !== null) {
+                dataToUse = dataToUse.filter(item => item.RejectReason === selectedRejectReason);
+            }
+            if (selectedStation !== null) {
+                dataToUse = dataToUse.filter(item => item.Station === selectedStation);
+            }
+            if (dataToUse.length === 0) {
                 container.innerHTML = '<div class="no-data">No data available</div>';
                 return;
             }
+            // Group data by date within selected date range
             const dailyData = {};
-            data.forEach(item => {
+            dataToUse.forEach(item => {
                 const date = item.ProductionDate || 'Unknown';
-                dailyData[date] = (dailyData[date] || { qty: 0, cost: 0 });
+                if (!dailyData[date]) {
+                    dailyData[date] = { qty: 0, cost: 0 };
+                }
                 dailyData[date].qty += (item.QTY || 0);
                 dailyData[date].cost += (item.Cost || 0);
             });
             const dates = Object.keys(dailyData).sort();
             const metric = sortTop10By === 'qty' ? 'qty' : 'cost';
             const values = dates.map(date => dailyData[date][metric]);
-            const globalData = getGlobalMetricsData().filter(item => {
-                const itemDate = new Date(item.ProductionDate);
-                const from = filterElements.dateFrom.value ? new Date(filterElements.dateFrom.value) : null;
-                const to = filterElements.dateTo.value ? new Date(filterElements.dateTo.value) : null;
-                return !from || !to || itemDate < from || itemDate > to;
-            });
-            const globalDaily = {};
-            globalData.forEach(item => {
-                const date = item.ProductionDate || 'Unknown';
-                globalDaily[date] = (globalDaily[date] || { qty: 0, cost: 0 });
-                globalDaily[date].qty += (item.QTY || 0);
-                globalDaily[date].cost += (item.Cost || 0);
-            });
-            const globalValues = Object.values(globalDaily).map(d => d[metric]);
-            const mean = globalValues.length ? globalValues.reduce((sum, v) => sum + v, 0) / globalValues.length : 0;
-            const max = globalValues.length ? Math.max(...globalValues) : 0;
-            const min = globalValues.length ? Math.min(...globalValues) : 0;
+            // Define chart dimensions
             const margin = { top: 40, right: 120, bottom: 40, left: 50 };
             const width = container.clientWidth - margin.left - margin.right;
             const height = container.clientHeight - margin.top - margin.bottom;
+            // Clear existing content
             container.innerHTML = '';
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', '100%');
+            svg.setAttribute('height', '100%');
             svg.setAttribute('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
             container.appendChild(svg);
             const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
             g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
             svg.appendChild(g);
-            const xScale = (i) => (i * width) / (dates.length - 1 || 1);
-            const yMax = Math.max(max, ...values) * 1.2;
-            const yScale = (v) => height - (v / yMax) * height;
-            ['mean', 'max', 'min'].forEach((type, i) => {
-                const value = { mean, max, min }[type];
-                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                line.setAttribute('x1', '0');
-                line.setAttribute('y1', yScale(value));
-                line.setAttribute('x2', width);
-                line.setAttribute('y2', yScale(value));
-                line.classList.add(`${type}-line`);
-                g.appendChild(line);
-                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                label.setAttribute('x', width + 10);
-                label.setAttribute('y', yScale(value));
-                label.set Attribute('dominant-baseline', 'middle');
-                label.textContent = type.charAt(0).toUpperCase() + type.slice(1);
-                label.classList.add('line-label', `${type}-line`);
-                g.appendChild(label);
-            });
-            const dailyPath = dates.map((date, i) => `${xScale(i)},${yScale(dailyData[date][metric])}`).join(' ');
-            const dailyLine = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
-            dailyLine.setAttribute('points', dailyPath);
-            dailyLine.classList.add('daily-line');
-            g.appendChild(dailyLine);
-            dates.forEach((date, i) => {
+            // Scales
+            const yScale = (index) => (index * height) / (dates.length - 1 || 1);
+            const xMin = Math.min(globalDataMetrics.min, ...values);
+            const xMax = Math.max(globalDataMetrics.max, ...values);
+            const xScale = (value) => ((value - xMin) / (xMax - xMin || 1)) * width;
+            // Draw horizontal box plot
+            const boxHeight = 20;
+            const boxY = height / 2 - boxHeight / 2;
+            // Whiskers
+            const whiskerLeft = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            whiskerLeft.setAttribute('x1', xScale(globalDataMetrics.min));
+            whiskerLeft.setAttribute('y1', boxY + boxHeight / 2);
+            whiskerLeft.setAttribute('x2', xScale(globalDataMetrics.q1));
+            whiskerLeft.setAttribute('y2', boxY + boxHeight / 2);
+            whiskerLeft.classList.add('whisker-line');
+            g.appendChild(whiskerLeft);
+            const whiskerRight = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            whiskerRight.setAttribute('x1', xScale(globalDataMetrics.q3));
+            whiskerRight.setAttribute('y1', boxY + boxHeight / 2);
+            whiskerRight.setAttribute('x2', xScale(globalDataMetrics.max));
+            whiskerRight.setAttribute('y2', boxY + boxHeight / 2);
+            whiskerRight.classList.add('whisker-line');
+            g.appendChild(whiskerRight);
+            // Box
+            const box = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            box.setAttribute('x', xScale(globalDataMetrics.q1));
+            box.setAttribute('y', boxY);
+            box.setAttribute('width', xScale(globalDataMetrics.q3) - xScale(globalDataMetrics.q1));
+            box.setAttribute('height', boxHeight);
+            box.classList.add('box-plot');
+            g.appendChild(box);
+            // Median line
+            const medianLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            medianLine.setAttribute('x1', xScale(globalDataMetrics.median));
+            medianLine.setAttribute('y1', boxY);
+            medianLine.setAttribute('x2', xScale(globalDataMetrics.median));
+            medianLine.setAttribute('y2', boxY + boxHeight);
+            medianLine.classList.add('median-line');
+            g.appendChild(medianLine);
+            // Labels for box plot
+            const labels = [
+                { value: globalDataMetrics.min, text: 'Min' },
+                { value: globalDataMetrics.q1, text: 'Q1' },
+                { value: globalDataMetrics.median, text: 'Median' },
+                { value: globalDataMetrics.q3, text: 'Q3' },
+                { value: globalDataMetrics.max, text: 'Max' }
+            ];
+            labels.forEach(label => {
                 const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                text.setAttribute('x', xScale(i));
-                text.setAttribute('y', height + 15);
+                text.setAttribute('x', xScale(label.value));
+                text.setAttribute('y', boxY - 5);
                 text.setAttribute('text-anchor', 'middle');
-                text.textContent = formatDate(date).split(' ')[1];
-                text.classList.add('axis');
+                text.textContent = label.text;
+                text.classList.add('box-plot-label');
                 g.appendChild(text);
             });
-            [0, yMax / 2, yMax].forEach(tick => {
+            // Draw daily indicators
+            dates.forEach((date, i) => {
+                const value = dailyData[date][metric];
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', xScale(value));
+                line.setAttribute('y1', yScale(i) - 5);
+                line.setAttribute('x2', xScale(value));
+                line.setAttribute('y2', yScale(i) + 5);
+                line.classList.add('date-marker');
+                g.appendChild(line);
+                const dateText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                dateText.setAttribute('x', -5);
+                dateText.setAttribute('y', yScale(i));
+                dateText.setAttribute('text-anchor', 'end');
+                dateText.setAttribute('dominant-baseline', 'middle');
+                dateText.textContent = formatDate(date);
+                dateText.classList.add('axis');
+                g.appendChild(dateText);
+            });
+            // X-axis
+            const xTicks = [xMin, (xMin + xMax) / 2, xMax];
+            xTicks.forEach(tick => {
                 const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                text.setAttribute('x', '-5');
-                text.setAttribute('y', yScale(tick));
-                text.setAttribute('text-anchor', 'end');
-                text.setAttribute('dominant-baseline', 'middle');
+                text.setAttribute('x', xScale(tick));
+                text.setAttribute('y', height + 15);
+                text.setAttribute('text-anchor', 'middle');
                 text.textContent = sortTop10By === 'qty' ? tick.toFixed(0) : `R${tick.toFixed(0)}`;
                 text.classList.add('axis');
                 g.appendChild(text);
             });
         }
 
+        // Create top problems chart
         function createTopProblemsChart() {
             const container = chartContainers.parts;
-            let data = filteredData;
-            if (selectedAction !== 'All') data = data.filter(item => item.ActionSelection === selectedAction);
-            if (selectedRejectReason !== null) data = data.filter(item => item.RejectReason === selectedRejectReason);
-            if (selectedStation !== null) data = data.filter(item => item.Station === selectedStation);
-            if (data.length === 0) {
+            let dataToUse = filteredData;
+            if (selectedAction !== 'All') {
+                dataToUse = dataToUse.filter(item => item.ActionSelection === selectedAction);
+            }
+            if (selectedRejectReason !== null) {
+                dataToUse = dataToUse.filter(item => item.RejectReason === selectedRejectReason);
+            }
+            if (selectedStation !== null) {
+                dataToUse = dataToUse.filter(item => item.Station === selectedStation);
+            }
+            if (dataToUse.length === 0) {
                 container.innerHTML = '<div class="no-data">No data available</div>';
                 return;
             }
             const partCounts = {};
-            data.forEach(item => {
-                let parts = Array.isArray(item.Parts) ? item.Parts : (item.Parts || '').split(',').map(p => p.trim()).filter(Boolean);
+            dataToUse.forEach(item => {
+                let parts = [];
+                if (Array.isArray(item.Parts)) {
+                    parts = item.Parts;
+                } else if (typeof item.Parts === 'string') {
+                    parts = item.Parts.split(',').map(p => p.trim());
+                }
                 parts.forEach(part => {
-                    partCounts[part] = (partCounts[part] || { count: 0, cost: 0 });
+                    if (!part) return;
+                    if (!partCounts[part]) {
+                        partCounts[part] = { count: 0, cost: 0 };
+                    }
                     partCounts[part].count += (item.QTY || 0);
-                    partCounts[part].cost += (item.Cost || 0) / (parts.length || 1);
+                    const partCount = parts.length || 1;
+                    partCounts[part].cost += ((item.Cost || 0) / partCount);
                 });
             });
-            const topParts = Object.keys(partCounts).sort((a, b) => 
-                sortTop10By === 'qty' ? partCounts[b].count - partCounts[a].count : partCounts[b].cost - partCounts[a].cost
-            ).slice(0, 3);
+            const sortedParts = Object.keys(partCounts).sort((a, b) => 
+                sortTop10By === 'qty' 
+                    ? partCounts[b].count - partCounts[a].count 
+                    : partCounts[b].cost - partCounts[a].cost
+            );
+            const topParts = sortedParts.slice(0, 3);
             const margin = { top: 10, right: 80, bottom: 20, left: 120 };
             const width = container.clientWidth - margin.left - margin.right;
             const height = container.clientHeight - margin.top - margin.bottom;
             container.innerHTML = '';
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', '100%');
+            svg.setAttribute('height', '100%');
             svg.setAttribute('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
             container.appendChild(svg);
             const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
@@ -1837,62 +2528,95 @@
             const y = topParts.map((_, i) => i * (height / topParts.length) + barHeight);
             const metric = sortTop10By === 'qty' ? 'count' : 'cost';
             const maxValue = Math.max(...topParts.map(p => partCounts[p][metric]));
+            const x = (value) => width * (value / maxValue);
             topParts.forEach((part, i) => {
                 const value = partCounts[part][metric];
+                const barWidth = x(value);
                 const bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                bar.setAttribute('x', '0');
-                bar.setAttribute('y', `${y[i] - barHeight}`);
-                bar.setAttribute('width', `${width * (value / maxValue)}`);
+                bar.setAttribute('x', 0);
+                bar.setAttribute('y', y[i] - barHeight);
+                bar.setAttribute('width', barWidth);
                 bar.setAttribute('height', barHeight);
                 bar.setAttribute('fill', colors[i % colors.length]);
                 bar.classList.add('horizontal-bar');
-                bar.addEventListener('mouseover', (e) => showTooltip(e, `<strong>${part}</strong><br>Count: ${partCounts[part].count}<br>Cost: R${partCounts[part].cost.toFixed(2)}`));
-                bar.addEventListener('mousemove', moveTooltip);
-                bar.addEventListener('mouseout', hideTooltip);
+                bar.addEventListener('mouseover', (e) => {
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'tooltip';
+                    tooltip.innerHTML = `<strong>${part}</strong><br>Count: ${partCounts[part].count}<br>Cost: R${partCounts[part].cost.toFixed(2)}`;
+                    tooltip.style.left = `${e.pageX + 10}px`;
+                    tooltip.style.top = `${e.pageY - 30}px`;
+                    document.body.appendChild(tooltip);
+                });
+                bar.addEventListener('mousemove', (e) => {
+                    const tooltip = document.querySelector('.tooltip');
+                    if (tooltip) {
+                        tooltip.style.left = `${e.pageX + 10}px`;
+                        tooltip.style.top = `${e.pageY - 30}px`;
+                    }
+                });
+                bar.addEventListener('mouseout', () => {
+                    const tooltip = document.querySelector('.tooltip');
+                    if (tooltip) tooltip.remove();
+                });
                 g.appendChild(bar);
                 const nameLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                nameLabel.setAttribute('x', '-5');
-                nameLabel.setAttribute('y', `${y[i] - barHeight / 2}`);
+                nameLabel.setAttribute('x', -5);
+                nameLabel.setAttribute('y', y[i] - barHeight / 2);
                 nameLabel.setAttribute('text-anchor', 'end');
                 nameLabel.setAttribute('dominant-baseline', 'middle');
                 nameLabel.textContent = part.length > 18 ? part.substring(0, 16) + '...' : part;
                 nameLabel.classList.add('horizontal-bar-label');
                 g.appendChild(nameLabel);
                 const valueLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                valueLabel.setAttribute('x', `${width * (value / maxValue) + 5}`);
-                valueLabel.setAttribute('y', `${y[i] - barHeight / 2}`);
+                valueLabel.setAttribute('x', barWidth + 5);
+                valueLabel.setAttribute('y', y[i] - barHeight / 2);
                 valueLabel.setAttribute('dominant-baseline', 'middle');
-                valueLabel.textContent = sortTop10By === 'qty' ? value : `R${value.toFixed(0)}`;
+                const valueText = sortTop10By === 'qty' ? value : 'R' + value.toFixed(0);
+                valueLabel.textContent = valueText;
                 valueLabel.classList.add('horizontal-bar-label');
                 g.appendChild(valueLabel);
             });
         }
 
+        // Create station cost chart
         function createStationCostChart() {
             const container = chartContainers.station;
-            let data = filteredData;
-            if (selectedAction !== 'All') data = data.filter(item => item.ActionSelection === selectedAction);
-            if (selectedRejectReason !== null) data = data.filter(item => item.RejectReason === selectedRejectReason);
-            if (selectedStation !== null) data = data.filter(item => item.Station === selectedStation);
-            if (data.length === 0) {
+            let dataToUse = filteredData;
+            if (selectedAction !== 'All') {
+                dataToUse = dataToUse.filter(item => item.ActionSelection === selectedAction);
+            }
+            if (selectedRejectReason !== null) {
+                dataToUse = dataToUse.filter(item => item.RejectReason === selectedRejectReason);
+            }
+            if (selectedStation !== null) {
+                dataToUse = dataToUse.filter(item => item.Station === selectedStation);
+            }
+            if (dataToUse.length === 0) {
                 container.innerHTML = '<div class="no-data">No data available</div>';
                 return;
             }
             const stationData = {};
-            data.forEach(item => {
+            dataToUse.forEach(item => {
                 const station = item.Station || 'Unknown';
-                stationData[station] = (stationData[station] || { count: 0, cost: 0 });
+                if (!stationData[station]) {
+                    stationData[station] = { count: 0, cost: 0 };
+                }
                 stationData[station].count += (item.QTY || 0);
                 stationData[station].cost += (item.Cost || 0);
             });
-            const topStations = Object.keys(stationData).sort((a, b) => 
-                sortTop10By === 'qty' ? stationData[b].count - stationData[a].count : stationData[b].cost - stationData[a].cost
-            ).slice(0, 3);
+            const sortedStations = Object.keys(stationData).sort((a, b) => 
+                sortTop10By === 'qty' 
+                    ? stationData[b].count - stationData[a].count 
+                    : stationData[b].cost - stationData[a].cost
+            );
+            const topStations = sortedStations.slice(0, 3);
             const margin = { top: 10, right: 80, bottom: 20, left: 120 };
             const width = container.clientWidth - margin.left - margin.right;
             const height = container.clientHeight - margin.top - margin.bottom;
             container.innerHTML = '';
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', '100%');
+            svg.setAttribute('height', '100%');
             svg.setAttribute('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
             container.appendChild(svg);
             const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
@@ -1902,58 +2626,54 @@
             const y = topStations.map((_, i) => i * (height / topStations.length) + barHeight);
             const metric = sortTop10By === 'qty' ? 'count' : 'cost';
             const maxValue = Math.max(...topStations.map(s => stationData[s][metric]));
+            const x = (value) => width * (value / maxValue);
             topStations.forEach((station, i) => {
                 const value = stationData[station][metric];
+                const barWidth = x(value);
                 const bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                bar.setAttribute('x', '0');
-                bar.setAttribute('y', `${y[i] - barHeight}`);
-                bar.setAttribute('width', `${width * (value / maxValue)}`);
+                bar.setAttribute('x', 0);
+                bar.setAttribute('y', y[i] - barHeight);
+                bar.setAttribute('width', barWidth);
                 bar.setAttribute('height', barHeight);
                 bar.setAttribute('fill', colors[i % colors.length]);
                 bar.classList.add('horizontal-bar');
-                bar.addEventListener('mouseover', (e) => showTooltip(e, `<strong>${station}</strong><br>Count: ${stationData[station].count}<br>Cost: R${stationData[station].cost.toFixed(2)}`));
-                bar.addEventListener('mousemove', moveTooltip);
-                bar.addEventListener('mouseout', hideTooltip);
+                bar.addEventListener('mouseover', (e) => {
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'tooltip';
+                    tooltip.innerHTML = `<strong>${station}</strong><br>Count: ${stationData[station].count}<br>Cost: R${stationData[station].cost.toFixed(2)}`;
+                    tooltip.style.left = `${e.pageX + 10}px`;
+                    tooltip.style.top = `${e.pageY - 30}px`;
+                    document.body.appendChild(tooltip);
+                });
+                bar.addEventListener('mousemove', (e) => {
+                    const tooltip = document.querySelector('.tooltip');
+                    if (tooltip) {
+                        tooltip.style.left = `${e.pageX + 10}px`;
+                        tooltip.style.top = `${e.pageY - 30}px`;
+                    }
+                });
+                bar.addEventListener('mouseout', () => {
+                    const tooltip = document.querySelector('.tooltip');
+                    if (tooltip) tooltip.remove();
+                });
                 g.appendChild(bar);
                 const nameLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                nameLabel.setAttribute('x', '-5');
-                nameLabel.setAttribute('y', `${y[i] - barHeight / 2}`);
+                nameLabel.setAttribute('x', -5);
+                nameLabel.setAttribute('y', y[i] - barHeight / 2);
                 nameLabel.setAttribute('text-anchor', 'end');
                 nameLabel.setAttribute('dominant-baseline', 'middle');
                 nameLabel.textContent = station.length > 18 ? station.substring(0, 16) + '...' : station;
                 nameLabel.classList.add('horizontal-bar-label');
                 g.appendChild(nameLabel);
                 const valueLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                valueLabel.setAttribute('x', `${width * (value / maxValue) + 5}`);
-                valueLabel.setAttribute('y', `${y[i] - barHeight / 2}`);
+                valueLabel.setAttribute('x', barWidth + 5);
+                valueLabel.setAttribute('y', y[i] - barHeight / 2);
                 valueLabel.setAttribute('dominant-baseline', 'middle');
-                valueLabel.textContent = sortTop10By === 'qty' ? value : `R${value.toFixed(0)}`;
+                const valueText = sortTop10By === 'qty' ? value : 'R' + value.toFixed(0);
+                valueLabel.textContent = valueText;
                 valueLabel.classList.add('horizontal-bar-label');
                 g.appendChild(valueLabel);
             });
-        }
-
-        // Tooltip helpers
-        function showTooltip(e, content) {
-            const tooltip = document.createElement('div');
-            tooltip.className = 'tooltip';
-            tooltip.innerHTML = content;
-            tooltip.style.left = `${e.pageX + 10}px`;
-            tooltip.style.top = `${e.pageY - 30}px`;
-            document.body.appendChild(tooltip);
-        }
-
-        function moveTooltip(e) {
-            const tooltip = document.querySelector('.tooltip');
-            if (tooltip) {
-                tooltip.style.left = `${e.pageX + 10}px`;
-                tooltip.style.top = `${e.pageY - 30}px`;
-            }
-        }
-
-        function hideTooltip() {
-            const tooltip = document.querySelector('.tooltip');
-            if (tooltip) tooltip.remove();
         }
     </script>
 </body>
