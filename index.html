@@ -3140,118 +3140,19 @@ function createDailyTrendChart() {
             }
         }
 
-        // Modified prepareTrendChartData() function for improved trend visualization
-function prepareTrendChartData() {
-    const dateFrom = filterElements.dateFrom.value ? new Date(filterElements.dateFrom.value) : null;
-    const dateTo = filterElements.dateTo.value ? new Date(filterElements.dateTo.value) : null;
-    
-    // Filter data based on current filters EXCEPT date range
-    let dataForOutsideRange = getDataWithFiltersExceptDate();
-    
-    // Separate data inside and outside the date range
-    let dataOutsideRange = [];
-    let dataInsideRange = [];
-    
-    dataForOutsideRange.forEach(item => {
-        const itemDate = new Date(item.ProductionDate);
-        if (dateFrom && dateTo && (itemDate >= dateFrom && itemDate <= dateTo)) {
-            dataInsideRange.push(item);
-        } else {
-            dataOutsideRange.push(item);
-        }
-    });
-    
-    // Process data outside date range - getting single values, not by date
-    let allOutsideValues = [];
-    dataOutsideRange.forEach(item => {
-        const value = sortTop10By === 'qty' ? (item.QTY || 0) : (item.Cost || 0);
-        if (!isNaN(value) && value !== null && value !== undefined) {
-            allOutsideValues.push(value);
-        }
-    });
-    
-    // Calculate single min, max, mean values from all outside data with safety checks
-    let minValue = 0;
-    let maxValue = 0;
-    let meanValue = 0;
-    
-    if (allOutsideValues.length > 0) {
-        minValue = Math.min(...allOutsideValues);
-        maxValue = Math.max(...allOutsideValues);
-        const sum = allOutsideValues.reduce((a, b) => a + b, 0);
-        meanValue = sum / allOutsideValues.length;
-    }
-    
-    // Safety check for NaN values
-    minValue = isNaN(minValue) ? 0 : minValue;
-    maxValue = isNaN(maxValue) ? 0 : maxValue;
-    meanValue = isNaN(meanValue) ? 0 : meanValue;
-    
-    // Process data inside date range
-    const insideDateGroups = {};
-    dataInsideRange.forEach(item => {
-        const date = item.ProductionDate;
-        if (!insideDateGroups[date]) {
-            insideDateGroups[date] = {
-                date,
-                total: 0
-            };
-        }
-        const value = sortTop10By === 'qty' ? (item.QTY || 0) : (item.Cost || 0);
-        if (!isNaN(value)) {
-            insideDateGroups[date].total += value;
-        }
-    });
-    
-    // Prepare data for inside date range
-    const currentValues = Object.values(insideDateGroups)
-        .sort((a, b) => new Date(a.date) - new Date(b.date))
-        .map(group => ({
-            date: group.date,
-            value: group.total
-        }));
-    
-    console.log("Debug trend data:", {
-        minValue,
-        maxValue,
-        meanValue,
-        currentValuesCount: currentValues.length,
-        sampleCurrentValue: currentValues.length > 0 ? currentValues[0].value : 'none'
-    });
-    
-    // Store in the global object
-    trendChartData = {
-        outsideRange: {
-            min: minValue,
-            max: maxValue,
-            mean: meanValue
-        },
-        insideRange: {
-            values: currentValues
-        }
-    };
-}
 
 function createDailyTrendChart() {
     const container = chartContainers.trend;
     container.innerHTML = '';
     
-    // Get data from trend chart data with safety checks
+    // Use the trend chart data prepared by prepareTrendChartData()
     const minValue = trendChartData.outsideRange.min || 0;
     const maxValue = trendChartData.outsideRange.max || 0;
     const meanValue = trendChartData.outsideRange.mean || 0;
     const currentData = trendChartData.insideRange.values || [];
     
-    // Debug logging
-    console.log("Chart values:", { 
-        minValue, 
-        maxValue, 
-        meanValue, 
-        currentDataPoints: currentData.length 
-    });
-    
-    if (currentData.length === 0) {
-        container.innerHTML = '<div class="no-data">No data available for selected date range</div>';
+    if (currentData.length === 0 || filteredData.length === 0) {
+        container.innerHTML = '<div class="no-data">No data available</div>';
         return;
     }
     
@@ -3269,33 +3170,27 @@ function createDailyTrendChart() {
     g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
     svg.appendChild(g);
     
-    // Find min and max for y-axis scale, with safety checks
-    const currentDataMax = currentData.length > 0 
-        ? Math.max(...currentData.map(d => d.value)) 
-        : 0;
+    // Find min and max for y-axis scale, considering both reference lines and current data
+    let yMaxValue = Math.max(
+        Math.max(...currentData.map(d => d.value || 0)), 
+        maxValue || 0
+    );
     
-    // Use either the historical max or the current max, whichever is greater
-    let yMaxValue = Math.max(maxValue, currentDataMax);
-    
-    // Add 10% padding to the top, but handle the case where max is 0
+    // Add some padding to ensure values don't sit right at the top of the chart
     yMaxValue = yMaxValue > 0 ? yMaxValue * 1.1 : 10;
     
     let yMinValue = 0; // Usually we start from 0
     
     // Extract dates from current data
-    const dates = currentData.map(d => d.date)
-        .sort((a, b) => new Date(a) - new Date(b));
+    const dates = currentData.map(d => d.date).sort((a, b) => new Date(a) - new Date(b));
     
     // Create scales
     const xScale = value => {
         const dateIndex = dates.indexOf(value);
-        if (dateIndex === -1 || dates.length <= 1) return 0;
-        return (dateIndex / (dates.length - 1)) * width;
+        return dateIndex >= 0 && dates.length > 1 ? (dateIndex / (dates.length - 1)) * width : 0;
     };
     
     const yScale = value => {
-        // Ensure we don't divide by zero
-        if (yMaxValue === yMinValue) return height;
         return height - ((value - yMinValue) / (yMaxValue - yMinValue)) * height;
     };
     
@@ -3360,10 +3255,237 @@ function createDailyTrendChart() {
     
     g.appendChild(gridGroup);
     
-    // Rest of the chart code remains the same...
-    // (axes, reference lines, current data line, etc.)
-
-    // ... (continue with the rest of the function as before)
+    // Add axes
+    const xAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    xAxis.setAttribute('x1', 0);
+    xAxis.setAttribute('y1', height);
+    xAxis.setAttribute('x2', width);
+    xAxis.setAttribute('y2', height);
+    xAxis.setAttribute('stroke', '#666');
+    xAxis.setAttribute('stroke-width', 1.5);
+    g.appendChild(xAxis);
+    
+    const yAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    yAxis.setAttribute('x1', 0);
+    yAxis.setAttribute('y1', 0);
+    yAxis.setAttribute('x2', 0);
+    yAxis.setAttribute('y2', height);
+    yAxis.setAttribute('stroke', '#666');
+    yAxis.setAttribute('stroke-width', 1.5);
+    g.appendChild(yAxis);
+    
+    // Add axis labels
+    const xAxisLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    xAxisLabel.setAttribute('x', width / 2);
+    xAxisLabel.setAttribute('y', height + 40);
+    xAxisLabel.setAttribute('text-anchor', 'middle');
+    xAxisLabel.setAttribute('font-size', '12px');
+    xAxisLabel.setAttribute('fill', '#333');
+    xAxisLabel.textContent = 'Production Date';
+    g.appendChild(xAxisLabel);
+    
+    const yAxisLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    yAxisLabel.setAttribute('transform', `rotate(-90) translate(${-height/2}, ${-40})`);
+    yAxisLabel.setAttribute('text-anchor', 'middle');
+    yAxisLabel.setAttribute('font-size', '12px');
+    yAxisLabel.setAttribute('fill', '#333');
+    yAxisLabel.textContent = sortTop10By === 'qty' ? 'Quantity' : 'Cost (R)';
+    g.appendChild(yAxisLabel);
+    
+    // Draw reference lines (Min, Max, Mean) as horizontal lines
+    const linesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    linesGroup.setAttribute('class', 'lines');
+    
+    // Min line - horizontal
+    if (minValue > 0) {
+        const minLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        minLine.setAttribute('class', 'line line-min');
+        minLine.setAttribute('x1', 0);
+        minLine.setAttribute('y1', yScale(minValue));
+        minLine.setAttribute('x2', width);
+        minLine.setAttribute('y2', yScale(minValue));
+        minLine.setAttribute('stroke', '#3498db');
+        minLine.setAttribute('stroke-width', 2);
+        minLine.setAttribute('stroke-dasharray', '5,5');
+        linesGroup.appendChild(minLine);
+        
+        // Label for Min line
+        const minLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        minLabel.setAttribute('x', width - 5);
+        minLabel.setAttribute('y', yScale(minValue) - 5);
+        minLabel.setAttribute('text-anchor', 'end');
+        minLabel.setAttribute('font-size', '10px');
+        minLabel.setAttribute('fill', '#3498db');
+        minLabel.textContent = 'Min: ' + (sortTop10By === 'qty' ? 
+            Math.round(minValue) : 'R' + minValue.toFixed(2));
+        linesGroup.appendChild(minLabel);
+    }
+    
+    // Max line - horizontal
+    if (maxValue > 0) {
+        const maxLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        maxLine.setAttribute('class', 'line line-max');
+        maxLine.setAttribute('x1', 0);
+        maxLine.setAttribute('y1', yScale(maxValue));
+        maxLine.setAttribute('x2', width);
+        maxLine.setAttribute('y2', yScale(maxValue));
+        maxLine.setAttribute('stroke', '#e74c3c');
+        maxLine.setAttribute('stroke-width', 2);
+        maxLine.setAttribute('stroke-dasharray', '5,5');
+        linesGroup.appendChild(maxLine);
+        
+        // Label for Max line
+        const maxLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        maxLabel.setAttribute('x', width - 5);
+        maxLabel.setAttribute('y', yScale(maxValue) - 5);
+        maxLabel.setAttribute('text-anchor', 'end');
+        maxLabel.setAttribute('font-size', '10px');
+        maxLabel.setAttribute('fill', '#e74c3c');
+        maxLabel.textContent = 'Max: ' + (sortTop10By === 'qty' ? 
+            Math.round(maxValue) : 'R' + maxValue.toFixed(2));
+        linesGroup.appendChild(maxLabel);
+    }
+    
+    // Mean line - horizontal
+    if (meanValue > 0) {
+        const meanLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        meanLine.setAttribute('class', 'line line-mean');
+        meanLine.setAttribute('x1', 0);
+        meanLine.setAttribute('y1', yScale(meanValue));
+        meanLine.setAttribute('x2', width);
+        meanLine.setAttribute('y2', yScale(meanValue));
+        meanLine.setAttribute('stroke', '#2ecc71');
+        meanLine.setAttribute('stroke-width', 2);
+        linesGroup.appendChild(meanLine);
+        
+        // Label for Mean line
+        const meanLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        meanLabel.setAttribute('x', width - 5);
+        meanLabel.setAttribute('y', yScale(meanValue) - 5);
+        meanLabel.setAttribute('text-anchor', 'end');
+        meanLabel.setAttribute('font-size', '10px');
+        meanLabel.setAttribute('fill', '#2ecc71');
+        meanLabel.textContent = 'Mean: ' + (sortTop10By === 'qty' ? 
+            Math.round(meanValue) : 'R' + meanValue.toFixed(2));
+        linesGroup.appendChild(meanLabel);
+    }
+    
+    // Current line - path (unchanged)
+    if (currentData.length >= 2) {
+        let pathD = '';
+        currentData.sort((a, b) => new Date(a.date) - new Date(b.date)).forEach((d, i) => {
+            const x = xScale(d.date);
+            const y = yScale(d.value);
+            pathD += i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`;
+        });
+        
+        const currentLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        currentLine.setAttribute('class', 'line line-current');
+        currentLine.setAttribute('d', pathD);
+        currentLine.setAttribute('stroke', '#9b59b6');
+        currentLine.setAttribute('stroke-width', 3);
+        currentLine.setAttribute('fill', 'none');
+        linesGroup.appendChild(currentLine);
+    }
+    
+    g.appendChild(linesGroup);
+    
+    // Add data points for the current line with hover tooltips
+    const pointsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    pointsGroup.setAttribute('class', 'data-points');
+    
+    currentData.sort((a, b) => new Date(a.date) - new Date(b.date)).forEach(d => {
+        const x = xScale(d.date);
+        const y = yScale(d.value);
+        
+        const point = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        point.setAttribute('class', 'data-point');
+        point.setAttribute('cx', x);
+        point.setAttribute('cy', y);
+        point.setAttribute('r', 4);
+        point.setAttribute('fill', '#9b59b6');
+        point.setAttribute('stroke', '#9b59b6');
+        
+        // Add tooltip on hover
+        point.setAttribute('data-date', formatDate(d.date));
+        point.setAttribute('data-value', sortTop10By === 'qty' ? 
+            `${Math.round(d.value)} units` : 
+            `R${d.value.toFixed(2)}`);
+        
+        point.addEventListener('mouseover', function(e) {
+            const tooltip = document.createElement('div');
+            tooltip.className = 'tooltip';
+            tooltip.innerHTML = `<div>Date: ${this.getAttribute('data-date')}</div>
+                              <div>Value: ${this.getAttribute('data-value')}</div>`;
+            document.body.appendChild(tooltip);
+            
+            // Position the tooltip
+            const rect = this.getBoundingClientRect();
+            tooltip.style.left = `${rect.left + window.scrollX}px`;
+            tooltip.style.top = `${rect.top + window.scrollY - 40}px`;
+        });
+        
+        point.addEventListener('mousemove', function(e) {
+            const tooltip = document.querySelector('.tooltip');
+            if (tooltip) {
+                tooltip.style.left = `${e.pageX + 10}px`;
+                tooltip.style.top = `${e.pageY - 40}px`;
+            }
+        });
+        
+        point.addEventListener('mouseout', function() {
+            const tooltip = document.querySelector('.tooltip');
+            if (tooltip) {
+                tooltip.remove();
+            }
+        });
+        
+        pointsGroup.appendChild(point);
+    });
+    
+    g.appendChild(pointsGroup);
+    
+    // Create a legend
+    const legendGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    legendGroup.setAttribute('class', 'legend');
+    legendGroup.setAttribute('transform', `translate(${width - 150}, 10)`);
+    
+    const legends = [
+        { label: 'Min', color: '#3498db', visible: minValue > 0 },
+        { label: 'Max', color: '#e74c3c', visible: maxValue > 0 },
+        { label: 'Mean', color: '#2ecc71', visible: meanValue > 0 },
+        { label: 'Current', color: '#9b59b6', visible: currentData.length > 0 }
+    ].filter(l => l.visible);
+    
+    legends.forEach((legend, i) => {
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('transform', `translate(0, ${i * 20})`);
+        
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', 0);
+        line.setAttribute('y1', 10);
+        line.setAttribute('x2', 20);
+        line.setAttribute('y2', 10);
+        line.setAttribute('stroke', legend.color);
+        line.setAttribute('stroke-width', 2);
+        if (['Min', 'Max'].includes(legend.label)) {
+            line.setAttribute('stroke-dasharray', '5,5');
+        }
+        g.appendChild(line);
+        
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', 25);
+        text.setAttribute('y', 14);
+        text.setAttribute('font-size', '10px');
+        text.setAttribute('class', 'legend-label');
+        text.textContent = legend.label;
+        g.appendChild(text);
+        
+        legendGroup.appendChild(g);
+    });
+    
+    g.appendChild(legendGroup);
+}
         
         // Get data with all filters applied except date range
         function getDataWithFiltersExceptDate() {
