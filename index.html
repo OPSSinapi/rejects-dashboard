@@ -575,7 +575,42 @@
             fill: #666;
         }
 
-        /* Box and Whisker Plot */
+        /* Line Chart */
+        .line {
+            fill: none;
+            stroke-width: 2;
+        }
+
+        .line-min {
+            stroke: #3498db;
+            stroke-dasharray: 5,5;
+        }
+
+        .line-max {
+            stroke: #e74c3c;
+            stroke-dasharray: 5,5;
+        }
+
+        .line-mean {
+            stroke: #2ecc71;
+        }
+
+        .line-current {
+            stroke: #9b59b6;
+            stroke-width: 3;
+        }
+
+        .data-point {
+            fill: #fff;
+            stroke-width: 2;
+        }
+
+        .legend-label {
+            font-size: 9px;
+            fill: #333;
+        }
+
+        /* Box plot */
         .box-plot {
             stroke: #333;
             stroke-width: 1;
@@ -1027,13 +1062,17 @@
             // Structure: { filterName: { value: { otherFilterName: [associated values] } } }
         };
 
-        // Store data metrics for box and whisker plot
-        let globalDataMetrics = {
-            min: 0,
-            max: 0,
-            median: 0,
-            q1: 0, 
-            q3: 0
+        // Store data metrics for trend chart
+        let trendChartData = {
+            outsideRange: {
+                byDate: {},
+                min: [],
+                max: [],
+                mean: []
+            },
+            insideRange: {
+                byDate: {}
+            }
         };
 
         // DOM elements
@@ -1158,8 +1197,8 @@
                 top10Elements.sortByQty.classList.add('active');
                 top10Elements.sortByCost.classList.remove('active');
                 
-                // Recalculate global metrics with new sort type
-                calculateGlobalDataMetrics();
+                // Prepare trend chart data with new sort type
+                prepareTrendChartData();
                 
                 // Update all views
                 updateTop10Table();
@@ -1176,8 +1215,8 @@
                 top10Elements.sortByCost.classList.add('active');
                 top10Elements.sortByQty.classList.remove('active');
                 
-                // Recalculate global metrics with new sort type
-                calculateGlobalDataMetrics();
+                // Prepare trend chart data with new sort type
+                prepareTrendChartData();
                 
                 // Update all views
                 updateTop10Table();
@@ -1241,71 +1280,110 @@
             }
         });
 
-        // Calculate global data metrics for horizontal box plot
-        function calculateGlobalDataMetrics() {
+        // Prepare data for trend chart (replaces calculateGlobalDataMetrics)
+        function prepareTrendChartData() {
+            const dateFrom = filterElements.dateFrom.value ? new Date(filterElements.dateFrom.value) : null;
+            const dateTo = filterElements.dateTo.value ? new Date(filterElements.dateTo.value) : null;
+            
             // Filter data based on current filters EXCEPT date range
-            let dataForMetrics = getGlobalMetricsData();
+            let dataForOutsideRange = getDataWithFiltersExceptDate();
             
-            if (dataForMetrics.length === 0) {
-                globalDataMetrics = {
-                    min: 0, max: 0, median: 0, q1: 0, q3: 0
-                };
-                return;
-            }
+            // Separate data inside and outside the date range
+            let dataOutsideRange = [];
+            let dataInsideRange = [];
             
-            // Group data by date
-            const dateGroups = {};
-            dataForMetrics.forEach(item => {
-                const date = item.ProductionDate;
-                if (!dateGroups[date]) {
-                    dateGroups[date] = {
-                        count: 0,
-                        cost: 0
-                    };
+            dataForOutsideRange.forEach(item => {
+                const itemDate = new Date(item.ProductionDate);
+                if (dateFrom && dateTo && (itemDate >= dateFrom && itemDate <= dateTo)) {
+                    dataInsideRange.push(item);
+                } else {
+                    dataOutsideRange.push(item);
                 }
-                dateGroups[date].count += (item.QTY || 0);
-                dateGroups[date].cost += (item.Cost || 0);
             });
             
-            // Get metrics by the current sort type
-            const metricValues = Object.values(dateGroups).map(g => 
-                sortTop10By === 'qty' ? g.count : g.cost
-            ).sort((a, b) => a - b);
+            // Process data outside date range
+            const outsideDateGroups = {};
+            dataOutsideRange.forEach(item => {
+                const date = item.ProductionDate;
+                if (!outsideDateGroups[date]) {
+                    outsideDateGroups[date] = {
+                        date,
+                        values: []
+                    };
+                }
+                const value = sortTop10By === 'qty' ? (item.QTY || 0) : (item.Cost || 0);
+                outsideDateGroups[date].values.push(value);
+            });
             
-            // Filter out zero values
-            const nonZeroValues = metricValues.filter(val => val > 0);
+            // Process data inside date range
+            const insideDateGroups = {};
+            dataInsideRange.forEach(item => {
+                const date = item.ProductionDate;
+                if (!insideDateGroups[date]) {
+                    insideDateGroups[date] = {
+                        date,
+                        total: 0
+                    };
+                }
+                insideDateGroups[date].total += sortTop10By === 'qty' ? (item.QTY || 0) : (item.Cost || 0);
+            });
             
-            if (nonZeroValues.length === 0) {
-                globalDataMetrics = {
-                    min: 0, max: 0, median: 0, q1: 0, q3: 0
-                };
-                return;
-            }
+            // Calculate min, max, mean for data outside date range
+            const minValues = [];
+            const maxValues = [];
+            const meanValues = [];
             
-            // Calculate metrics
-            const min = nonZeroValues[0] || 0;
-            const max = nonZeroValues[nonZeroValues.length - 1] || 0;
+            Object.values(outsideDateGroups).sort((a, b) => 
+                new Date(a.date) - new Date(b.date)
+            ).forEach(group => {
+                if (group.values.length > 0) {
+                    const min = Math.min(...group.values);
+                    const max = Math.max(...group.values);
+                    const sum = group.values.reduce((a, b) => a + b, 0);
+                    const mean = sum / group.values.length;
+                    
+                    minValues.push({
+                        date: group.date,
+                        value: min
+                    });
+                    
+                    maxValues.push({
+                        date: group.date,
+                        value: max
+                    });
+                    
+                    meanValues.push({
+                        date: group.date,
+                        value: mean
+                    });
+                }
+            });
             
-            // Calculate quartiles
-            const q1Index = Math.floor(nonZeroValues.length * 0.25);
-            const medianIndex = Math.floor(nonZeroValues.length * 0.5);
-            const q3Index = Math.floor(nonZeroValues.length * 0.75);
+            // Prepare data for inside date range
+            const currentValues = Object.values(insideDateGroups).sort((a, b) => 
+                new Date(a.date) - new Date(b.date)
+            ).map(group => ({
+                date: group.date,
+                value: group.total
+            }));
             
-            const q1 = nonZeroValues[q1Index] || 0;
-            const median = nonZeroValues[medianIndex] || 0;
-            const q3 = nonZeroValues[q3Index] || 0;
-            
-            globalDataMetrics = {
-                min,
-                max,
-                median,
-                q1,
-                q3
+            // Store in the global object
+            trendChartData = {
+                outsideRange: {
+                    byDate: outsideDateGroups,
+                    min: minValues,
+                    max: maxValues,
+                    mean: meanValues
+                },
+                insideRange: {
+                    byDate: insideDateGroups,
+                    values: currentValues
+                }
             };
         }
         
-        // Get data for global metrics calculation (applies all filters except date range)
-        function getGlobalMetricsData() {
+        // Get data with all filters applied except date range
+        function getDataWithFiltersExceptDate() {
             // Start with all data
             let result = allData;
             
@@ -1397,7 +1475,7 @@
                             top10Elements.batchHeader.style.display = 'none';
                             top10Elements.supplierHeader.style.display = 'none';
                         }
-                        calculateGlobalDataMetrics();
+                        prepareTrendChartData();
                         updateTop10Table();
                         updateDashboardWithActionFilter();
                     }
@@ -1436,7 +1514,7 @@
             allOption.textContent = 'All Reasons';
             allOption.addEventListener('click', () => {
                 selectedRejectReason = null;
-                calculateGlobalDataMetrics();
+                prepareTrendChartData();
                 updateTop10Table();
                 menu.classList.remove('active');
                 updateDashboardWithActionFilter();
@@ -1467,7 +1545,7 @@
                 option.textContent = reason;
                 option.addEventListener('click', () => {
                     selectedRejectReason = reason;
-                    calculateGlobalDataMetrics();
+                    prepareTrendChartData();
                     updateTop10Table();
                     menu.classList.remove('active');
                     updateDashboardWithActionFilter();
@@ -1485,7 +1563,7 @@
             allOption.textContent = 'All Stations';
             allOption.addEventListener('click', () => {
                 selectedStation = null;
-                calculateGlobalDataMetrics();
+                prepareTrendChartData();
                 updateTop10Table();
                 menu.classList.remove('active');
                 updateDashboardWithActionFilter();
@@ -1519,7 +1597,7 @@
                 option.textContent = station;
                 option.addEventListener('click', () => {
                     selectedStation = station;
-                    calculateGlobalDataMetrics();
+                    prepareTrendChartData();
                     updateTop10Table();
                     menu.classList.remove('active');
                     updateDashboardWithActionFilter();
@@ -1678,7 +1756,7 @@
             buildFilterAssociations();
             populateMultiSelectOptions();
             filteredData = [...dateFilteredData];
-            calculateGlobalDataMetrics();
+            prepareTrendChartData();
             updateDashboard();
         }
 
@@ -1879,7 +1957,7 @@
             });
             if (!skipUpdate) {
                 filteredData = [...dateFilteredData];
-                calculateGlobalDataMetrics();
+                prepareTrendChartData();
                 updateDashboard();
                 buildFilterAssociations();
                 populateMultiSelectOptions();
@@ -1892,11 +1970,12 @@
             resetOtherFilters();
         }
 
-        // Select only one option in a filter
+        // Select only one option in a filter (modified for fix #1)
         function selectOnlyThisOption(filterName, value) {
             if (isUpdatingFilters) return;
             isUpdatingFilters = true;
             try {
+                // Clear all filter values for this filter name and set only the selected value
                 filterValues[filterName] = [value];
                 const multiSelect = filterElements.multiSelects[filterName];
                 const checkboxes = multiSelect.querySelectorAll('input[type="checkbox"]');
@@ -1904,6 +1983,8 @@
                     checkbox.checked = checkbox.value === value;
                 });
                 updateHeaderText(multiSelect, filterName);
+                
+                // Update other filters based on associations
                 const associations = filterAssociations[filterName][value];
                 if (associations) {
                     Object.keys(filterValues).forEach(otherFilter => {
@@ -1919,7 +2000,9 @@
                         }
                     });
                 }
-                applyDetailFilters(filterName, false);
+                
+                // Apply filters and update UI - changed to true for fix #1
+                applyDetailFilters(filterName, true);
             } finally {
                 isUpdatingFilters = false;
             }
@@ -2005,6 +2088,8 @@
                         option.appendChild(label);
                         option.appendChild(onlyBtn);
                         optionsContainer.appendChild(option);
+                        
+                        // Modified for fix #1: Make checkbox apply both filters and update data
                         checkbox.addEventListener('change', () => {
                             if (isUpdatingFilters) return;
                             if (checkbox.checked) {
@@ -2018,8 +2103,13 @@
                                 }
                             }
                             updateHeaderText(multiSelect, key);
-                            applyDetailFilters(key);
+                            
+                            // Apply filters and update other filters (added for fix #1)
+                            updateAssociatedFilters(key);
+                            // Apply filters to data
+                            applyDetailFilters(key, true);
                         });
+                        
                         onlyBtn.addEventListener('click', (e) => {
                             e.stopPropagation();
                             selectOnlyThisOption(key, value);
@@ -2028,6 +2118,50 @@
                 }
                 updateHeaderText(multiSelect, key);
             });
+        }
+        
+        // New function to update associated filters when a checkbox changes (for fix #1)
+        function updateAssociatedFilters(changedFilter) {
+            if (isUpdatingFilters) return;
+            isUpdatingFilters = true;
+            try {
+                // Build a set of all values associated with the current filter selection
+                const associatedValues = {};
+                Object.keys(filterValues).forEach(otherFilter => {
+                    if (otherFilter !== changedFilter) {
+                        associatedValues[otherFilter] = new Set();
+                    }
+                });
+                
+                // For each selected value in the changed filter, get its associations
+                filterValues[changedFilter].forEach(value => {
+                    const associations = filterAssociations[changedFilter][value];
+                    if (associations) {
+                        Object.keys(associations).forEach(otherFilter => {
+                            associations[otherFilter].forEach(v => {
+                                associatedValues[otherFilter].add(v);
+                            });
+                        });
+                    }
+                });
+                
+                // Update checkboxes for other filters based on availability
+                Object.keys(associatedValues).forEach(otherFilter => {
+                    if (filterValues[otherFilter].length === 0) {
+                        const otherMultiSelect = filterElements.multiSelects[otherFilter];
+                        const checkboxes = otherMultiSelect.querySelectorAll('input[type="checkbox"]');
+                        checkboxes.forEach(checkbox => {
+                            // Disable checkboxes that are not in the associated values
+                            const isAvailable = filterValues[changedFilter].length === 0 || 
+                                                associatedValues[otherFilter].has(checkbox.value);
+                            checkbox.disabled = !isAvailable;
+                            checkbox.parentElement.classList.toggle('disabled', !isAvailable);
+                        });
+                    }
+                });
+            } finally {
+                isUpdatingFilters = false;
+            }
         }
 
         // Apply filters based on multi-select values
@@ -2038,7 +2172,7 @@
                 const hasSelections = Object.values(filterValues).some(values => values.length > 0);
                 if (!hasSelections) {
                     filteredData = [...dateFilteredData];
-                    calculateGlobalDataMetrics();
+                    prepareTrendChartData();
                     updateDashboard();
                     if (!skipPopulate) {
                         populateMultiSelectOptions();
@@ -2087,7 +2221,7 @@
                     }
                     return true;
                 });
-                calculateGlobalDataMetrics();
+                prepareTrendChartData();
                 updateDashboard();
                 updateRejectReasonMenu();
                 updateStationMenu();
@@ -2121,6 +2255,616 @@
             if (selectedStation !== null) {
                 dataToUse = dataToUse.filter(item => item.Station === selectedStation);
             }
+            if (dataToUse.length === 0) {
+                container.innerHTML = '<div class="no-data">No data available</div>';
+                return;
+            }
+            const reasonCounts = {};
+            dataToUse.forEach(item => {
+                const reason = item.RejectReason || 'Unknown';
+                if (!reasonCounts[reason]) {
+                    reasonCounts[reason] = { count: 0, cost: 0 };
+                }
+                reasonCounts[reason].count += (item.QTY || 0);
+                reasonCounts[reason].cost += (item.Cost || 0);
+            });
+            const sortedReasons = Object.keys(reasonCounts).sort((a, b) => 
+                sortTop10By === 'qty' 
+                    ? reasonCounts[b].count - reasonCounts[a].count 
+                    : reasonCounts[b].cost - reasonCounts[a].cost
+            );
+            const topReasons = sortedReasons.slice(0, 3);
+            const margin = { top: 10, right: 80, bottom: 20, left: 120 };
+            const width = container.clientWidth - margin.left - margin.right;
+            const height = container.clientHeight - margin.top - margin.bottom;
+            container.innerHTML = '';
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', '100%');
+            svg.setAttribute('height', '100%');
+            svg.setAttribute('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
+            container.appendChild(svg);
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
+            svg.appendChild(g);
+
+            // Create horizontal bars for each top reason
+            topReasons.forEach((reason, index) => {
+                const barHeight = 20;
+                const barValue = sortTop10By === 'qty' ? reasonCounts[reason].count : reasonCounts[reason].cost;
+                const barWidth = (barValue / Math.max(...topReasons.map(r => sortTop10By === 'qty' ? reasonCounts[r].count : reasonCounts[r].cost))) * (width - 20);
+                
+                const y = index * (barHeight + 15) + 10;
+                
+                const bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                bar.setAttribute('class', 'horizontal-bar');
+                bar.setAttribute('x', 0);
+                bar.setAttribute('y', y);
+                bar.setAttribute('width', barWidth);
+                bar.setAttribute('height', barHeight);
+                bar.setAttribute('fill', colors[index % colors.length]);
+                g.appendChild(bar);
+                
+                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                label.setAttribute('class', 'horizontal-bar-label');
+                label.setAttribute('x', barWidth + 5);
+                label.setAttribute('y', y + barHeight / 2 + 4);
+                label.textContent = sortTop10By === 'qty' ? 
+                    `${reasonCounts[reason].count} (R${reasonCounts[reason].cost.toFixed(2)})` : 
+                    `R${reasonCounts[reason].cost.toFixed(2)} (${reasonCounts[reason].count})`;
+                g.appendChild(label);
+                
+                const reasonText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                reasonText.setAttribute('x', 0);
+                reasonText.setAttribute('y', y - 5);
+                reasonText.setAttribute('font-size', '10px');
+                reasonText.setAttribute('fill', '#333');
+                // Truncate long text with ellipsis
+                const maxLength = 25;
+                reasonText.textContent = reason.length > maxLength ? reason.substring(0, maxLength) + '...' : reason;
+                g.appendChild(reasonText);
+            });
+            
+            if (topReasons.length === 0) {
+                const noDataText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                noDataText.setAttribute('x', width / 2);
+                noDataText.setAttribute('y', height / 2);
+                noDataText.setAttribute('text-anchor', 'middle');
+                noDataText.setAttribute('font-size', '14px');
+                noDataText.setAttribute('fill', '#999');
+                noDataText.textContent = 'No data available';
+                g.appendChild(noDataText);
+            }
+        }
+
+        // Create daily trend chart (line graph implementation)
+        function createDailyTrendChart() {
+            const container = chartContainers.trend;
+            container.innerHTML = '';
+            
+            // Use the trend chart data prepared by prepareTrendChartData()
+            const minData = trendChartData.outsideRange.min;
+            const maxData = trendChartData.outsideRange.max;
+            const meanData = trendChartData.outsideRange.mean;
+            const currentData = trendChartData.insideRange.values;
+            
+            if ((minData.length === 0 && maxData.length === 0 && meanData.length === 0 && currentData.length === 0) || 
+                filteredData.length === 0) {
+                container.innerHTML = '<div class="no-data">No data available</div>';
+                return;
+            }
+            
+            const margin = { top: 30, right: 60, bottom: 60, left: 60 };
+            const width = container.clientWidth - margin.left - margin.right;
+            const height = container.clientHeight - margin.top - margin.bottom;
+            
+            // Create SVG
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', container.clientWidth);
+            svg.setAttribute('height', container.clientHeight);
+            container.appendChild(svg);
+            
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
+            svg.appendChild(g);
+            
+            // Combine all data to find the date range and value range
+            const allData = [...minData, ...maxData, ...meanData, ...currentData];
+            if (allData.length === 0) {
+                const noDataText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                noDataText.setAttribute('x', width / 2);
+                noDataText.setAttribute('y', height / 2);
+                noDataText.setAttribute('text-anchor', 'middle');
+                noDataText.setAttribute('font-size', '14px');
+                noDataText.setAttribute('fill', '#999');
+                noDataText.textContent = 'No data available';
+                g.appendChild(noDataText);
+                return;
+            }
+            
+            // Extract all dates and sort them
+            const dates = [...new Set(allData.map(d => d.date))].sort((a, b) => new Date(a) - new Date(b));
+            
+            // Find the min and max values
+            const minValue = 0;
+            const maxValue = Math.max(...allData.map(d => d.value)) * 1.1;
+            
+            // Create scales
+            const xScale = value => {
+                const dateIndex = dates.indexOf(value);
+                return (dateIndex / (dates.length - 1)) * width;
+            };
+            
+            const yScale = value => {
+                return height - ((value - minValue) / (maxValue - minValue)) * height;
+            };
+            
+            // Draw grid lines
+            const gridGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            gridGroup.setAttribute('class', 'grid');
+            
+            // Horizontal grid lines
+            const numGridLines = 5;
+            for (let i = 0; i <= numGridLines; i++) {
+                const y = height * (i / numGridLines);
+                const gridLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                gridLine.setAttribute('x1', 0);
+                gridLine.setAttribute('y1', y);
+                gridLine.setAttribute('x2', width);
+                gridLine.setAttribute('y2', y);
+                gridLine.setAttribute('stroke', '#e0e0e0');
+                gridLine.setAttribute('stroke-width', 1);
+                gridGroup.appendChild(gridLine);
+                
+                // Add y-axis labels
+                const yValue = maxValue - (i / numGridLines) * (maxValue - minValue);
+                const yLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                yLabel.setAttribute('x', -10);
+                yLabel.setAttribute('y', y + 4);
+                yLabel.setAttribute('text-anchor', 'end');
+                yLabel.setAttribute('font-size', '10px');
+                yLabel.setAttribute('fill', '#666');
+                yLabel.textContent = sortTop10By === 'qty' ? 
+                    Math.round(yValue) : 
+                    'R' + yValue.toFixed(2);
+                gridGroup.appendChild(yLabel);
+            }
+            
+            // Vertical grid lines and date labels
+            const numDates = Math.min(dates.length, 10); // Limit to avoid overcrowding
+            const dateStep = dates.length > 1 ? Math.max(1, Math.floor(dates.length / numDates)) : 1;
+            
+            for (let i = 0; i < dates.length; i += dateStep) {
+                const date = dates[i];
+                const x = xScale(date);
+                
+                const gridLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                gridLine.setAttribute('x1', x);
+                gridLine.setAttribute('y1', 0);
+                gridLine.setAttribute('x2', x);
+                gridLine.setAttribute('y2', height);
+                gridLine.setAttribute('stroke', '#e0e0e0');
+                gridLine.setAttribute('stroke-width', 1);
+                gridGroup.appendChild(gridLine);
+                
+                // Add x-axis labels (dates)
+                const dateLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                dateLabel.setAttribute('x', x);
+                dateLabel.setAttribute('y', height + 20);
+                dateLabel.setAttribute('text-anchor', 'middle');
+                dateLabel.setAttribute('font-size', '10px');
+                dateLabel.setAttribute('fill', '#666');
+                dateLabel.textContent = formatDate(date);
+                gridGroup.appendChild(dateLabel);
+            }
+            
+            g.appendChild(gridGroup);
+            
+            // Add axes
+            const xAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            xAxis.setAttribute('x1', 0);
+            xAxis.setAttribute('y1', height);
+            xAxis.setAttribute('x2', width);
+            xAxis.setAttribute('y2', height);
+            xAxis.setAttribute('stroke', '#666');
+            xAxis.setAttribute('stroke-width', 1.5);
+            g.appendChild(xAxis);
+            
+            const yAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            yAxis.setAttribute('x1', 0);
+            yAxis.setAttribute('y1', 0);
+            yAxis.setAttribute('x2', 0);
+            yAxis.setAttribute('y2', height);
+            yAxis.setAttribute('stroke', '#666');
+            yAxis.setAttribute('stroke-width', 1.5);
+            g.appendChild(yAxis);
+            
+            // Add axis labels
+            const xAxisLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            xAxisLabel.setAttribute('x', width / 2);
+            xAxisLabel.setAttribute('y', height + 40);
+            xAxisLabel.setAttribute('text-anchor', 'middle');
+            xAxisLabel.setAttribute('font-size', '12px');
+            xAxisLabel.setAttribute('fill', '#333');
+            xAxisLabel.textContent = 'Production Date';
+            g.appendChild(xAxisLabel);
+            
+            const yAxisLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            yAxisLabel.setAttribute('transform', `rotate(-90) translate(${-height/2}, ${-40})`);
+            yAxisLabel.setAttribute('text-anchor', 'middle');
+            yAxisLabel.setAttribute('font-size', '12px');
+            yAxisLabel.setAttribute('fill', '#333');
+            yAxisLabel.textContent = sortTop10By === 'qty' ? 'Quantity' : 'Cost (R)';
+            g.appendChild(yAxisLabel);
+            
+            // Create lines
+            function createLine(data, color, isStroke = true, isDashed = false, lineWidth = 2) {
+                if (data.length < 2) return null;
+                
+                let pathD = '';
+                data.sort((a, b) => new Date(a.date) - new Date(b.date)).forEach((d, i) => {
+                    const x = xScale(d.date);
+                    const y = yScale(d.value);
+                    pathD += i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`;
+                });
+                
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('class', 'line');
+                path.setAttribute('d', pathD);
+                path.setAttribute('stroke', color);
+                path.setAttribute('stroke-width', lineWidth);
+                if (isDashed) {
+                    path.setAttribute('stroke-dasharray', '5,5');
+                }
+                return path;
+            }
+            
+            // Create and append the lines
+            const minLine = createLine(minData, '#3498db', true, true);
+            const maxLine = createLine(maxData, '#e74c3c', true, true);
+            const meanLine = createLine(meanData, '#2ecc71', true, false);
+            const currentLine = createLine(currentData, '#9b59b6', true, false, 3);
+            
+            const linesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            linesGroup.setAttribute('class', 'lines');
+            
+            // Add the lines in specific order (min and max at the back, current at the front)
+            if (minLine) linesGroup.appendChild(minLine);
+            if (maxLine) linesGroup.appendChild(maxLine);
+            if (meanLine) linesGroup.appendChild(meanLine);
+            if (currentLine) linesGroup.appendChild(currentLine);
+            
+            g.appendChild(linesGroup);
+            
+            // Add data points with hover tooltips
+            function createDataPoints(data, color) {
+                if (!data || data.length === 0) return [];
+                
+                data.sort((a, b) => new Date(a.date) - new Date(b.date));
+                const points = [];
+                
+                data.forEach(d => {
+                    const x = xScale(d.date);
+                    const y = yScale(d.value);
+                    
+                    const point = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    point.setAttribute('class', 'data-point');
+                    point.setAttribute('cx', x);
+                    point.setAttribute('cy', y);
+                    point.setAttribute('r', 4);
+                    point.setAttribute('fill', color);
+                    point.setAttribute('stroke', color);
+                    
+                    // Add tooltip on hover
+                    point.setAttribute('data-date', formatDate(d.date));
+                    point.setAttribute('data-value', sortTop10By === 'qty' ? 
+                        `${Math.round(d.value)} units` : 
+                        `R${d.value.toFixed(2)}`);
+                    
+                    point.addEventListener('mouseover', function(e) {
+                        const tooltip = document.createElement('div');
+                        tooltip.className = 'tooltip';
+                        tooltip.innerHTML = `<div>Date: ${this.getAttribute('data-date')}</div>
+                                          <div>Value: ${this.getAttribute('data-value')}</div>`;
+                        document.body.appendChild(tooltip);
+                        
+                        // Position the tooltip
+                        const rect = this.getBoundingClientRect();
+                        tooltip.style.left = `${rect.left + window.scrollX}px`;
+                        tooltip.style.top = `${rect.top + window.scrollY - 40}px`;
+                    });
+                    
+                    point.addEventListener('mousemove', function(e) {
+                        const tooltip = document.querySelector('.tooltip');
+                        if (tooltip) {
+                            tooltip.style.left = `${e.pageX + 10}px`;
+                            tooltip.style.top = `${e.pageY - 40}px`;
+                        }
+                    });
+                    
+                    point.addEventListener('mouseout', function() {
+                        const tooltip = document.querySelector('.tooltip');
+                        if (tooltip) {
+                            tooltip.remove();
+                        }
+                    });
+                    
+                    points.push(point);
+                });
+                
+                return points;
+            }
+            
+            // Create all data points
+            const pointsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            pointsGroup.setAttribute('class', 'data-points');
+            
+            const minPoints = createDataPoints(minData, '#3498db');
+            const maxPoints = createDataPoints(maxData, '#e74c3c');
+            const meanPoints = createDataPoints(meanData, '#2ecc71');
+            const currentPoints = createDataPoints(currentData, '#9b59b6');
+            
+            minPoints.forEach(point => pointsGroup.appendChild(point));
+            maxPoints.forEach(point => pointsGroup.appendChild(point));
+            meanPoints.forEach(point => pointsGroup.appendChild(point));
+            currentPoints.forEach(point => pointsGroup.appendChild(point));
+            
+            g.appendChild(pointsGroup);
+            
+            // Create a legend
+            const legendGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            legendGroup.setAttribute('class', 'legend');
+            legendGroup.setAttribute('transform', `translate(${width - 150}, 10)`);
+            
+            const legends = [
+                { label: 'Min', color: '#3498db', visible: minData.length > 0 },
+                { label: 'Max', color: '#e74c3c', visible: maxData.length > 0 },
+                { label: 'Mean', color: '#2ecc71', visible: meanData.length > 0 },
+                { label: 'Current', color: '#9b59b6', visible: currentData.length > 0 }
+            ].filter(l => l.visible);
+            
+            legends.forEach((legend, i) => {
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                g.setAttribute('transform', `translate(0, ${i * 20})`);
+                
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', 0);
+                line.setAttribute('y1', 10);
+                line.setAttribute('x2', 20);
+                line.setAttribute('y2', 10);
+                line.setAttribute('stroke', legend.color);
+                line.setAttribute('stroke-width', 2);
+                if (['Min', 'Max'].includes(legend.label)) {
+                    line.setAttribute('stroke-dasharray', '5,5');
+                }
+                g.appendChild(line);
+                
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', 10);
+                circle.setAttribute('cy', 10);
+                circle.setAttribute('r', 4);
+                circle.setAttribute('fill', legend.color);
+                g.appendChild(circle);
+                
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', 25);
+                text.setAttribute('y', 14);
+                text.setAttribute('font-size', '10px');
+                text.setAttribute('class', 'legend-label');
+                text.textContent = legend.label;
+                g.appendChild(text);
+                
+                legendGroup.appendChild(g);
+            });
+            
+            g.appendChild(legendGroup);
+        }
+
+        // Create top problems chart
+        function createTopProblemsChart() {
+            const container = chartContainers.parts;
+            container.innerHTML = '';
+            
+            let dataToUse = filteredData;
+            if (selectedAction !== 'All') {
+                dataToUse = dataToUse.filter(item => item.ActionSelection === selectedAction);
+            }
+            if (selectedRejectReason !== null) {
+                dataToUse = dataToUse.filter(item => item.RejectReason === selectedRejectReason);
+            }
+            if (selectedStation !== null) {
+                dataToUse = dataToUse.filter(item => item.Station === selectedStation);
+            }
+            
+            // Group data by part
+            const partCounts = {};
+            dataToUse.forEach(item => {
+                let parts = [];
+                if (Array.isArray(item.Parts)) {
+                    parts = item.Parts.filter(p => p && p.trim());
+                } else if (typeof item.Parts === 'string') {
+                    parts = item.Parts.split(',').map(p => p.trim()).filter(p => p);
+                }
+                
+                parts.forEach(part => {
+                    if (!partCounts[part]) {
+                        partCounts[part] = { count: 0, cost: 0 };
+                    }
+                    partCounts[part].count += (item.QTY || 0);
+                    partCounts[part].cost += (item.Cost || 0);
+                });
+            });
+            
+            // Sort and take top 3
+            const sortedParts = Object.keys(partCounts).sort((a, b) => 
+                sortTop10By === 'qty' 
+                    ? partCounts[b].count - partCounts[a].count 
+                    : partCounts[b].cost - partCounts[a].cost
+            );
+            const topParts = sortedParts.slice(0, 3);
+            
+            const margin = { top: 10, right: 20, bottom: 50, left: 150 };
+            const width = container.clientWidth - margin.left - margin.right;
+            const height = container.clientHeight - margin.top - margin.bottom;
+            
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', '100%');
+            svg.setAttribute('height', '100%');
+            svg.setAttribute('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
+            container.appendChild(svg);
+            
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
+            svg.appendChild(g);
+            
+            // Create horizontal bars for each top part
+            topParts.forEach((part, index) => {
+                const barHeight = 25;
+                const barValue = sortTop10By === 'qty' ? partCounts[part].count : partCounts[part].cost;
+                const barWidth = (barValue / Math.max(...topParts.map(p => sortTop10By === 'qty' ? partCounts[p].count : partCounts[p].cost))) * (width - 20);
+                
+                const y = index * (barHeight + 15) + 10;
+                
+                const bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                bar.setAttribute('class', 'horizontal-bar');
+                bar.setAttribute('x', 0);
+                bar.setAttribute('y', y);
+                bar.setAttribute('width', barWidth);
+                bar.setAttribute('height', barHeight);
+                bar.setAttribute('fill', colors[index % colors.length]);
+                g.appendChild(bar);
+                
+                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                label.setAttribute('class', 'horizontal-bar-label');
+                label.setAttribute('x', barWidth + 5);
+                label.setAttribute('y', y + barHeight / 2 + 5);
+                label.textContent = sortTop10By === 'qty' ? 
+                    `${partCounts[part].count} (R${partCounts[part].cost.toFixed(2)})` : 
+                    `R${partCounts[part].cost.toFixed(2)} (${partCounts[part].count})`;
+                g.appendChild(label);
+                
+                const partText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                partText.setAttribute('x', 0);
+                partText.setAttribute('y', y - 5);
+                partText.setAttribute('font-size', '12px');
+                partText.setAttribute('fill', '#333');
+                // Truncate long text with ellipsis
+                const maxLength = 20;
+                partText.textContent = part.length > maxLength ? part.substring(0, maxLength) + '...' : part;
+                g.appendChild(partText);
+            });
+            
+            if (topParts.length === 0) {
+                const noDataText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                noDataText.setAttribute('x', width / 2);
+                noDataText.setAttribute('y', height / 2);
+                noDataText.setAttribute('text-anchor', 'middle');
+                noDataText.setAttribute('font-size', '14px');
+                noDataText.setAttribute('fill', '#999');
+                noDataText.textContent = 'No data available';
+                g.appendChild(noDataText);
+            }
+        }
+
+        // Create station cost chart
+        function createStationCostChart() {
+            const container = chartContainers.station;
+            container.innerHTML = '';
+            
+            let dataToUse = filteredData;
+            if (selectedAction !== 'All') {
+                dataToUse = dataToUse.filter(item => item.ActionSelection === selectedAction);
+            }
+            if (selectedRejectReason !== null) {
+                dataToUse = dataToUse.filter(item => item.RejectReason === selectedRejectReason);
+            }
+            if (selectedStation !== null) {
+                dataToUse = dataToUse.filter(item => item.Station === selectedStation);
+            }
+            
+            // Group data by station
+            const stationCounts = {};
+            dataToUse.forEach(item => {
+                const station = item.Station || 'Unknown';
+                if (!stationCounts[station]) {
+                    stationCounts[station] = { count: 0, cost: 0 };
+                }
+                stationCounts[station].count += (item.QTY || 0);
+                stationCounts[station].cost += (item.Cost || 0);
+            });
+            
+            // Sort and take top 3
+            const sortedStations = Object.keys(stationCounts).sort((a, b) => 
+                sortTop10By === 'qty' 
+                    ? stationCounts[b].count - stationCounts[a].count 
+                    : stationCounts[b].cost - stationCounts[a].cost
+            );
+            const topStations = sortedStations.slice(0, 3);
+            
+            const margin = { top: 10, right: 20, bottom: 50, left: 150 };
+            const width = container.clientWidth - margin.left - margin.right;
+            const height = container.clientHeight - margin.top - margin.bottom;
+            
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', '100%');
+            svg.setAttribute('height', '100%');
+            svg.setAttribute('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
+            container.appendChild(svg);
+            
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
+            svg.appendChild(g);
+            
+            // Create horizontal bars for each top station
+            topStations.forEach((station, index) => {
+                const barHeight = 25;
+                const barValue = sortTop10By === 'qty' ? stationCounts[station].count : stationCounts[station].cost;
+                const barWidth = (barValue / Math.max(...topStations.map(s => sortTop10By === 'qty' ? stationCounts[s].count : stationCounts[s].cost))) * (width - 20);
+                
+                const y = index * (barHeight + 15) + 10;
+                
+                const bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                bar.setAttribute('class', 'horizontal-bar');
+                bar.setAttribute('x', 0);
+                bar.setAttribute('y', y);
+                bar.setAttribute('width', barWidth);
+                bar.setAttribute('height', barHeight);
+                bar.setAttribute('fill', colors[index % colors.length]);
+                g.appendChild(bar);
+                
+                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                label.setAttribute('class', 'horizontal-bar-label');
+                label.setAttribute('x', barWidth + 5);
+                label.setAttribute('y', y + barHeight / 2 + 5);
+                label.textContent = sortTop10By === 'qty' ? 
+                    `${stationCounts[station].count} (R${stationCounts[station].cost.toFixed(2)})` : 
+                    `R${stationCounts[station].cost.toFixed(2)} (${stationCounts[station].count})`;
+                g.appendChild(label);
+                
+                const stationText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                stationText.setAttribute('x', 0);
+                stationText.setAttribute('y', y - 5);
+                stationText.setAttribute('font-size', '12px');
+                stationText.setAttribute('fill', '#333');
+                // Truncate long text with ellipsis
+                const maxLength = 20;
+                stationText.textContent = station.length > maxLength ? station.substring(0, maxLength) + '...' : station;
+                g.appendChild(stationText);
+            });
+            
+            if (topStations.length === 0) {
+                const noDataText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                noDataText.setAttribute('x', width / 2);
+                noDataText.setAttribute('y', height / 2);
+                noDataText.setAttribute('text-anchor', 'middle');
+                noDataText.setAttribute('font-size', '14px');
+                noDataText.setAttribute('fill', '#999');
+                noDataText.textContent = 'No data available';
+                g.appendChild(noDataText);
+            }
+        }
+    </script>
+</body>
+</html>
             const totalCost = dataToUse.reduce((sum, item) => sum + (item.Cost || 0), 0);
             const scrapCount = dataToUse.filter(item => item.ActionSelection === 'Scrap')
                 .reduce((sum, item) => sum + (item.QTY || 0), 0);
@@ -2241,8 +2985,7 @@
             });
         }
 
-        // Create reject reasons chart
-        function createRejectReasonsChart() {
+function createRejectReasonsChart() {
             const container = chartContainers.reasons;
             let dataToUse = filteredData;
             if (selectedAction !== 'All') {
@@ -2285,195 +3028,384 @@
             const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
             g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
             svg.appendChild(g);
-            const barHeight = Math.min(30, (height / topReasons.length) * 0.8);
-            const y = topReasons.map((_, i) => i * (height / topReasons.length) + barHeight);
-            const metric = sortTop10By === 'qty' ? 'count' : 'cost';
-            const maxValue = Math.max(...topReasons.map(r => reasonCounts[r][metric]));
-            const x = (value) => width * (value / maxValue);
-            topReasons.forEach((reason, i) => {
-                const value = reasonCounts[reason][metric];
-                const barWidth = x(value);
+
+            // Create horizontal bars for each top reason
+            topReasons.forEach((reason, index) => {
+                const barHeight = 20;
+                const barValue = sortTop10By === 'qty' ? reasonCounts[reason].count : reasonCounts[reason].cost;
+                const barWidth = (barValue / Math.max(...topReasons.map(r => sortTop10By === 'qty' ? reasonCounts[r].count : reasonCounts[r].cost))) * (width - 20);
+                
+                const y = index * (barHeight + 15) + 10;
+                
                 const bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                bar.setAttribute('class', 'horizontal-bar');
                 bar.setAttribute('x', 0);
-                bar.setAttribute('y', y[i] - barHeight);
+                bar.setAttribute('y', y);
                 bar.setAttribute('width', barWidth);
                 bar.setAttribute('height', barHeight);
-                bar.setAttribute('fill', colors[i % colors.length]);
-                bar.classList.add('horizontal-bar');
-                bar.addEventListener('mouseover', (e) => {
-                    const tooltip = document.createElement('div');
-                    tooltip.className = 'tooltip';
-                    tooltip.innerHTML = `<strong>${reason}</strong><br>Count: ${reasonCounts[reason].count}<br>Cost: R${reasonCounts[reason].cost.toFixed(2)}`;
-                    tooltip.style.left = `${e.pageX + 10}px`;
-                    tooltip.style.top = `${e.pageY - 30}px`;
-                    document.body.appendChild(tooltip);
-                });
-                bar.addEventListener('mousemove', (e) => {
-                    const tooltip = document.querySelector('.tooltip');
-                    if (tooltip) {
-                        tooltip.style.left = `${e.pageX + 10}px`;
-                        tooltip.style.top = `${e.pageY - 30}px`;
-                    }
-                });
-                bar.addEventListener('mouseout', () => {
-                    const tooltip = document.querySelector('.tooltip');
-                    if (tooltip) tooltip.remove();
-                });
+                bar.setAttribute('fill', colors[index % colors.length]);
                 g.appendChild(bar);
-                const nameLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                nameLabel.setAttribute('x', -5);
-                nameLabel.setAttribute('y', y[i] - barHeight / 2);
-                nameLabel.setAttribute('text-anchor', 'end');
-                nameLabel.setAttribute('dominant-baseline', 'middle');
-                nameLabel.textContent = reason.length > 18 ? reason.substring(0, 16) + '...' : reason;
-                nameLabel.classList.add('horizontal-bar-label');
-                g.appendChild(nameLabel);
-                const valueLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                valueLabel.setAttribute('x', barWidth + 5);
-                valueLabel.setAttribute('y', y[i] - barHeight / 2);
-                valueLabel.setAttribute('dominant-baseline', 'middle');
-                const valueText = sortTop10By === 'qty' ? value : 'R' + value.toFixed(0);
-                valueLabel.textContent = valueText;
-                valueLabel.classList.add('horizontal-bar-label');
-                g.appendChild(valueLabel);
+                
+                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                label.setAttribute('class', 'horizontal-bar-label');
+                label.setAttribute('x', barWidth + 5);
+                label.setAttribute('y', y + barHeight / 2 + 4);
+                label.textContent = sortTop10By === 'qty' ? 
+                    `${reasonCounts[reason].count} (R${reasonCounts[reason].cost.toFixed(2)})` : 
+                    `R${reasonCounts[reason].cost.toFixed(2)} (${reasonCounts[reason].count})`;
+                g.appendChild(label);
+                
+                const reasonText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                reasonText.setAttribute('x', 0);
+                reasonText.setAttribute('y', y - 5);
+                reasonText.setAttribute('font-size', '10px');
+                reasonText.setAttribute('fill', '#333');
+                // Truncate long text with ellipsis
+                const maxLength = 25;
+                reasonText.textContent = reason.length > maxLength ? reason.substring(0, maxLength) + '...' : reason;
+                g.appendChild(reasonText);
             });
+            
+            if (topReasons.length === 0) {
+                const noDataText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                noDataText.setAttribute('x', width / 2);
+                noDataText.setAttribute('y', height / 2);
+                noDataText.setAttribute('text-anchor', 'middle');
+                noDataText.setAttribute('font-size', '14px');
+                noDataText.setAttribute('fill', '#999');
+                noDataText.textContent = 'No data available';
+                g.appendChild(noDataText);
+            }
         }
 
-        // Create daily trend chart with horizontal box plot
+        // Create daily trend chart (line graph implementation)
         function createDailyTrendChart() {
             const container = chartContainers.trend;
-            let dataToUse = filteredData;
-            if (selectedAction !== 'All') {
-                dataToUse = dataToUse.filter(item => item.ActionSelection === selectedAction);
-            }
-            if (selectedRejectReason !== null) {
-                dataToUse = dataToUse.filter(item => item.RejectReason === selectedRejectReason);
-            }
-            if (selectedStation !== null) {
-                dataToUse = dataToUse.filter(item => item.Station === selectedStation);
-            }
-            if (dataToUse.length === 0) {
+            container.innerHTML = '';
+            
+            // Use the trend chart data prepared by prepareTrendChartData()
+            const minData = trendChartData.outsideRange.min;
+            const maxData = trendChartData.outsideRange.max;
+            const meanData = trendChartData.outsideRange.mean;
+            const currentData = trendChartData.insideRange.values;
+            
+            if ((minData.length === 0 && maxData.length === 0 && meanData.length === 0 && currentData.length === 0) || 
+                filteredData.length === 0) {
                 container.innerHTML = '<div class="no-data">No data available</div>';
                 return;
             }
-            // Group data by date within selected date range
-            const dailyData = {};
-            dataToUse.forEach(item => {
-                const date = item.ProductionDate || 'Unknown';
-                if (!dailyData[date]) {
-                    dailyData[date] = { qty: 0, cost: 0 };
-                }
-                dailyData[date].qty += (item.QTY || 0);
-                dailyData[date].cost += (item.Cost || 0);
-            });
-            const dates = Object.keys(dailyData).sort();
-            const metric = sortTop10By === 'qty' ? 'qty' : 'cost';
-            const values = dates.map(date => dailyData[date][metric]);
-            // Define chart dimensions
-            const margin = { top: 40, right: 120, bottom: 40, left: 50 };
+            
+            const margin = { top: 30, right: 60, bottom: 60, left: 60 };
             const width = container.clientWidth - margin.left - margin.right;
             const height = container.clientHeight - margin.top - margin.bottom;
-            // Clear existing content
-            container.innerHTML = '';
+            
+            // Create SVG
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            svg.setAttribute('width', '100%');
-            svg.setAttribute('height', '100%');
-            svg.setAttribute('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
+            svg.setAttribute('width', container.clientWidth);
+            svg.setAttribute('height', container.clientHeight);
             container.appendChild(svg);
+            
             const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
             g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
             svg.appendChild(g);
-            // Scales
-            const yScale = (index) => (index * height) / (dates.length - 1 || 1);
-            const xMin = Math.min(globalDataMetrics.min, ...values);
-            const xMax = Math.max(globalDataMetrics.max, ...values);
-            const xScale = (value) => ((value - xMin) / (xMax - xMin || 1)) * width;
-            // Draw horizontal box plot
-            const boxHeight = 20;
-            const boxY = height / 2 - boxHeight / 2;
-            // Whiskers
-            const whiskerLeft = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            whiskerLeft.setAttribute('x1', xScale(globalDataMetrics.min));
-            whiskerLeft.setAttribute('y1', boxY + boxHeight / 2);
-            whiskerLeft.setAttribute('x2', xScale(globalDataMetrics.q1));
-            whiskerLeft.setAttribute('y2', boxY + boxHeight / 2);
-            whiskerLeft.classList.add('whisker-line');
-            g.appendChild(whiskerLeft);
-            const whiskerRight = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            whiskerRight.setAttribute('x1', xScale(globalDataMetrics.q3));
-            whiskerRight.setAttribute('y1', boxY + boxHeight / 2);
-            whiskerRight.setAttribute('x2', xScale(globalDataMetrics.max));
-            whiskerRight.setAttribute('y2', boxY + boxHeight / 2);
-            whiskerRight.classList.add('whisker-line');
-            g.appendChild(whiskerRight);
-            // Box
-            const box = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            box.setAttribute('x', xScale(globalDataMetrics.q1));
-            box.setAttribute('y', boxY);
-            box.setAttribute('width', xScale(globalDataMetrics.q3) - xScale(globalDataMetrics.q1));
-            box.setAttribute('height', boxHeight);
-            box.classList.add('box-plot');
-            g.appendChild(box);
-            // Median line
-            const medianLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            medianLine.setAttribute('x1', xScale(globalDataMetrics.median));
-            medianLine.setAttribute('y1', boxY);
-            medianLine.setAttribute('x2', xScale(globalDataMetrics.median));
-            medianLine.setAttribute('y2', boxY + boxHeight);
-            medianLine.classList.add('median-line');
-            g.appendChild(medianLine);
-            // Labels for box plot
-            const labels = [
-                { value: globalDataMetrics.min, text: 'Min' },
-                { value: globalDataMetrics.q1, text: 'Q1' },
-                { value: globalDataMetrics.median, text: 'Median' },
-                { value: globalDataMetrics.q3, text: 'Q3' },
-                { value: globalDataMetrics.max, text: 'Max' }
-            ];
-            labels.forEach(label => {
-                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                text.setAttribute('x', xScale(label.value));
-                text.setAttribute('y', boxY - 5);
-                text.setAttribute('text-anchor', 'middle');
-                text.textContent = label.text;
-                text.classList.add('box-plot-label');
-                g.appendChild(text);
-            });
-            // Draw daily indicators
-            dates.forEach((date, i) => {
-                const value = dailyData[date][metric];
+            
+            // Combine all data to find the date range and value range
+            const allData = [...minData, ...maxData, ...meanData, ...currentData];
+            if (allData.length === 0) {
+                const noDataText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                noDataText.setAttribute('x', width / 2);
+                noDataText.setAttribute('y', height / 2);
+                noDataText.setAttribute('text-anchor', 'middle');
+                noDataText.setAttribute('font-size', '14px');
+                noDataText.setAttribute('fill', '#999');
+                noDataText.textContent = 'No data available';
+                g.appendChild(noDataText);
+                return;
+            }
+            
+            // Extract all dates and sort them
+            const dates = [...new Set(allData.map(d => d.date))].sort((a, b) => new Date(a) - new Date(b));
+            
+            // Find the min and max values
+            const minValue = 0;
+            const maxValue = Math.max(...allData.map(d => d.value)) * 1.1;
+            
+            // Create scales
+            const xScale = value => {
+                const dateIndex = dates.indexOf(value);
+                return (dateIndex / (dates.length - 1)) * width;
+            };
+            
+            const yScale = value => {
+                return height - ((value - minValue) / (maxValue - minValue)) * height;
+            };
+            
+            // Draw grid lines
+            const gridGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            gridGroup.setAttribute('class', 'grid');
+            
+            // Horizontal grid lines
+            const numGridLines = 5;
+            for (let i = 0; i <= numGridLines; i++) {
+                const y = height * (i / numGridLines);
+                const gridLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                gridLine.setAttribute('x1', 0);
+                gridLine.setAttribute('y1', y);
+                gridLine.setAttribute('x2', width);
+                gridLine.setAttribute('y2', y);
+                gridLine.setAttribute('stroke', '#e0e0e0');
+                gridLine.setAttribute('stroke-width', 1);
+                gridGroup.appendChild(gridLine);
+                
+                // Add y-axis labels
+                const yValue = maxValue - (i / numGridLines) * (maxValue - minValue);
+                const yLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                yLabel.setAttribute('x', -10);
+                yLabel.setAttribute('y', y + 4);
+                yLabel.setAttribute('text-anchor', 'end');
+                yLabel.setAttribute('font-size', '10px');
+                yLabel.setAttribute('fill', '#666');
+                yLabel.textContent = sortTop10By === 'qty' ? 
+                    Math.round(yValue) : 
+                    'R' + yValue.toFixed(2);
+                gridGroup.appendChild(yLabel);
+            }
+            
+            // Vertical grid lines and date labels
+            const numDates = Math.min(dates.length, 10); // Limit to avoid overcrowding
+            const dateStep = dates.length > 1 ? Math.max(1, Math.floor(dates.length / numDates)) : 1;
+            
+            for (let i = 0; i < dates.length; i += dateStep) {
+                const date = dates[i];
+                const x = xScale(date);
+                
+                const gridLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                gridLine.setAttribute('x1', x);
+                gridLine.setAttribute('y1', 0);
+                gridLine.setAttribute('x2', x);
+                gridLine.setAttribute('y2', height);
+                gridLine.setAttribute('stroke', '#e0e0e0');
+                gridLine.setAttribute('stroke-width', 1);
+                gridGroup.appendChild(gridLine);
+                
+                // Add x-axis labels (dates)
+                const dateLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                dateLabel.setAttribute('x', x);
+                dateLabel.setAttribute('y', height + 20);
+                dateLabel.setAttribute('text-anchor', 'middle');
+                dateLabel.setAttribute('font-size', '10px');
+                dateLabel.setAttribute('fill', '#666');
+                dateLabel.textContent = formatDate(date);
+                gridGroup.appendChild(dateLabel);
+            }
+            
+            g.appendChild(gridGroup);
+            
+            // Add axes
+            const xAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            xAxis.setAttribute('x1', 0);
+            xAxis.setAttribute('y1', height);
+            xAxis.setAttribute('x2', width);
+            xAxis.setAttribute('y2', height);
+            xAxis.setAttribute('stroke', '#666');
+            xAxis.setAttribute('stroke-width', 1.5);
+            g.appendChild(xAxis);
+            
+            const yAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            yAxis.setAttribute('x1', 0);
+            yAxis.setAttribute('y1', 0);
+            yAxis.setAttribute('x2', 0);
+            yAxis.setAttribute('y2', height);
+            yAxis.setAttribute('stroke', '#666');
+            yAxis.setAttribute('stroke-width', 1.5);
+            g.appendChild(yAxis);
+            
+            // Add axis labels
+            const xAxisLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            xAxisLabel.setAttribute('x', width / 2);
+            xAxisLabel.setAttribute('y', height + 40);
+            xAxisLabel.setAttribute('text-anchor', 'middle');
+            xAxisLabel.setAttribute('font-size', '12px');
+            xAxisLabel.setAttribute('fill', '#333');
+            xAxisLabel.textContent = 'Production Date';
+            g.appendChild(xAxisLabel);
+            
+            const yAxisLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            yAxisLabel.setAttribute('transform', `rotate(-90) translate(${-height/2}, ${-40})`);
+            yAxisLabel.setAttribute('text-anchor', 'middle');
+            yAxisLabel.setAttribute('font-size', '12px');
+            yAxisLabel.setAttribute('fill', '#333');
+            yAxisLabel.textContent = sortTop10By === 'qty' ? 'Quantity' : 'Cost (R)';
+            g.appendChild(yAxisLabel);
+            
+            // Create lines
+            function createLine(data, color, isStroke = true, isDashed = false, lineWidth = 2) {
+                if (data.length < 2) return null;
+                
+                let pathD = '';
+                data.sort((a, b) => new Date(a.date) - new Date(b.date)).forEach((d, i) => {
+                    const x = xScale(d.date);
+                    const y = yScale(d.value);
+                    pathD += i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`;
+                });
+                
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('class', 'line');
+                path.setAttribute('d', pathD);
+                path.setAttribute('stroke', color);
+                path.setAttribute('stroke-width', lineWidth);
+                if (isDashed) {
+                    path.setAttribute('stroke-dasharray', '5,5');
+                }
+                return path;
+            }
+            
+            // Create and append the lines
+            const minLine = createLine(minData, '#3498db', true, true);
+            const maxLine = createLine(maxData, '#e74c3c', true, true);
+            const meanLine = createLine(meanData, '#2ecc71', true, false);
+            const currentLine = createLine(currentData, '#9b59b6', true, false, 3);
+            
+            const linesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            linesGroup.setAttribute('class', 'lines');
+            
+            // Add the lines in specific order (min and max at the back, current at the front)
+            if (minLine) linesGroup.appendChild(minLine);
+            if (maxLine) linesGroup.appendChild(maxLine);
+            if (meanLine) linesGroup.appendChild(meanLine);
+            if (currentLine) linesGroup.appendChild(currentLine);
+            
+            g.appendChild(linesGroup);
+            
+            // Add data points with hover tooltips
+            function createDataPoints(data, color) {
+                if (!data || data.length === 0) return [];
+                
+                data.sort((a, b) => new Date(a.date) - new Date(b.date));
+                const points = [];
+                
+                data.forEach(d => {
+                    const x = xScale(d.date);
+                    const y = yScale(d.value);
+                    
+                    const point = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    point.setAttribute('class', 'data-point');
+                    point.setAttribute('cx', x);
+                    point.setAttribute('cy', y);
+                    point.setAttribute('r', 4);
+                    point.setAttribute('fill', color);
+                    point.setAttribute('stroke', color);
+                    
+                    // Add tooltip on hover
+                    point.setAttribute('data-date', formatDate(d.date));
+                    point.setAttribute('data-value', sortTop10By === 'qty' ? 
+                        `${Math.round(d.value)} units` : 
+                        `R${d.value.toFixed(2)}`);
+                    
+                    point.addEventListener('mouseover', function(e) {
+                        const tooltip = document.createElement('div');
+                        tooltip.className = 'tooltip';
+                        tooltip.innerHTML = `<div>Date: ${this.getAttribute('data-date')}</div>
+                                          <div>Value: ${this.getAttribute('data-value')}</div>`;
+                        document.body.appendChild(tooltip);
+                        
+                        // Position the tooltip
+                        const rect = this.getBoundingClientRect();
+                        tooltip.style.left = `${rect.left + window.scrollX}px`;
+                        tooltip.style.top = `${rect.top + window.scrollY - 40}px`;
+                    });
+                    
+                    point.addEventListener('mousemove', function(e) {
+                        const tooltip = document.querySelector('.tooltip');
+                        if (tooltip) {
+                            tooltip.style.left = `${e.pageX + 10}px`;
+                            tooltip.style.top = `${e.pageY - 40}px`;
+                        }
+                    });
+                    
+                    point.addEventListener('mouseout', function() {
+                        const tooltip = document.querySelector('.tooltip');
+                        if (tooltip) {
+                            tooltip.remove();
+                        }
+                    });
+                    
+                    points.push(point);
+                });
+                
+                return points;
+            }
+            
+            // Create all data points
+            const pointsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            pointsGroup.setAttribute('class', 'data-points');
+            
+            const minPoints = createDataPoints(minData, '#3498db');
+            const maxPoints = createDataPoints(maxData, '#e74c3c');
+            const meanPoints = createDataPoints(meanData, '#2ecc71');
+            const currentPoints = createDataPoints(currentData, '#9b59b6');
+            
+            minPoints.forEach(point => pointsGroup.appendChild(point));
+            maxPoints.forEach(point => pointsGroup.appendChild(point));
+            meanPoints.forEach(point => pointsGroup.appendChild(point));
+            currentPoints.forEach(point => pointsGroup.appendChild(point));
+            
+            g.appendChild(pointsGroup);
+            
+            // Create a legend
+            const legendGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            legendGroup.setAttribute('class', 'legend');
+            legendGroup.setAttribute('transform', `translate(${width - 150}, 10)`);
+            
+            const legends = [
+                { label: 'Min', color: '#3498db', visible: minData.length > 0 },
+                { label: 'Max', color: '#e74c3c', visible: maxData.length > 0 },
+                { label: 'Mean', color: '#2ecc71', visible: meanData.length > 0 },
+                { label: 'Current', color: '#9b59b6', visible: currentData.length > 0 }
+            ].filter(l => l.visible);
+            
+            legends.forEach((legend, i) => {
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                g.setAttribute('transform', `translate(0, ${i * 20})`);
+                
                 const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                line.setAttribute('x1', xScale(value));
-                line.setAttribute('y1', yScale(i) - 5);
-                line.setAttribute('x2', xScale(value));
-                line.setAttribute('y2', yScale(i) + 5);
-                line.classList.add('date-marker');
+                line.setAttribute('x1', 0);
+                line.setAttribute('y1', 10);
+                line.setAttribute('x2', 20);
+                line.setAttribute('y2', 10);
+                line.setAttribute('stroke', legend.color);
+                line.setAttribute('stroke-width', 2);
+                if (['Min', 'Max'].includes(legend.label)) {
+                    line.setAttribute('stroke-dasharray', '5,5');
+                }
                 g.appendChild(line);
-                const dateText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                dateText.setAttribute('x', -5);
-                dateText.setAttribute('y', yScale(i));
-                dateText.setAttribute('text-anchor', 'end');
-                dateText.setAttribute('dominant-baseline', 'middle');
-                dateText.textContent = formatDate(date);
-                dateText.classList.add('axis');
-                g.appendChild(dateText);
-            });
-            // X-axis
-            const xTicks = [xMin, (xMin + xMax) / 2, xMax];
-            xTicks.forEach(tick => {
+                
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', 10);
+                circle.setAttribute('cy', 10);
+                circle.setAttribute('r', 4);
+                circle.setAttribute('fill', legend.color);
+                g.appendChild(circle);
+                
                 const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                text.setAttribute('x', xScale(tick));
-                text.setAttribute('y', height + 15);
-                text.setAttribute('text-anchor', 'middle');
-                text.textContent = sortTop10By === 'qty' ? tick.toFixed(0) : `R${tick.toFixed(0)}`;
-                text.classList.add('axis');
+                text.setAttribute('x', 25);
+                text.setAttribute('y', 14);
+                text.setAttribute('font-size', '10px');
+                text.setAttribute('class', 'legend-label');
+                text.textContent = legend.label;
                 g.appendChild(text);
+                
+                legendGroup.appendChild(g);
             });
+            
+            g.appendChild(legendGroup);
         }
 
         // Create top problems chart
         function createTopProblemsChart() {
             const container = chartContainers.parts;
+            container.innerHTML = '';
+            
             let dataToUse = filteredData;
             if (selectedAction !== 'All') {
                 dataToUse = dataToUse.filter(item => item.ActionSelection === selectedAction);
@@ -2484,103 +3416,102 @@
             if (selectedStation !== null) {
                 dataToUse = dataToUse.filter(item => item.Station === selectedStation);
             }
-            if (dataToUse.length === 0) {
-                container.innerHTML = '<div class="no-data">No data available</div>';
-                return;
-            }
+            
+            // Group data by part
             const partCounts = {};
             dataToUse.forEach(item => {
                 let parts = [];
                 if (Array.isArray(item.Parts)) {
-                    parts = item.Parts;
+                    parts = item.Parts.filter(p => p && p.trim());
                 } else if (typeof item.Parts === 'string') {
-                    parts = item.Parts.split(',').map(p => p.trim());
+                    parts = item.Parts.split(',').map(p => p.trim()).filter(p => p);
                 }
+                
                 parts.forEach(part => {
-                    if (!part) return;
                     if (!partCounts[part]) {
                         partCounts[part] = { count: 0, cost: 0 };
                     }
                     partCounts[part].count += (item.QTY || 0);
-                    const partCount = parts.length || 1;
-                    partCounts[part].cost += ((item.Cost || 0) / partCount);
+                    partCounts[part].cost += (item.Cost || 0);
                 });
             });
+            
+            // Sort and take top 3
             const sortedParts = Object.keys(partCounts).sort((a, b) => 
                 sortTop10By === 'qty' 
                     ? partCounts[b].count - partCounts[a].count 
                     : partCounts[b].cost - partCounts[a].cost
             );
             const topParts = sortedParts.slice(0, 3);
-            const margin = { top: 10, right: 80, bottom: 20, left: 120 };
+            
+            const margin = { top: 10, right: 20, bottom: 50, left: 150 };
             const width = container.clientWidth - margin.left - margin.right;
             const height = container.clientHeight - margin.top - margin.bottom;
-            container.innerHTML = '';
+            
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
             svg.setAttribute('width', '100%');
             svg.setAttribute('height', '100%');
             svg.setAttribute('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
             container.appendChild(svg);
+            
             const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
             g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
             svg.appendChild(g);
-            const barHeight = Math.min(30, (height / topParts.length) * 0.8);
-            const y = topParts.map((_, i) => i * (height / topParts.length) + barHeight);
-            const metric = sortTop10By === 'qty' ? 'count' : 'cost';
-            const maxValue = Math.max(...topParts.map(p => partCounts[p][metric]));
-            const x = (value) => width * (value / maxValue);
-            topParts.forEach((part, i) => {
-                const value = partCounts[part][metric];
-                const barWidth = x(value);
+            
+            // Create horizontal bars for each top part
+            topParts.forEach((part, index) => {
+                const barHeight = 25;
+                const barValue = sortTop10By === 'qty' ? partCounts[part].count : partCounts[part].cost;
+                const barWidth = (barValue / Math.max(...topParts.map(p => sortTop10By === 'qty' ? partCounts[p].count : partCounts[p].cost))) * (width - 20);
+                
+                const y = index * (barHeight + 15) + 10;
+                
                 const bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                bar.setAttribute('class', 'horizontal-bar');
                 bar.setAttribute('x', 0);
-                bar.setAttribute('y', y[i] - barHeight);
+                bar.setAttribute('y', y);
                 bar.setAttribute('width', barWidth);
                 bar.setAttribute('height', barHeight);
-                bar.setAttribute('fill', colors[i % colors.length]);
-                bar.classList.add('horizontal-bar');
-                bar.addEventListener('mouseover', (e) => {
-                    const tooltip = document.createElement('div');
-                    tooltip.className = 'tooltip';
-                    tooltip.innerHTML = `<strong>${part}</strong><br>Count: ${partCounts[part].count}<br>Cost: R${partCounts[part].cost.toFixed(2)}`;
-                    tooltip.style.left = `${e.pageX + 10}px`;
-                    tooltip.style.top = `${e.pageY - 30}px`;
-                    document.body.appendChild(tooltip);
-                });
-                bar.addEventListener('mousemove', (e) => {
-                    const tooltip = document.querySelector('.tooltip');
-                    if (tooltip) {
-                        tooltip.style.left = `${e.pageX + 10}px`;
-                        tooltip.style.top = `${e.pageY - 30}px`;
-                    }
-                });
-                bar.addEventListener('mouseout', () => {
-                    const tooltip = document.querySelector('.tooltip');
-                    if (tooltip) tooltip.remove();
-                });
+                bar.setAttribute('fill', colors[index % colors.length]);
                 g.appendChild(bar);
-                const nameLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                nameLabel.setAttribute('x', -5);
-                nameLabel.setAttribute('y', y[i] - barHeight / 2);
-                nameLabel.setAttribute('text-anchor', 'end');
-                nameLabel.setAttribute('dominant-baseline', 'middle');
-                nameLabel.textContent = part.length > 18 ? part.substring(0, 16) + '...' : part;
-                nameLabel.classList.add('horizontal-bar-label');
-                g.appendChild(nameLabel);
-                const valueLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                valueLabel.setAttribute('x', barWidth + 5);
-                valueLabel.setAttribute('y', y[i] - barHeight / 2);
-                valueLabel.setAttribute('dominant-baseline', 'middle');
-                const valueText = sortTop10By === 'qty' ? value : 'R' + value.toFixed(0);
-                valueLabel.textContent = valueText;
-                valueLabel.classList.add('horizontal-bar-label');
-                g.appendChild(valueLabel);
+                
+                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                label.setAttribute('class', 'horizontal-bar-label');
+                label.setAttribute('x', barWidth + 5);
+                label.setAttribute('y', y + barHeight / 2 + 5);
+                label.textContent = sortTop10By === 'qty' ? 
+                    `${partCounts[part].count} (R${partCounts[part].cost.toFixed(2)})` : 
+                    `R${partCounts[part].cost.toFixed(2)} (${partCounts[part].count})`;
+                g.appendChild(label);
+                
+                const partText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                partText.setAttribute('x', 0);
+                partText.setAttribute('y', y - 5);
+                partText.setAttribute('font-size', '12px');
+                partText.setAttribute('fill', '#333');
+                // Truncate long text with ellipsis
+                const maxLength = 20;
+                partText.textContent = part.length > maxLength ? part.substring(0, maxLength) + '...' : part;
+                g.appendChild(partText);
             });
+            
+            if (topParts.length === 0) {
+                const noDataText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                noDataText.setAttribute('x', width / 2);
+                noDataText.setAttribute('y', height / 2);
+                noDataText.setAttribute('text-anchor', 'middle');
+                noDataText.setAttribute('font-size', '14px');
+                noDataText.setAttribute('fill', '#999');
+                noDataText.textContent = 'No data available';
+                g.appendChild(noDataText);
+            }
         }
 
         // Create station cost chart
         function createStationCostChart() {
             const container = chartContainers.station;
+            container.innerHTML = '';
+            
             let dataToUse = filteredData;
             if (selectedAction !== 'All') {
                 dataToUse = dataToUse.filter(item => item.ActionSelection === selectedAction);
@@ -2591,89 +3522,258 @@
             if (selectedStation !== null) {
                 dataToUse = dataToUse.filter(item => item.Station === selectedStation);
             }
-            if (dataToUse.length === 0) {
-                container.innerHTML = '<div class="no-data">No data available</div>';
-                return;
-            }
-            const stationData = {};
+            
+            // Group data by station
+            const stationCounts = {};
             dataToUse.forEach(item => {
                 const station = item.Station || 'Unknown';
-                if (!stationData[station]) {
-                    stationData[station] = { count: 0, cost: 0 };
+                if (!stationCounts[station]) {
+                    stationCounts[station] = { count: 0, cost: 0 };
                 }
-                stationData[station].count += (item.QTY || 0);
-                stationData[station].cost += (item.Cost || 0);
+                stationCounts[station].count += (item.QTY || 0);
+                stationCounts[station].cost += (item.Cost || 0);
             });
-            const sortedStations = Object.keys(stationData).sort((a, b) => 
+            
+            // Sort and take top 3
+            const sortedStations = Object.keys(stationCounts).sort((a, b) => 
                 sortTop10By === 'qty' 
-                    ? stationData[b].count - stationData[a].count 
-                    : stationData[b].cost - stationData[a].cost
+                    ? stationCounts[b].count - stationCounts[a].count 
+                    : stationCounts[b].cost - stationCounts[a].cost
             );
             const topStations = sortedStations.slice(0, 3);
-            const margin = { top: 10, right: 80, bottom: 20, left: 120 };
+            
+            const margin = { top: 10, right: 20, bottom: 50, left: 150 };
             const width = container.clientWidth - margin.left - margin.right;
             const height = container.clientHeight - margin.top - margin.bottom;
-            container.innerHTML = '';
+            
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
             svg.setAttribute('width', '100%');
             svg.setAttribute('height', '100%');
             svg.setAttribute('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
             container.appendChild(svg);
+            
             const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
             g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
             svg.appendChild(g);
-            const barHeight = Math.min(30, (height / topStations.length) * 0.8);
-            const y = topStations.map((_, i) => i * (height / topStations.length) + barHeight);
-            const metric = sortTop10By === 'qty' ? 'count' : 'cost';
-            const maxValue = Math.max(...topStations.map(s => stationData[s][metric]));
-            const x = (value) => width * (value / maxValue);
-            topStations.forEach((station, i) => {
-                const value = stationData[station][metric];
-                const barWidth = x(value);
+            
+            // Create horizontal bars for each top station
+            topStations.forEach((station, index) => {
+                const barHeight = 25;
+                const barValue = sortTop10By === 'qty' ? stationCounts[station].count : stationCounts[station].cost;
+                const barWidth = (barValue / Math.max(...topStations.map(s => sortTop10By === 'qty' ? stationCounts[s].count : stationCounts[s].cost))) * (width - 20);
+                
+                const y = index * (barHeight + 15) + 10;
+                
                 const bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                bar.setAttribute('class', 'horizontal-bar');
                 bar.setAttribute('x', 0);
-                bar.setAttribute('y', y[i] - barHeight);
+                bar.setAttribute('y', y);
                 bar.setAttribute('width', barWidth);
                 bar.setAttribute('height', barHeight);
-                bar.setAttribute('fill', colors[i % colors.length]);
-                bar.classList.add('horizontal-bar');
-                bar.addEventListener('mouseover', (e) => {
-                    const tooltip = document.createElement('div');
-                    tooltip.className = 'tooltip';
-                    tooltip.innerHTML = `<strong>${station}</strong><br>Count: ${stationData[station].count}<br>Cost: R${stationData[station].cost.toFixed(2)}`;
-                    tooltip.style.left = `${e.pageX + 10}px`;
-                    tooltip.style.top = `${e.pageY - 30}px`;
-                    document.body.appendChild(tooltip);
-                });
-                bar.addEventListener('mousemove', (e) => {
-                    const tooltip = document.querySelector('.tooltip');
-                    if (tooltip) {
-                        tooltip.style.left = `${e.pageX + 10}px`;
-                        tooltip.style.top = `${e.pageY - 30}px`;
-                    }
-                });
-                bar.addEventListener('mouseout', () => {
-                    const tooltip = document.querySelector('.tooltip');
-                    if (tooltip) tooltip.remove();
-                });
+                bar.setAttribute('fill', colors[index % colors.length]);
                 g.appendChild(bar);
-                const nameLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                nameLabel.setAttribute('x', -5);
-                nameLabel.setAttribute('y', y[i] - barHeight / 2);
-                nameLabel.setAttribute('text-anchor', 'end');
-                nameLabel.setAttribute('dominant-baseline', 'middle');
-                nameLabel.textContent = station.length > 18 ? station.substring(0, 16) + '...' : station;
-                nameLabel.classList.add('horizontal-bar-label');
-                g.appendChild(nameLabel);
-                const valueLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                valueLabel.setAttribute('x', barWidth + 5);
-                valueLabel.setAttribute('y', y[i] - barHeight / 2);
-                valueLabel.setAttribute('dominant-baseline', 'middle');
-                const valueText = sortTop10By === 'qty' ? value : 'R' + value.toFixed(0);
-                valueLabel.textContent = valueText;
-                valueLabel.classList.add('horizontal-bar-label');
-                g.appendChild(valueLabel);
+                
+                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                label.setAttribute('class', 'horizontal-bar-label');
+                label.setAttribute('x', barWidth + 5);
+                label.setAttribute('y', y + barHeight / 2 + 5);
+                label.textContent = sortTop10By === 'qty' ? 
+                    `${stationCounts[station].count} (R${stationCounts[station].cost.toFixed(2)})` : 
+                    `R${stationCounts[station].cost.toFixed(2)} (${stationCounts[station].count})`;
+                g.appendChild(label);
+                
+                const stationText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                stationText.setAttribute('x', 0);
+                stationText.setAttribute('y', y - 5);
+                stationText.setAttribute('font-size', '12px');
+                stationText.setAttribute('fill', '#333');
+                // Truncate long text with ellipsis
+                const maxLength = 20;
+                stationText.textContent = station.length > maxLength ? station.substring(0, maxLength) + '...' : station;
+                g.appendChild(stationText);
             });
+            
+            if (topStations.length === 0) {
+                const noDataText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                noDataText.setAttribute('x', width / 2);
+                noDataText.setAttribute('y', height / 2);
+                noDataText.setAttribute('text-anchor', 'middle');
+                noDataText.setAttribute('font-size', '14px');
+                noDataText.setAttribute('fill', '#999');
+                noDataText.textContent = 'No data available';
+                g.appendChild(noDataText);
+            }
+        }
+
+        // Modified prepareTrendChartData() function for improved trend visualization
+        function prepareTrendChartData() {
+            const dateFrom = filterElements.dateFrom.value ? new Date(filterElements.dateFrom.value) : null;
+            const dateTo = filterElements.dateTo.value ? new Date(filterElements.dateTo.value) : null;
+            
+            // Filter data based on current filters EXCEPT date range
+            let dataForOutsideRange = getDataWithFiltersExceptDate();
+            
+            // Separate data inside and outside the date range
+            let dataOutsideRange = [];
+            let dataInsideRange = [];
+            
+            dataForOutsideRange.forEach(item => {
+                const itemDate = new Date(item.ProductionDate);
+                if (dateFrom && dateTo && (itemDate >= dateFrom && itemDate <= dateTo)) {
+                    dataInsideRange.push(item);
+                } else {
+                    dataOutsideRange.push(item);
+                }
+            });
+            
+            // Process data outside date range
+            const outsideDateGroups = {};
+            dataOutsideRange.forEach(item => {
+                const date = item.ProductionDate;
+                if (!outsideDateGroups[date]) {
+                    outsideDateGroups[date] = {
+                        date,
+                        values: []
+                    };
+                }
+                const value = sortTop10By === 'qty' ? (item.QTY || 0) : (item.Cost || 0);
+                outsideDateGroups[date].values.push(value);
+            });
+            
+            // Process data inside date range
+            const insideDateGroups = {};
+            dataInsideRange.forEach(item => {
+                const date = item.ProductionDate;
+                if (!insideDateGroups[date]) {
+                    insideDateGroups[date] = {
+                        date,
+                        total: 0
+                    };
+                }
+                insideDateGroups[date].total += sortTop10By === 'qty' ? (item.QTY || 0) : (item.Cost || 0);
+            });
+            
+            // Calculate min, max, mean for data outside date range
+            const minValues = [];
+            const maxValues = [];
+            const meanValues = [];
+            
+            Object.values(outsideDateGroups).sort((a, b) => 
+                new Date(a.date) - new Date(b.date)
+            ).forEach(group => {
+                if (group.values.length > 0) {
+                    const min = Math.min(...group.values);
+                    const max = Math.max(...group.values);
+                    const sum = group.values.reduce((a, b) => a + b, 0);
+                    const mean = sum / group.values.length;
+                    
+                    minValues.push({
+                        date: group.date,
+                        value: min
+                    });
+                    
+                    maxValues.push({
+                        date: group.date,
+                        value: max
+                    });
+                    
+                    meanValues.push({
+                        date: group.date,
+                        value: mean
+                    });
+                }
+            });
+            
+            // Prepare data for inside date range
+            const currentValues = Object.values(insideDateGroups).sort((a, b) => 
+                new Date(a.date) - new Date(b.date)
+            ).map(group => ({
+                date: group.date,
+                value: group.total
+            }));
+            
+            // Store in the global object
+            trendChartData = {
+                outsideRange: {
+                    byDate: outsideDateGroups,
+                    min: minValues,
+                    max: maxValues,
+                    mean: meanValues
+                },
+                insideRange: {
+                    byDate: insideDateGroups,
+                    values: currentValues
+                }
+            };
+        }
+        
+        // Get data with all filters applied except date range
+        function getDataWithFiltersExceptDate() {
+            // Start with all data
+            let result = allData;
+            
+            // Apply action filter if selected
+            if (selectedAction !== 'All') {
+                result = result.filter(item => item.ActionSelection === selectedAction);
+            }
+            
+            // Apply reject reason filter if selected
+            if (selectedRejectReason !== null) {
+                result = result.filter(item => item.RejectReason === selectedRejectReason);
+            }
+            
+            // Apply station filter if selected
+            if (selectedStation !== null) {
+                result = result.filter(item => item.Station === selectedStation);
+            }
+            
+            // Apply multi-select filters
+            const hasSelections = Object.values(filterValues).some(values => values.length > 0);
+            if (hasSelections) {
+                result = result.filter(item => {
+                    if (filterValues.supervisor.length > 0 && !filterValues.supervisor.includes(item.LineSupervisor)) {
+                        return false;
+                    }
+                    if (filterValues.product.length > 0 && !filterValues.product.includes(item.Product)) {
+                        return false;
+                    }
+                    if (filterValues.variant.length > 0 && !filterValues.variant.includes(item.Variant)) {
+                        return false;
+                    }
+                    if (filterValues.batch.length > 0) {
+                        const batchStr = item.BatchNumber !== undefined && item.BatchNumber !== null 
+                            ? String(item.BatchNumber) 
+                            : '';
+                        if (!filterValues.batch.includes(batchStr)) {
+                            return false;
+                        }
+                    }
+                    if (filterValues.part.length > 0) {
+                        let partFound = false;
+                        let parts = [];
+                        if (Array.isArray(item.Parts)) {
+                            parts = item.Parts;
+                        } else if (typeof item.Parts === 'string') {
+                            parts = item.Parts.split(',').map(p => p.trim());
+                        }
+                        partFound = parts.some(part => part && filterValues.part.includes(part.trim()));
+                        if (!partFound) return false;
+                    }
+                    if (filterValues.alias.length > 0) {
+                        let aliasFound = false;
+                        let aliases = [];
+                        if (Array.isArray(item.Aliases)) {
+                            aliases = item.Aliases;
+                        } else if (typeof item.Aliases === 'string') {
+                            aliases = item.Aliases.split(',').map(a => a.trim());
+                        }
+                        aliasFound = aliases.some(alias => alias && filterValues.alias.includes(alias.trim()));
+                        if (!aliasFound) return false;
+                    }
+                    return true;
+                });
+            }
+            return result;
         }
     </script>
 </body>
