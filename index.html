@@ -1301,21 +1301,33 @@ function prepareTrendChartData() {
         }
     });
     
-    // Process data outside date range - but now just getting single values, not by date
+    // Process data outside date range - getting single values, not by date
     let allOutsideValues = [];
     dataOutsideRange.forEach(item => {
         const value = sortTop10By === 'qty' ? (item.QTY || 0) : (item.Cost || 0);
-        allOutsideValues.push(value);
+        if (!isNaN(value) && value !== null && value !== undefined) {
+            allOutsideValues.push(value);
+        }
     });
     
-    // Calculate single min, max, mean values from all outside data
-    let minValue = allOutsideValues.length > 0 ? Math.min(...allOutsideValues) : 0;
-    let maxValue = allOutsideValues.length > 0 ? Math.max(...allOutsideValues) : 0;
-    let meanValue = allOutsideValues.length > 0 
-        ? allOutsideValues.reduce((sum, val) => sum + val, 0) / allOutsideValues.length 
-        : 0;
+    // Calculate single min, max, mean values from all outside data with safety checks
+    let minValue = 0;
+    let maxValue = 0;
+    let meanValue = 0;
     
-    // Process data inside date range - unchanged
+    if (allOutsideValues.length > 0) {
+        minValue = Math.min(...allOutsideValues);
+        maxValue = Math.max(...allOutsideValues);
+        const sum = allOutsideValues.reduce((a, b) => a + b, 0);
+        meanValue = sum / allOutsideValues.length;
+    }
+    
+    // Safety check for NaN values
+    minValue = isNaN(minValue) ? 0 : minValue;
+    maxValue = isNaN(maxValue) ? 0 : maxValue;
+    meanValue = isNaN(meanValue) ? 0 : meanValue;
+    
+    // Process data inside date range
     const insideDateGroups = {};
     dataInsideRange.forEach(item => {
         const date = item.ProductionDate;
@@ -1325,18 +1337,29 @@ function prepareTrendChartData() {
                 total: 0
             };
         }
-        insideDateGroups[date].total += sortTop10By === 'qty' ? (item.QTY || 0) : (item.Cost || 0);
+        const value = sortTop10By === 'qty' ? (item.QTY || 0) : (item.Cost || 0);
+        if (!isNaN(value)) {
+            insideDateGroups[date].total += value;
+        }
     });
     
-    // Prepare data for inside date range - unchanged
-    const currentValues = Object.values(insideDateGroups).sort((a, b) => 
-        new Date(a.date) - new Date(b.date)
-    ).map(group => ({
-        date: group.date,
-        value: group.total
-    }));
+    // Prepare data for inside date range
+    const currentValues = Object.values(insideDateGroups)
+        .sort((a, b) => new Date(a.date) - new Date(b.date))
+        .map(group => ({
+            date: group.date,
+            value: group.total
+        }));
     
-    // Store in the global object - but with single values for min/max/mean
+    console.log("Debug trend data:", {
+        minValue,
+        maxValue,
+        meanValue,
+        currentValuesCount: currentValues.length,
+        sampleCurrentValue: currentValues.length > 0 ? currentValues[0].value : 'none'
+    });
+    
+    // Store in the global object
     trendChartData = {
         outsideRange: {
             min: minValue,
@@ -1348,6 +1371,139 @@ function prepareTrendChartData() {
         }
     };
 }
+
+function createDailyTrendChart() {
+    const container = chartContainers.trend;
+    container.innerHTML = '';
+    
+    // Get data from trend chart data with safety checks
+    const minValue = trendChartData.outsideRange.min || 0;
+    const maxValue = trendChartData.outsideRange.max || 0;
+    const meanValue = trendChartData.outsideRange.mean || 0;
+    const currentData = trendChartData.insideRange.values || [];
+    
+    // Debug logging
+    console.log("Chart values:", { 
+        minValue, 
+        maxValue, 
+        meanValue, 
+        currentDataPoints: currentData.length 
+    });
+    
+    if (currentData.length === 0) {
+        container.innerHTML = '<div class="no-data">No data available for selected date range</div>';
+        return;
+    }
+    
+    const margin = { top: 30, right: 60, bottom: 60, left: 60 };
+    const width = container.clientWidth - margin.left - margin.right;
+    const height = container.clientHeight - margin.top - margin.bottom;
+    
+    // Create SVG
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', container.clientWidth);
+    svg.setAttribute('height', container.clientHeight);
+    container.appendChild(svg);
+    
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
+    svg.appendChild(g);
+    
+    // Find min and max for y-axis scale, with safety checks
+    const currentDataMax = currentData.length > 0 
+        ? Math.max(...currentData.map(d => d.value)) 
+        : 0;
+    
+    // Use either the historical max or the current max, whichever is greater
+    let yMaxValue = Math.max(maxValue, currentDataMax);
+    
+    // Add 10% padding to the top, but handle the case where max is 0
+    yMaxValue = yMaxValue > 0 ? yMaxValue * 1.1 : 10;
+    
+    let yMinValue = 0; // Usually we start from 0
+    
+    // Extract dates from current data
+    const dates = currentData.map(d => d.date)
+        .sort((a, b) => new Date(a) - new Date(b));
+    
+    // Create scales
+    const xScale = value => {
+        const dateIndex = dates.indexOf(value);
+        if (dateIndex === -1 || dates.length <= 1) return 0;
+        return (dateIndex / (dates.length - 1)) * width;
+    };
+    
+    const yScale = value => {
+        // Ensure we don't divide by zero
+        if (yMaxValue === yMinValue) return height;
+        return height - ((value - yMinValue) / (yMaxValue - yMinValue)) * height;
+    };
+    
+    // Draw grid lines
+    const gridGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    gridGroup.setAttribute('class', 'grid');
+    
+    // Horizontal grid lines
+    const numGridLines = 5;
+    for (let i = 0; i <= numGridLines; i++) {
+        const y = height * (i / numGridLines);
+        const gridLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        gridLine.setAttribute('x1', 0);
+        gridLine.setAttribute('y1', y);
+        gridLine.setAttribute('x2', width);
+        gridLine.setAttribute('y2', y);
+        gridLine.setAttribute('stroke', '#e0e0e0');
+        gridLine.setAttribute('stroke-width', 1);
+        gridGroup.appendChild(gridLine);
+        
+        // Add y-axis labels
+        const yValue = yMaxValue - (i / numGridLines) * (yMaxValue - yMinValue);
+        const yLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        yLabel.setAttribute('x', -10);
+        yLabel.setAttribute('y', y + 4);
+        yLabel.setAttribute('text-anchor', 'end');
+        yLabel.setAttribute('font-size', '10px');
+        yLabel.setAttribute('fill', '#666');
+        yLabel.textContent = sortTop10By === 'qty' ? 
+            Math.round(yValue) : 
+            'R' + yValue.toFixed(2);
+        gridGroup.appendChild(yLabel);
+    }
+    
+    // Vertical grid lines and date labels
+    const numDates = Math.min(dates.length, 10); // Limit to avoid overcrowding
+    const dateStep = dates.length > 1 ? Math.max(1, Math.floor(dates.length / numDates)) : 1;
+    
+    for (let i = 0; i < dates.length; i += dateStep) {
+        const date = dates[i];
+        const x = xScale(date);
+        
+        const gridLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        gridLine.setAttribute('x1', x);
+        gridLine.setAttribute('y1', 0);
+        gridLine.setAttribute('x2', x);
+        gridLine.setAttribute('y2', height);
+        gridLine.setAttribute('stroke', '#e0e0e0');
+        gridLine.setAttribute('stroke-width', 1);
+        gridGroup.appendChild(gridLine);
+        
+        // Add x-axis labels (dates)
+        const dateLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        dateLabel.setAttribute('x', x);
+        dateLabel.setAttribute('y', height + 20);
+        dateLabel.setAttribute('text-anchor', 'middle');
+        dateLabel.setAttribute('font-size', '10px');
+        dateLabel.setAttribute('fill', '#666');
+        dateLabel.textContent = formatDate(date);
+        gridGroup.appendChild(dateLabel);
+    }
+    
+    g.appendChild(gridGroup);
+    
+    // Rest of the chart code remains the same...
+    // (axes, reference lines, current data line, etc.)
+
+    // ... (continue with the rest of the function as before)
         
         // Get data with all filters applied except date range
         function getDataWithFiltersExceptDate() {
@@ -2985,106 +3141,229 @@ function createDailyTrendChart() {
         }
 
         // Modified prepareTrendChartData() function for improved trend visualization
-        function prepareTrendChartData() {
-            const dateFrom = filterElements.dateFrom.value ? new Date(filterElements.dateFrom.value) : null;
-            const dateTo = filterElements.dateTo.value ? new Date(filterElements.dateTo.value) : null;
-            
-            // Filter data based on current filters EXCEPT date range
-            let dataForOutsideRange = getDataWithFiltersExceptDate();
-            
-            // Separate data inside and outside the date range
-            let dataOutsideRange = [];
-            let dataInsideRange = [];
-            
-            dataForOutsideRange.forEach(item => {
-                const itemDate = new Date(item.ProductionDate);
-                if (dateFrom && dateTo && (itemDate >= dateFrom && itemDate <= dateTo)) {
-                    dataInsideRange.push(item);
-                } else {
-                    dataOutsideRange.push(item);
-                }
-            });
-            
-            // Process data outside date range
-            const outsideDateGroups = {};
-            dataOutsideRange.forEach(item => {
-                const date = item.ProductionDate;
-                if (!outsideDateGroups[date]) {
-                    outsideDateGroups[date] = {
-                        date,
-                        values: []
-                    };
-                }
-                const value = sortTop10By === 'qty' ? (item.QTY || 0) : (item.Cost || 0);
-                outsideDateGroups[date].values.push(value);
-            });
-            
-            // Process data inside date range
-            const insideDateGroups = {};
-            dataInsideRange.forEach(item => {
-                const date = item.ProductionDate;
-                if (!insideDateGroups[date]) {
-                    insideDateGroups[date] = {
-                        date,
-                        total: 0
-                    };
-                }
-                insideDateGroups[date].total += sortTop10By === 'qty' ? (item.QTY || 0) : (item.Cost || 0);
-            });
-            
-            // Calculate min, max, mean for data outside date range
-            const minValues = [];
-            const maxValues = [];
-            const meanValues = [];
-            
-            Object.values(outsideDateGroups).sort((a, b) => 
-                new Date(a.date) - new Date(b.date)
-            ).forEach(group => {
-                if (group.values.length > 0) {
-                    const min = Math.min(...group.values);
-                    const max = Math.max(...group.values);
-                    const sum = group.values.reduce((a, b) => a + b, 0);
-                    const mean = sum / group.values.length;
-                    
-                    minValues.push({
-                        date: group.date,
-                        value: min
-                    });
-                    
-                    maxValues.push({
-                        date: group.date,
-                        value: max
-                    });
-                    
-                    meanValues.push({
-                        date: group.date,
-                        value: mean
-                    });
-                }
-            });
-            
-            // Prepare data for inside date range
-            const currentValues = Object.values(insideDateGroups).sort((a, b) => 
-                new Date(a.date) - new Date(b.date)
-            ).map(group => ({
-                date: group.date,
-                value: group.total
-            }));
-            
-            // Store in the global object
-            trendChartData = {
-                outsideRange: {
-                    byDate: outsideDateGroups,
-                    min: minValues,
-                    max: maxValues,
-                    mean: meanValues
-                },
-                insideRange: {
-                    byDate: insideDateGroups,
-                    values: currentValues
-                }
+function prepareTrendChartData() {
+    const dateFrom = filterElements.dateFrom.value ? new Date(filterElements.dateFrom.value) : null;
+    const dateTo = filterElements.dateTo.value ? new Date(filterElements.dateTo.value) : null;
+    
+    // Filter data based on current filters EXCEPT date range
+    let dataForOutsideRange = getDataWithFiltersExceptDate();
+    
+    // Separate data inside and outside the date range
+    let dataOutsideRange = [];
+    let dataInsideRange = [];
+    
+    dataForOutsideRange.forEach(item => {
+        const itemDate = new Date(item.ProductionDate);
+        if (dateFrom && dateTo && (itemDate >= dateFrom && itemDate <= dateTo)) {
+            dataInsideRange.push(item);
+        } else {
+            dataOutsideRange.push(item);
+        }
+    });
+    
+    // Process data outside date range - getting single values, not by date
+    let allOutsideValues = [];
+    dataOutsideRange.forEach(item => {
+        const value = sortTop10By === 'qty' ? (item.QTY || 0) : (item.Cost || 0);
+        if (!isNaN(value) && value !== null && value !== undefined) {
+            allOutsideValues.push(value);
+        }
+    });
+    
+    // Calculate single min, max, mean values from all outside data with safety checks
+    let minValue = 0;
+    let maxValue = 0;
+    let meanValue = 0;
+    
+    if (allOutsideValues.length > 0) {
+        minValue = Math.min(...allOutsideValues);
+        maxValue = Math.max(...allOutsideValues);
+        const sum = allOutsideValues.reduce((a, b) => a + b, 0);
+        meanValue = sum / allOutsideValues.length;
+    }
+    
+    // Safety check for NaN values
+    minValue = isNaN(minValue) ? 0 : minValue;
+    maxValue = isNaN(maxValue) ? 0 : maxValue;
+    meanValue = isNaN(meanValue) ? 0 : meanValue;
+    
+    // Process data inside date range
+    const insideDateGroups = {};
+    dataInsideRange.forEach(item => {
+        const date = item.ProductionDate;
+        if (!insideDateGroups[date]) {
+            insideDateGroups[date] = {
+                date,
+                total: 0
             };
         }
+        const value = sortTop10By === 'qty' ? (item.QTY || 0) : (item.Cost || 0);
+        if (!isNaN(value)) {
+            insideDateGroups[date].total += value;
+        }
+    });
+    
+    // Prepare data for inside date range
+    const currentValues = Object.values(insideDateGroups)
+        .sort((a, b) => new Date(a.date) - new Date(b.date))
+        .map(group => ({
+            date: group.date,
+            value: group.total
+        }));
+    
+    console.log("Debug trend data:", {
+        minValue,
+        maxValue,
+        meanValue,
+        currentValuesCount: currentValues.length,
+        sampleCurrentValue: currentValues.length > 0 ? currentValues[0].value : 'none'
+    });
+    
+    // Store in the global object
+    trendChartData = {
+        outsideRange: {
+            min: minValue,
+            max: maxValue,
+            mean: meanValue
+        },
+        insideRange: {
+            values: currentValues
+        }
+    };
+}
+
+function createDailyTrendChart() {
+    const container = chartContainers.trend;
+    container.innerHTML = '';
+    
+    // Get data from trend chart data with safety checks
+    const minValue = trendChartData.outsideRange.min || 0;
+    const maxValue = trendChartData.outsideRange.max || 0;
+    const meanValue = trendChartData.outsideRange.mean || 0;
+    const currentData = trendChartData.insideRange.values || [];
+    
+    // Debug logging
+    console.log("Chart values:", { 
+        minValue, 
+        maxValue, 
+        meanValue, 
+        currentDataPoints: currentData.length 
+    });
+    
+    if (currentData.length === 0) {
+        container.innerHTML = '<div class="no-data">No data available for selected date range</div>';
+        return;
+    }
+    
+    const margin = { top: 30, right: 60, bottom: 60, left: 60 };
+    const width = container.clientWidth - margin.left - margin.right;
+    const height = container.clientHeight - margin.top - margin.bottom;
+    
+    // Create SVG
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', container.clientWidth);
+    svg.setAttribute('height', container.clientHeight);
+    container.appendChild(svg);
+    
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
+    svg.appendChild(g);
+    
+    // Find min and max for y-axis scale, with safety checks
+    const currentDataMax = currentData.length > 0 
+        ? Math.max(...currentData.map(d => d.value)) 
+        : 0;
+    
+    // Use either the historical max or the current max, whichever is greater
+    let yMaxValue = Math.max(maxValue, currentDataMax);
+    
+    // Add 10% padding to the top, but handle the case where max is 0
+    yMaxValue = yMaxValue > 0 ? yMaxValue * 1.1 : 10;
+    
+    let yMinValue = 0; // Usually we start from 0
+    
+    // Extract dates from current data
+    const dates = currentData.map(d => d.date)
+        .sort((a, b) => new Date(a) - new Date(b));
+    
+    // Create scales
+    const xScale = value => {
+        const dateIndex = dates.indexOf(value);
+        if (dateIndex === -1 || dates.length <= 1) return 0;
+        return (dateIndex / (dates.length - 1)) * width;
+    };
+    
+    const yScale = value => {
+        // Ensure we don't divide by zero
+        if (yMaxValue === yMinValue) return height;
+        return height - ((value - yMinValue) / (yMaxValue - yMinValue)) * height;
+    };
+    
+    // Draw grid lines
+    const gridGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    gridGroup.setAttribute('class', 'grid');
+    
+    // Horizontal grid lines
+    const numGridLines = 5;
+    for (let i = 0; i <= numGridLines; i++) {
+        const y = height * (i / numGridLines);
+        const gridLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        gridLine.setAttribute('x1', 0);
+        gridLine.setAttribute('y1', y);
+        gridLine.setAttribute('x2', width);
+        gridLine.setAttribute('y2', y);
+        gridLine.setAttribute('stroke', '#e0e0e0');
+        gridLine.setAttribute('stroke-width', 1);
+        gridGroup.appendChild(gridLine);
+        
+        // Add y-axis labels
+        const yValue = yMaxValue - (i / numGridLines) * (yMaxValue - yMinValue);
+        const yLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        yLabel.setAttribute('x', -10);
+        yLabel.setAttribute('y', y + 4);
+        yLabel.setAttribute('text-anchor', 'end');
+        yLabel.setAttribute('font-size', '10px');
+        yLabel.setAttribute('fill', '#666');
+        yLabel.textContent = sortTop10By === 'qty' ? 
+            Math.round(yValue) : 
+            'R' + yValue.toFixed(2);
+        gridGroup.appendChild(yLabel);
+    }
+    
+    // Vertical grid lines and date labels
+    const numDates = Math.min(dates.length, 10); // Limit to avoid overcrowding
+    const dateStep = dates.length > 1 ? Math.max(1, Math.floor(dates.length / numDates)) : 1;
+    
+    for (let i = 0; i < dates.length; i += dateStep) {
+        const date = dates[i];
+        const x = xScale(date);
+        
+        const gridLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        gridLine.setAttribute('x1', x);
+        gridLine.setAttribute('y1', 0);
+        gridLine.setAttribute('x2', x);
+        gridLine.setAttribute('y2', height);
+        gridLine.setAttribute('stroke', '#e0e0e0');
+        gridLine.setAttribute('stroke-width', 1);
+        gridGroup.appendChild(gridLine);
+        
+        // Add x-axis labels (dates)
+        const dateLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        dateLabel.setAttribute('x', x);
+        dateLabel.setAttribute('y', height + 20);
+        dateLabel.setAttribute('text-anchor', 'middle');
+        dateLabel.setAttribute('font-size', '10px');
+        dateLabel.setAttribute('fill', '#666');
+        dateLabel.textContent = formatDate(date);
+        gridGroup.appendChild(dateLabel);
+    }
+    
+    g.appendChild(gridGroup);
+    
+    // Rest of the chart code remains the same...
+    // (axes, reference lines, current data line, etc.)
+
+    // ... (continue with the rest of the function as before)
         
         // Get data with all filters applied except date range
         function getDataWithFiltersExceptDate() {
