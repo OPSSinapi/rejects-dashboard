@@ -13,35 +13,6 @@
             font-family: Arial, Helvetica, sans-serif;
         }
 
-          .loading-status {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(255, 255, 255, 0.8);
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        z-index: 1000;
-    }
-    
-    .loading-status .spinner {
-        border: 5px solid #f3f3f3;
-        border-top: 5px solid #3498db;
-        border-radius: 50%;
-        width: 50px;
-        height: 50px;
-        animation: spin 1s linear infinite;
-        margin-bottom: 15px;
-    }
-    
-    .loading-status span {
-        font-size: 16px;
-        color: #333;
-    }
-        
         body {
             background-color: #f5f5f5;
             color: #333;
@@ -1049,240 +1020,6 @@
     </div>
 
     <script>
-        // Global variables for data management
-let dataLoadingInProgress = false;
-let loadedMonths = {}; // Cache of loaded monthly data
-let indexData = null; // Will store the index file data
-const GITHUB_REPO = 'OPSSinapi/rejects-dashboard';
-const BASE_URL = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/`;
-
-// Load the index file first
-async function initDashboard() {
-    // Show loading indicators
-    Object.values(chartContainers).forEach(container => {
-        container.innerHTML = `
-            <div class="loading">
-                <div class="spinner"></div>
-                <span>Loading dashboard data...</span>
-            </div>
-        `;
-    });
-
-    try {
-        // Fetch index file
-        console.log("Fetching index file...");
-        const response = await fetch(`${BASE_URL}RejectsIndex.json`);
-        if (!response.ok) {
-            throw new Error(`Failed to load index file: ${response.status}`);
-        }
-        
-        indexData = await response.json();
-        console.log("Index file loaded with periods:", indexData.availablePeriods);
-        
-        // Set up date range options
-        setupDateRangeOptions(indexData.availablePeriods);
-        
-        // Initialize filters and other components
-        initMultiSelectDropdowns();
-        initActionDropdown();
-        initClickableHeaders();
-        
-        // Load first set of data
-        await loadInitialData();
-        
-    } catch (error) {
-        console.error("Error initializing dashboard:", error);
-        Object.values(chartContainers).forEach(container => {
-            container.innerHTML = `
-                <div class="no-data">Error loading dashboard: ${error.message}</div>
-            `;
-        });
-    }
-}
-
-// Setup date range selector with available periods
-function setupDateRangeOptions(availablePeriods) {
-    if (!availablePeriods || availablePeriods.length === 0) {
-        console.warn("No data periods available");
-        return;
-    }
-    
-    // Sort periods chronologically
-    availablePeriods.sort();
-    
-    // Set default date range to most recent month
-    const mostRecentMonth = availablePeriods[availablePeriods.length - 1];
-    
-    // Parse YYYY-MM format
-    const [year, month] = mostRecentMonth.split('-').map(num => parseInt(num));
-    
-    // Set to first day of month
-    const fromDate = new Date(year, month - 1, 1);
-    
-    // Set to last day of month
-    const toDate = new Date(year, month, 0);
-    
-    // Format for input fields
-    filterElements.dateFrom.value = formatDateForInput(fromDate);
-    filterElements.dateTo.value = formatDateForInput(toDate);
-    
-    // Add event listener for date range application
-    filterElements.applyDateBtn.addEventListener('click', loadDataForDateRange);
-}
-
-// Load initial data for the default date range
-async function loadInitialData() {
-    // Display loading state
-    updateLoadingState(true, "Loading initial data...");
-    
-    try {
-        await loadDataForDateRange();
-    } catch (error) {
-        console.error("Error loading initial data:", error);
-        showDataLoadError(error.message);
-    } finally {
-        updateLoadingState(false);
-    }
-}
-
-// Load data for the selected date range
-async function loadDataForDateRange() {
-    if (dataLoadingInProgress) {
-        console.log("Data loading already in progress, please wait...");
-        return;
-    }
-    
-    updateLoadingState(true, "Loading data for selected date range...");
-    
-    try {
-        const fromDate = filterElements.dateFrom.value ? new Date(filterElements.dateFrom.value) : null;
-        const toDate = filterElements.dateTo.value ? new Date(filterElements.dateTo.value) : null;
-        
-        if (!fromDate || !toDate) {
-            throw new Error("Please select a valid date range");
-        }
-        
-        // Get list of months that need to be loaded
-        const monthsToLoad = getMonthsInRange(fromDate, toDate);
-        console.log("Months to load:", monthsToLoad);
-        
-        if (monthsToLoad.length === 0) {
-            throw new Error("No data available for the selected date range");
-        }
-        
-        // Reset data arrays
-        rejectData = [];
-        
-        // Load each month's data if not already cached
-        for (const month of monthsToLoad) {
-            updateLoadingState(true, `Loading data for ${month}...`);
-            
-            if (!loadedMonths[month]) {
-                // Fetch this month's data
-                const monthResponse = await fetch(`${BASE_URL}data/${month}.json`);
-                if (!monthResponse.ok) {
-                    console.warn(`Month data for ${month} not found or error: ${monthResponse.status}`);
-                    continue;
-                }
-                
-                const monthData = await monthResponse.json();
-                loadedMonths[month] = monthData.rejectData || [];
-            }
-            
-            // Add this month's data to the current dataset
-            rejectData = rejectData.concat(loadedMonths[month]);
-        }
-        
-        // Create a copy for all data (used for global metrics)
-        allData = [...rejectData];
-        
-        // Apply date filtering specifically for the selected range
-        dateFilteredData = rejectData.filter(item => {
-            if (!item.ProductionDate) return false;
-            const itemDate = new Date(item.ProductionDate);
-            return itemDate >= fromDate && itemDate <= toDate;
-        });
-        
-        // Reset all other filters
-        resetOtherFilters(true);
-        
-        // Calculate available filter options
-        calculateAvailableFilterOptions();
-        buildFilterAssociations();
-        populateMultiSelectOptions();
-        
-        // Set filtered data to date-filtered data
-        filteredData = [...dateFilteredData];
-        
-        // Prepare trend chart data using pre-calculated statistics when possible
-        prepareTrendChartData();
-        
-        // Update dashboard
-        updateDashboard();
-        
-        console.log(`Successfully loaded ${rejectData.length} records, with ${dateFilteredData.length} in date range`);
-        
-    } catch (error) {
-        console.error("Error loading data for date range:", error);
-        showDataLoadError(error.message);
-    } finally {
-        updateLoadingState(false);
-    }
-}
-
-// Get array of month strings (YYYY-MM) between two dates
-function getMonthsInRange(fromDate, toDate) {
-    const months = [];
-    const currentDate = new Date(fromDate.getFullYear(), fromDate.getMonth(), 1);
-    
-    // Create end date at end of the month
-    const endDate = new Date(toDate.getFullYear(), toDate.getMonth() + 1, 0);
-    
-    // Iterate through each month
-    while (currentDate <= endDate) {
-        const year = currentDate.getFullYear();
-        const month = String(currentDate.getMonth() + 1).padStart(2, '0');
-        const monthStr = `${year}-${month}`;
-        
-        // Only add if this month exists in available periods
-        if (indexData && indexData.availablePeriods && indexData.availablePeriods.includes(monthStr)) {
-            months.push(monthStr);
-        }
-        
-        // Move to next month
-        currentDate.setMonth(currentDate.getMonth() + 1);
-    }
-    
-    return months;
-}
-
-// Update loading state UI
-function updateLoadingState(isLoading, message = "Loading...") {
-    dataLoadingInProgress = isLoading;
-    
-    const loadingStatus = document.createElement('div');
-    loadingStatus.className = 'loading-status';
-    loadingStatus.innerHTML = `
-        <div class="spinner"></div>
-        <span>${message}</span>
-    `;
-    
-    // Remove any existing loading status
-    document.querySelectorAll('.loading-status').forEach(el => el.remove());
-    
-    if (isLoading) {
-        document.querySelector('.container').appendChild(loadingStatus);
-    }
-}
-
-// Show data loading error
-function showDataLoadError(message) {
-    Object.values(chartContainers).forEach(container => {
-        container.innerHTML = `
-            <div class="no-data">Error: ${message}</div>
-        `;
-    });
-}
         // Global variables
         let rejectData = [];
         let dateFilteredData = []; // Data filtered by date range only
@@ -1544,39 +1281,7 @@ function showDataLoadError(message) {
         });
 
         // Prepare data for trend chart (replaces calculateGlobalDataMetrics)
-// Prepare data for trend chart using pre-calculated statistics when available
 function prepareTrendChartData() {
-    // Check if we can use pre-calculated statistics from the index file
-    if (indexData && indexData.statistics) {
-        const statsToUse = sortTop10By === 'qty' ? indexData.statistics.quantity : indexData.statistics.cost;
-        
-        // Filter values to only include the selected date range
-        const fromDate = filterElements.dateFrom.value;
-        const toDate = filterElements.dateTo.value;
-        
-        const filteredValues = statsToUse.values.filter(item => {
-            const itemDate = item.date + "-01"; // Convert YYYY-MM to YYYY-MM-DD for comparison
-            return itemDate >= fromDate && itemDate <= toDate;
-        });
-        
-        trendChartData = {
-            outsideRange: {
-                min: statsToUse.min,
-                max: statsToUse.max,
-                mean: statsToUse.mean
-            },
-            insideRange: {
-                values: filteredValues
-            }
-        };
-        
-        console.log("Using pre-calculated trend statistics");
-        return;
-    }
-    
-    // Fall back to calculating statistics from the data if pre-calculated stats not available
-    console.log("Pre-calculated statistics not available, calculating from data");
-    
     const dateFrom = filterElements.dateFrom.value ? new Date(filterElements.dateFrom.value) : null;
     const dateTo = filterElements.dateTo.value ? new Date(filterElements.dateTo.value) : null;
     
@@ -1645,6 +1350,14 @@ function prepareTrendChartData() {
             date: group.date,
             value: group.total
         }));
+    
+    console.log("Debug trend data:", {
+        minValue,
+        maxValue,
+        meanValue,
+        currentValuesCount: currentValues.length,
+        sampleCurrentValue: currentValues.length > 0 ? currentValues[0].value : 'none'
+    });
     
     // Store in the global object
     trendChartData = {
@@ -2653,72 +2366,54 @@ function createDailyTrendChart() {
             createStationCostChart();
         }
 
-// Update metrics display
-function updateMetrics() {
-    let dataToUse = filteredData;
-    if (selectedAction !== 'All') {
-        dataToUse = dataToUse.filter(item => item.ActionSelection === selectedAction);
-    }
-    if (selectedRejectReason !== null) {
-        dataToUse = dataToUse.filter(item => item.RejectReason === selectedRejectReason);
-    }
-    if (selectedStation !== null) {
-        dataToUse = dataToUse.filter(item => item.Station === selectedStation);
-    }
-    
-    const totalCost = dataToUse.reduce((sum, item) => sum + (item.Cost || 0), 0);
-    const scrapCount = dataToUse.filter(item => item.ActionSelection === 'Scrap')
-        .reduce((sum, item) => sum + (item.QTY || 0), 0);
-    const rtsCount = dataToUse.filter(item => item.ActionSelection === 'RTS')
-        .reduce((sum, item) => sum + (item.QTY || 0), 0);
-    const localCount = dataToUse.filter(item => item.ActionSelection === 'Local')
-        .reduce((sum, item) => sum + (item.QTY || 0), 0);
-    const totalQty = dataToUse.reduce((sum, item) => sum + (item.QTY || 0), 0);
-    const scrapPercent = totalQty > 0 ? Math.round((scrapCount / totalQty) * 100) : 0;
-    const rtsPercent = totalQty > 0 ? Math.round((rtsCount / totalQty) * 100) : 0;
-    const localPercent = totalQty > 0 ? Math.round((localCount / totalQty) * 100) : 0;
-    
-    // Count single parts and assemblies based on the isAssembly flag or part count
-    let singlePartsCount = 0;
-    let assembliesCount = 0;
-    
-    dataToUse.forEach(item => {
-        const qty = item.QTY || 0;
-        
-        // Use the new isAssembly flag if available
-        if (typeof item.isAssembly === 'boolean') {
-            if (item.isAssembly) {
-                assembliesCount += qty;
-            } else {
-                singlePartsCount += qty;
+        // Update metrics display
+        function updateMetrics() {
+            let dataToUse = filteredData;
+            if (selectedAction !== 'All') {
+                dataToUse = dataToUse.filter(item => item.ActionSelection === selectedAction);
             }
-        } else {
-            // Fall back to counting parts if isAssembly flag not available
-            let parts = [];
-            if (Array.isArray(item.Parts)) {
-                parts = item.Parts.filter(p => p && p.trim());
-            } else if (typeof item.Parts === 'string') {
-                parts = item.Parts.split(',').map(p => p.trim()).filter(p => p);
+            if (selectedRejectReason !== null) {
+                dataToUse = dataToUse.filter(item => item.RejectReason === selectedRejectReason);
             }
-            
-            if (parts.length <= 1) {
-                singlePartsCount += qty;
-            } else {
-                assembliesCount += qty;
+            if (selectedStation !== null) {
+                dataToUse = dataToUse.filter(item => item.Station === selectedStation);
             }
+            const totalCost = dataToUse.reduce((sum, item) => sum + (item.Cost || 0), 0);
+            const scrapCount = dataToUse.filter(item => item.ActionSelection === 'Scrap')
+                .reduce((sum, item) => sum + (item.QTY || 0), 0);
+            const rtsCount = dataToUse.filter(item => item.ActionSelection === 'RTS')
+                .reduce((sum, item) => sum + (item.QTY || 0), 0);
+            const localCount = dataToUse.filter(item => item.ActionSelection === 'Local')
+                .reduce((sum, item) => sum + (item.QTY || 0), 0);
+            const totalQty = dataToUse.reduce((sum, item) => sum + (item.QTY || 0), 0);
+            const scrapPercent = totalQty > 0 ? Math.round((scrapCount / totalQty) * 100) : 0;
+            const rtsPercent = totalQty > 0 ? Math.round((rtsCount / totalQty) * 100) : 0;
+            const localPercent = totalQty > 0 ? Math.round((localCount / totalQty) * 100) : 0;
+            let singlePartsCount = 0;
+            let assembliesCount = 0;
+            dataToUse.forEach(item => {
+                let parts = [];
+                if (Array.isArray(item.Parts)) {
+                    parts = item.Parts.filter(p => p && p.trim());
+                } else if (typeof item.Parts === 'string') {
+                    parts = item.Parts.split(',').map(p => p.trim()).filter(p => p);
+                }
+                if (parts.length <= 1) {
+                    singlePartsCount += (item.QTY || 0);
+                } else {
+                    assembliesCount += (item.QTY || 0);
+                }
+            });
+            metricElements.totalCost.textContent = `R${totalCost.toFixed(2)}`;
+            metricElements.scrapPercent.textContent = `${scrapPercent}%`;
+            metricElements.rtsPercent.textContent = `${rtsPercent}%`;
+            metricElements.localPercent.textContent = `${localPercent}%`;
+            metricElements.scrapMetric.style.display = scrapPercent > 0 ? '' : 'none';
+            metricElements.rtsMetric.style.display = rtsPercent > 0 ? '' : 'none';
+            metricElements.localMetric.style.display = localPercent > 0 ? '' : 'none';
+            metricElements.singlePartsCount.textContent = singlePartsCount;
+            metricElements.assembliesCount.textContent = assembliesCount;
         }
-    });
-    
-    metricElements.totalCost.textContent = `R${totalCost.toFixed(2)}`;
-    metricElements.scrapPercent.textContent = `${scrapPercent}%`;
-    metricElements.rtsPercent.textContent = `${rtsPercent}%`;
-    metricElements.localPercent.textContent = `${localPercent}%`;
-    metricElements.scrapMetric.style.display = scrapPercent > 0 ? '' : 'none';
-    metricElements.rtsMetric.style.display = rtsPercent > 0 ? '' : 'none';
-    metricElements.localMetric.style.display = localPercent > 0 ? '' : 'none';
-    metricElements.singlePartsCount.textContent = singlePartsCount;
-    metricElements.assembliesCount.textContent = assembliesCount;
-}
 
         // Update Top 10 rejects table
         function updateTop10Table() {
