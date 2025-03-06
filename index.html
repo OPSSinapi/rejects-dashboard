@@ -13,6 +13,35 @@
             font-family: Arial, Helvetica, sans-serif;
         }
 
+        .loading-status {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+    
+        .loading-status .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+    
+        .loading-status span {
+            font-size: 16px;
+            color: #333;
+        }
+        
         body {
             background-color: #f5f5f5;
             color: #333;
@@ -1020,14 +1049,18 @@
     </div>
 
     <script>
-        // Global variables
+        // Global variables for data management
+        let dataLoadingInProgress = false;
+        let loadedMonths = {}; // Cache of loaded monthly data
+        let indexData = null; // Will store the index file data
+        const GITHUB_REPO = 'OPSSinapi/rejects-dashboard';
+        const BASE_URL = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/`;
+        
+        // Global variables for dashboard
         let rejectData = [];
         let dateFilteredData = []; // Data filtered by date range only
         let filteredData = []; // Final filtered data
         let allData = []; // All data, used for calculating global metrics
-        const GITHUB_REPO = 'OPSSinapi/rejects-dashboard';
-        const FILE_PATH = 'RejectsData.json';
-        const DATA_URL = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/${FILE_PATH}`;
         let sortTop10By = 'qty'; // 'qty' or 'cost'
         let selectedAction = 'All'; // For action selection filtering
         let selectedRejectReason = null; // For reject reason filtering
@@ -1133,118 +1166,155 @@
             '#8e44ad', '#27ae60', '#c0392b', '#2980b9', '#f1c40f'
         ];
 
-        // Fetch data from GitHub
-        async function fetchData() {
-            try {
-                const response = await fetch(DATA_URL);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-                const data = await response.json();
-                return data.rejectData || [];
-            } catch (error) {
-                console.error('Error fetching data:', error);
-                alert('Failed to load data. Please check the console for details.');
-                return [];
-            }
-        }
-
-        // Initialize the dashboard
+        // Load the index file first
         async function initDashboard() {
             // Show loading indicators
             Object.values(chartContainers).forEach(container => {
                 container.innerHTML = `
                     <div class="loading">
                         <div class="spinner"></div>
-                        <span>Loading data...</span>
+                        <span>Loading dashboard data...</span>
                     </div>
                 `;
             });
 
-            // Fetch data
-            rejectData = await fetchData();
-            allData = [...rejectData]; // Keep a copy of all data
-            
-            if (rejectData.length === 0) {
+            try {
+                // Fetch index file
+                console.log("Fetching index file...");
+                const response = await fetch(`${BASE_URL}RejectsIndex.json`);
+                if (!response.ok) {
+                    throw new Error(`Failed to load index file: ${response.status}`);
+                }
+                
+                indexData = await response.json();
+                console.log("Index file loaded with periods:", indexData.availablePeriods);
+                
+                // Set up date range options
+                setupDateRangeOptions(indexData.availablePeriods);
+                
+                // Initialize filters and other components
+                initMultiSelectDropdowns();
+                initActionDropdown();
+                initClickableHeaders();
+                
+                // Add event listeners
+                filterElements.resetAllBtn.addEventListener('click', resetAllFilters);
+                
+                // Top 10 sort toggle
+                top10Elements.sortByQty.addEventListener('click', () => {
+                    sortTop10By = 'qty';
+                    top10Elements.sortByQty.classList.add('active');
+                    top10Elements.sortByCost.classList.remove('active');
+                    
+                    // Prepare trend chart data with new sort type
+                    prepareTrendChartData();
+                    
+                    // Update all views
+                    updateTop10Table();
+                    updateRejectReasonMenu();
+                    updateStationMenu();
+                    createRejectReasonsChart();
+                    createTopProblemsChart();
+                    createStationCostChart();
+                    createDailyTrendChart();
+                });
+                
+                top10Elements.sortByCost.addEventListener('click', () => {
+                    sortTop10By = 'cost';
+                    top10Elements.sortByCost.classList.add('active');
+                    top10Elements.sortByQty.classList.remove('active');
+                    
+                    // Prepare trend chart data with new sort type
+                    prepareTrendChartData();
+                    
+                    // Update all views
+                    updateTop10Table();
+                    updateRejectReasonMenu();
+                    updateStationMenu();
+                    createRejectReasonsChart();
+                    createTopProblemsChart();
+                    createStationCostChart();
+                    createDailyTrendChart();
+                });
+
+                // Close popup menus when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!top10Elements.rejectReasonHeader.contains(e.target) && 
+                        !top10Elements.rejectReasonMenu.contains(e.target)) {
+                        top10Elements.rejectReasonMenu.classList.remove('active');
+                    }
+                    
+                    if (!top10Elements.stationHeader.contains(e.target) && 
+                        !top10Elements.stationMenu.contains(e.target)) {
+                        top10Elements.stationMenu.classList.remove('active');
+                    }
+                    
+                    // Close action dropdown if clicking outside
+                    if (!top10Elements.actionDropdown.contains(e.target)) {
+                        top10Elements.actionDropdownContent.classList.remove('show');
+                    }
+                });
+                
+                // Load first set of data
+                await loadInitialData();
+                
+                // Handle window resize
+                window.addEventListener('resize', () => {
+                    if (filteredData.length > 0) {
+                        createRejectReasonsChart();
+                        createDailyTrendChart();
+                        createTopProblemsChart();
+                        createStationCostChart();
+                    }
+                });
+                
+            } catch (error) {
+                console.error("Error initializing dashboard:", error);
                 Object.values(chartContainers).forEach(container => {
                     container.innerHTML = `
-                        <div class="no-data">No data available</div>
+                        <div class="no-data">Error loading dashboard: ${error.message}</div>
                     `;
                 });
+            }
+        }
+
+        // Setup date range selector with available periods
+        function setupDateRangeOptions(availablePeriods) {
+            if (!availablePeriods || availablePeriods.length === 0) {
+                console.warn("No data periods available");
                 return;
             }
-
-            // Initialize multi-select dropdowns
-            initMultiSelectDropdowns();
-
-            // Initialize action dropdown and clickable headers
-            initActionDropdown();
-            initClickableHeaders();
-
-            // Set initial date range to last 5 days with rejects
-            setDefaultDateRange();
-
-            // Apply initial date filter to get the base data set
-            applyDateFilter();
-
-            // Add event listeners
-            filterElements.applyDateBtn.addEventListener('click', applyDateFilter);
-            filterElements.resetAllBtn.addEventListener('click', resetAllFilters);
             
-            // Top 10 sort toggle
-            top10Elements.sortByQty.addEventListener('click', () => {
-                sortTop10By = 'qty';
-                top10Elements.sortByQty.classList.add('active');
-                top10Elements.sortByCost.classList.remove('active');
-                
-                // Prepare trend chart data with new sort type
-                prepareTrendChartData();
-                
-                // Update all views
-                updateTop10Table();
-                updateRejectReasonMenu();
-                updateStationMenu();
-                createRejectReasonsChart();
-                createTopProblemsChart();
-                createStationCostChart();
-                createDailyTrendChart();
-            });
+            // Sort periods chronologically
+            availablePeriods.sort();
             
-            top10Elements.sortByCost.addEventListener('click', () => {
-                sortTop10By = 'cost';
-                top10Elements.sortByCost.classList.add('active');
-                top10Elements.sortByQty.classList.remove('active');
-                
-                // Prepare trend chart data with new sort type
-                prepareTrendChartData();
-                
-                // Update all views
-                updateTop10Table();
-                updateRejectReasonMenu();
-                updateStationMenu();
-                createRejectReasonsChart();
-                createTopProblemsChart();
-                createStationCostChart();
-                createDailyTrendChart();
-            });
+            // Set default date range to most recent month
+            const mostRecentMonth = availablePeriods[availablePeriods.length - 1];
+            
+            // Parse YYYY-MM format
+            const [year, month] = mostRecentMonth.split('-').map(num => parseInt(num));
+            
+            // Set to first day of month
+            const fromDate = new Date(year, month - 1, 1);
+            
+            // Set to last day of month
+            const toDate = new Date(year, month, 0);
+            
+            // Format for input fields
+            filterElements.dateFrom.value = formatDateForInput(fromDate);
+            filterElements.dateTo.value = formatDateForInput(toDate);
+            
+            // Add event listener for date range application
+            filterElements.applyDateBtn.addEventListener('click', loadDataForDateRange);
+        }
 
-            // Close popup menus when clicking outside
-            document.addEventListener('click', (e) => {
-                if (!top10Elements.rejectReasonHeader.contains(e.target) && 
-                    !top10Elements.rejectReasonMenu.contains(e.target)) {
-                    top10Elements.rejectReasonMenu.classList.remove('active');
-                }
-                
-                if (!top10Elements.stationHeader.contains(e.target) && 
-                    !top10Elements.stationMenu.contains(e.target)) {
-                    top10Elements.stationMenu.classList.remove('active');
-                }
-                
-                // Close action dropdown if clicking outside
-                if (!top10Elements.actionDropdown.contains(e.target)) {
-                    top10Elements.actionDropdownContent.classList.remove('show');
-                }
-            });
+        // Helper function to format date for date input elements
+        function formatDateForInput(date) {
+            if (!date || !(date instanceof Date)) return '';
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
         }
 
         // Helper function to format date for display
@@ -1258,252 +1328,276 @@
             });
         }
 
-        // Helper function to format date for date input elements
-        function formatDateForInput(date) {
-            if (!date || !(date instanceof Date)) return '';
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        }
-
-        // Initialize the dashboard when the page loads
-        window.addEventListener('load', initDashboard);
-        
-        // Handle window resize
-        window.addEventListener('resize', () => {
-            if (filteredData.length > 0) {
-                createRejectReasonsChart();
-                createDailyTrendChart();
-                createTopProblemsChart();
-                createStationCostChart();
+        // Load initial data for the default date range
+        async function loadInitialData() {
+            // Display loading state
+            updateLoadingState(true, "Loading initial data...");
+            
+            try {
+                await loadDataForDateRange();
+            } catch (error) {
+                console.error("Error loading initial data:", error);
+                showDataLoadError(error.message);
+            } finally {
+                updateLoadingState(false);
             }
-        });
+        }
 
-        // Prepare data for trend chart (replaces calculateGlobalDataMetrics)
-function prepareTrendChartData() {
-    const dateFrom = filterElements.dateFrom.value ? new Date(filterElements.dateFrom.value) : null;
-    const dateTo = filterElements.dateTo.value ? new Date(filterElements.dateTo.value) : null;
-    
-    // Filter data based on current filters EXCEPT date range
-    let dataForOutsideRange = getDataWithFiltersExceptDate();
-    
-    // Separate data inside and outside the date range
-    let dataOutsideRange = [];
-    let dataInsideRange = [];
-    
-    dataForOutsideRange.forEach(item => {
-        const itemDate = new Date(item.ProductionDate);
-        if (dateFrom && dateTo && (itemDate >= dateFrom && itemDate <= dateTo)) {
-            dataInsideRange.push(item);
-        } else {
-            dataOutsideRange.push(item);
+        // Load data for the selected date range
+        async function loadDataForDateRange() {
+            if (dataLoadingInProgress) {
+                console.log("Data loading already in progress, please wait...");
+                return;
+            }
+            
+            updateLoadingState(true, "Loading data for selected date range...");
+            
+            try {
+                const fromDate = filterElements.dateFrom.value ? new Date(filterElements.dateFrom.value) : null;
+                const toDate = filterElements.dateTo.value ? new Date(filterElements.dateTo.value) : null;
+                
+                if (!fromDate || !toDate) {
+                    throw new Error("Please select a valid date range");
+                }
+                
+                // Get list of months that need to be loaded
+                const monthsToLoad = getMonthsInRange(fromDate, toDate);
+                console.log("Months to load:", monthsToLoad);
+                
+                if (monthsToLoad.length === 0) {
+                    throw new Error("No data available for the selected date range");
+                }
+                
+                // Reset data arrays
+                rejectData = [];
+                
+                // Load each month's data if not already cached
+                for (const month of monthsToLoad) {
+                    updateLoadingState(true, `Loading data for ${month}...`);
+                    
+                    if (!loadedMonths[month]) {
+                        // Fetch this month's data
+                        const monthResponse = await fetch(`${BASE_URL}data/${month}.json`);
+                        if (!monthResponse.ok) {
+                            console.warn(`Month data for ${month} not found or error: ${monthResponse.status}`);
+                            continue;
+                        }
+                        
+                        const monthData = await monthResponse.json();
+                        loadedMonths[month] = monthData.rejectData || [];
+                    }
+                    
+                    // Add this month's data to the current dataset
+                    rejectData = rejectData.concat(loadedMonths[month]);
+                }
+                
+                // Create a copy for all data (used for global metrics)
+                allData = [...rejectData];
+                
+                // Apply date filtering specifically for the selected range
+                dateFilteredData = rejectData.filter(item => {
+                    if (!item.ProductionDate) return false;
+                    const itemDate = new Date(item.ProductionDate);
+                    return itemDate >= fromDate && itemDate <= toDate;
+                });
+                
+                // Reset all other filters
+                resetOtherFilters(true);
+                
+                // Calculate available filter options
+                calculateAvailableFilterOptions();
+                buildFilterAssociations();
+                populateMultiSelectOptions();
+                
+                // Set filtered data to date-filtered data
+                filteredData = [...dateFilteredData];
+                
+                // Update action dropdown
+                updateActionDropdown();
+                
+                // Prepare trend chart data using pre-calculated statistics when possible
+                prepareTrendChartData();
+                
+                // Update dashboard
+                updateDashboard();
+                
+                console.log(`Successfully loaded ${rejectData.length} records, with ${dateFilteredData.length} in date range`);
+                
+            } catch (error) {
+                console.error("Error loading data for date range:", error);
+                showDataLoadError(error.message);
+            } finally {
+                updateLoadingState(false);
+            }
         }
-    });
-    
-    // Process data outside date range - getting single values, not by date
-    let allOutsideValues = [];
-    dataOutsideRange.forEach(item => {
-        const value = sortTop10By === 'qty' ? (item.QTY || 0) : (item.Cost || 0);
-        if (!isNaN(value) && value !== null && value !== undefined) {
-            allOutsideValues.push(value);
+
+        // Get array of month strings (YYYY-MM) between two dates
+        function getMonthsInRange(fromDate, toDate) {
+            const months = [];
+            const currentDate = new Date(fromDate.getFullYear(), fromDate.getMonth(), 1);
+            
+            // Create end date at end of the month
+            const endDate = new Date(toDate.getFullYear(), toDate.getMonth() + 1, 0);
+            
+            // Iterate through each month
+            while (currentDate <= endDate) {
+                const year = currentDate.getFullYear();
+                const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+                const monthStr = `${year}-${month}`;
+                
+                // Only add if this month exists in available periods
+                if (indexData && indexData.availablePeriods && indexData.availablePeriods.includes(monthStr)) {
+                    months.push(monthStr);
+                }
+                
+                // Move to next month
+                currentDate.setMonth(currentDate.getMonth() + 1);
+            }
+            
+            return months;
         }
-    });
-    
-    // Calculate single min, max, mean values from all outside data with safety checks
-    let minValue = 0;
-    let maxValue = 0;
-    let meanValue = 0;
-    
-    if (allOutsideValues.length > 0) {
-        minValue = Math.min(...allOutsideValues);
-        maxValue = Math.max(...allOutsideValues);
-        const sum = allOutsideValues.reduce((a, b) => a + b, 0);
-        meanValue = sum / allOutsideValues.length;
-    }
-    
-    // Safety check for NaN values
-    minValue = isNaN(minValue) ? 0 : minValue;
-    maxValue = isNaN(maxValue) ? 0 : maxValue;
-    meanValue = isNaN(meanValue) ? 0 : meanValue;
-    
-    // Process data inside date range
-    const insideDateGroups = {};
-    dataInsideRange.forEach(item => {
-        const date = item.ProductionDate;
-        if (!insideDateGroups[date]) {
-            insideDateGroups[date] = {
-                date,
-                total: 0
+
+        // Update loading state UI
+        function updateLoadingState(isLoading, message = "Loading...") {
+            dataLoadingInProgress = isLoading;
+            
+            // Remove any existing loading status
+            document.querySelectorAll('.loading-status').forEach(el => el.remove());
+            
+            if (isLoading) {
+                const loadingStatus = document.createElement('div');
+                loadingStatus.className = 'loading-status';
+                loadingStatus.innerHTML = `
+                    <div class="spinner"></div>
+                    <span>${message}</span>
+                `;
+                document.querySelector('.container').appendChild(loadingStatus);
+            }
+        }
+
+        // Show data loading error
+        function showDataLoadError(message) {
+            Object.values(chartContainers).forEach(container => {
+                container.innerHTML = `
+                    <div class="no-data">Error: ${message}</div>
+                `;
+            });
+        }
+
+        // Prepare data for trend chart using pre-calculated statistics when available
+        function prepareTrendChartData() {
+            // Check if we can use pre-calculated statistics from the index file
+            if (indexData && indexData.statistics) {
+                const statsToUse = sortTop10By === 'qty' ? indexData.statistics.quantity : indexData.statistics.cost;
+                
+                // Filter values to only include the selected date range
+                const fromDate = filterElements.dateFrom.value;
+                const toDate = filterElements.dateTo.value;
+                
+                const filteredValues = statsToUse.values.filter(item => {
+                    const itemDate = item.date + "-01"; // Convert YYYY-MM to YYYY-MM-DD for comparison
+                    return itemDate >= fromDate && itemDate <= toDate;
+                });
+                
+                trendChartData = {
+                    outsideRange: {
+                        min: statsToUse.min,
+                        max: statsToUse.max,
+                        mean: statsToUse.mean
+                    },
+                    insideRange: {
+                        values: filteredValues
+                    }
+                };
+                
+                console.log("Using pre-calculated trend statistics");
+                return;
+            }
+            
+            // Fall back to calculating statistics from the data if pre-calculated stats not available
+            console.log("Pre-calculated statistics not available, calculating from data");
+            
+            const dateFrom = filterElements.dateFrom.value ? new Date(filterElements.dateFrom.value) : null;
+            const dateTo = filterElements.dateTo.value ? new Date(filterElements.dateTo.value) : null;
+            
+            // Filter data based on current filters EXCEPT date range
+            let dataForOutsideRange = getDataWithFiltersExceptDate();
+            
+            // Separate data inside and outside the date range
+            let dataOutsideRange = [];
+            let dataInsideRange = [];
+            
+            dataForOutsideRange.forEach(item => {
+                const itemDate = new Date(item.ProductionDate);
+                if (dateFrom && dateTo && (itemDate >= dateFrom && itemDate <= dateTo)) {
+                    dataInsideRange.push(item);
+                } else {
+                    dataOutsideRange.push(item);
+                }
+            });
+            
+            // Process data outside date range - getting single values, not by date
+            let allOutsideValues = [];
+            dataOutsideRange.forEach(item => {
+                const value = sortTop10By === 'qty' ? (item.QTY || 0) : (item.Cost || 0);
+                if (!isNaN(value) && value !== null && value !== undefined) {
+                    allOutsideValues.push(value);
+                }
+            });
+            
+            // Calculate single min, max, mean values from all outside data with safety checks
+            let minValue = 0;
+            let maxValue = 0;
+            let meanValue = 0;
+            
+            if (allOutsideValues.length > 0) {
+                minValue = Math.min(...allOutsideValues);
+                maxValue = Math.max(...allOutsideValues);
+                const sum = allOutsideValues.reduce((a, b) => a + b, 0);
+                meanValue = sum / allOutsideValues.length;
+            }
+            
+            // Safety check for NaN values
+            minValue = isNaN(minValue) ? 0 : minValue;
+            maxValue = isNaN(maxValue) ? 0 : maxValue;
+            meanValue = isNaN(meanValue) ? 0 : meanValue;
+            
+            // Process data inside date range
+            const insideDateGroups = {};
+            dataInsideRange.forEach(item => {
+                const date = item.ProductionDate;
+                if (!insideDateGroups[date]) {
+                    insideDateGroups[date] = {
+                        date,
+                        total: 0
+                    };
+                }
+                const value = sortTop10By === 'qty' ? (item.QTY || 0) : (item.Cost || 0);
+                if (!isNaN(value)) {
+                    insideDateGroups[date].total += value;
+                }
+            });
+            
+            // Prepare data for inside date range
+            const currentValues = Object.values(insideDateGroups)
+                .sort((a, b) => new Date(a.date) - new Date(b.date))
+                .map(group => ({
+                    date: group.date,
+                    value: group.total
+                }));
+            
+            // Store in the global object
+            trendChartData = {
+                outsideRange: {
+                    min: minValue,
+                    max: maxValue,
+                    mean: meanValue
+                },
+                insideRange: {
+                    values: currentValues
+                }
             };
         }
-        const value = sortTop10By === 'qty' ? (item.QTY || 0) : (item.Cost || 0);
-        if (!isNaN(value)) {
-            insideDateGroups[date].total += value;
-        }
-    });
-    
-    // Prepare data for inside date range
-    const currentValues = Object.values(insideDateGroups)
-        .sort((a, b) => new Date(a.date) - new Date(b.date))
-        .map(group => ({
-            date: group.date,
-            value: group.total
-        }));
-    
-    console.log("Debug trend data:", {
-        minValue,
-        maxValue,
-        meanValue,
-        currentValuesCount: currentValues.length,
-        sampleCurrentValue: currentValues.length > 0 ? currentValues[0].value : 'none'
-    });
-    
-    // Store in the global object
-    trendChartData = {
-        outsideRange: {
-            min: minValue,
-            max: maxValue,
-            mean: meanValue
-        },
-        insideRange: {
-            values: currentValues
-        }
-    };
-}
-
-function createDailyTrendChart() {
-    const container = chartContainers.trend;
-    container.innerHTML = '';
-    
-    // Get data from trend chart data with safety checks
-    const minValue = trendChartData.outsideRange.min || 0;
-    const maxValue = trendChartData.outsideRange.max || 0;
-    const meanValue = trendChartData.outsideRange.mean || 0;
-    const currentData = trendChartData.insideRange.values || [];
-    
-    // Debug logging
-    console.log("Chart values:", { 
-        minValue, 
-        maxValue, 
-        meanValue, 
-        currentDataPoints: currentData.length 
-    });
-    
-    if (currentData.length === 0) {
-        container.innerHTML = '<div class="no-data">No data available for selected date range</div>';
-        return;
-    }
-    
-    const margin = { top: 30, right: 60, bottom: 60, left: 60 };
-    const width = container.clientWidth - margin.left - margin.right;
-    const height = container.clientHeight - margin.top - margin.bottom;
-    
-    // Create SVG
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('width', container.clientWidth);
-    svg.setAttribute('height', container.clientHeight);
-    container.appendChild(svg);
-    
-    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
-    svg.appendChild(g);
-    
-    // Find min and max for y-axis scale, with safety checks
-    const currentDataMax = currentData.length > 0 
-        ? Math.max(...currentData.map(d => d.value)) 
-        : 0;
-    
-    // Use either the historical max or the current max, whichever is greater
-    let yMaxValue = Math.max(maxValue, currentDataMax);
-    
-    // Add 10% padding to the top, but handle the case where max is 0
-    yMaxValue = yMaxValue > 0 ? yMaxValue * 1.1 : 10;
-    
-    let yMinValue = 0; // Usually we start from 0
-    
-    // Extract dates from current data
-    const dates = currentData.map(d => d.date)
-        .sort((a, b) => new Date(a) - new Date(b));
-    
-    // Create scales
-    const xScale = value => {
-        const dateIndex = dates.indexOf(value);
-        if (dateIndex === -1 || dates.length <= 1) return 0;
-        return (dateIndex / (dates.length - 1)) * width;
-    };
-    
-    const yScale = value => {
-        // Ensure we don't divide by zero
-        if (yMaxValue === yMinValue) return height;
-        return height - ((value - yMinValue) / (yMaxValue - yMinValue)) * height;
-    };
-    
-    // Draw grid lines
-    const gridGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    gridGroup.setAttribute('class', 'grid');
-    
-    // Horizontal grid lines
-    const numGridLines = 5;
-    for (let i = 0; i <= numGridLines; i++) {
-        const y = height * (i / numGridLines);
-        const gridLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        gridLine.setAttribute('x1', 0);
-        gridLine.setAttribute('y1', y);
-        gridLine.setAttribute('x2', width);
-        gridLine.setAttribute('y2', y);
-        gridLine.setAttribute('stroke', '#e0e0e0');
-        gridLine.setAttribute('stroke-width', 1);
-        gridGroup.appendChild(gridLine);
-        
-        // Add y-axis labels
-        const yValue = yMaxValue - (i / numGridLines) * (yMaxValue - yMinValue);
-        const yLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        yLabel.setAttribute('x', -10);
-        yLabel.setAttribute('y', y + 4);
-        yLabel.setAttribute('text-anchor', 'end');
-        yLabel.setAttribute('font-size', '10px');
-        yLabel.setAttribute('fill', '#666');
-        yLabel.textContent = sortTop10By === 'qty' ? 
-            Math.round(yValue) : 
-            'R' + yValue.toFixed(2);
-        gridGroup.appendChild(yLabel);
-    }
-    
-    // Vertical grid lines and date labels
-    const numDates = Math.min(dates.length, 10); // Limit to avoid overcrowding
-    const dateStep = dates.length > 1 ? Math.max(1, Math.floor(dates.length / numDates)) : 1;
-    
-    for (let i = 0; i < dates.length; i += dateStep) {
-        const date = dates[i];
-        const x = xScale(date);
-        
-        const gridLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        gridLine.setAttribute('x1', x);
-        gridLine.setAttribute('y1', 0);
-        gridLine.setAttribute('x2', x);
-        gridLine.setAttribute('y2', height);
-        gridLine.setAttribute('stroke', '#e0e0e0');
-        gridLine.setAttribute('stroke-width', 1);
-        gridGroup.appendChild(gridLine);
-        
-        // Add x-axis labels (dates)
-        const dateLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        dateLabel.setAttribute('x', x);
-        dateLabel.setAttribute('y', height + 20);
-        dateLabel.setAttribute('text-anchor', 'middle');
-        dateLabel.setAttribute('font-size', '10px');
-        dateLabel.setAttribute('fill', '#666');
-        dateLabel.textContent = formatDate(date);
-        gridGroup.appendChild(dateLabel);
-    }
-    
-    g.appendChild(gridGroup);
-    
-    // Rest of the chart code remains the same...
-    // (axes, reference lines, current data line, etc.)
-
-    // ... (continue with the rest of the function as before)
         
         // Get data with all filters applied except date range
         function getDataWithFiltersExceptDate() {
@@ -1832,57 +1926,6 @@ function createDailyTrendChart() {
             }
         }
 
-        // Set default date range to the most recent 5 days with rejects
-        function setDefaultDateRange() {
-            const uniqueDates = new Set();
-            rejectData.forEach(item => {
-                if (item.ProductionDate) {
-                    uniqueDates.add(item.ProductionDate);
-                }
-            });
-            const sortedDates = Array.from(uniqueDates)
-                .map(dateStr => new Date(dateStr))
-                .sort((a, b) => b - a);
-            const recentDates = sortedDates.slice(0, 5);
-            if (recentDates.length > 0) {
-                const toDate = recentDates[0];
-                const fromDate = recentDates[recentDates.length - 1];
-                filterElements.dateFrom.value = formatDateForInput(fromDate);
-                filterElements.dateTo.value = formatDateForInput(toDate);
-            } else {
-                const today = new Date();
-                const fiveDaysAgo = new Date();
-                fiveDaysAgo.setDate(today.getDate() - 4);
-                filterElements.dateFrom.value = formatDateForInput(fiveDaysAgo);
-                filterElements.dateTo.value = formatDateForInput(today);
-            }
-        }
-
-        // Apply date filter
-        function applyDateFilter() {
-            const dateFrom = filterElements.dateFrom.value ? new Date(filterElements.dateFrom.value) : null;
-            const dateTo = filterElements.dateTo.value ? new Date(filterElements.dateTo.value) : null;
-            dateFilteredData = rejectData.filter(item => {
-                if (!dateFrom || !dateTo) return true;
-                const itemDate = new Date(item.ProductionDate);
-                return itemDate >= dateFrom && itemDate <= dateTo;
-            });
-            resetOtherFilters(true);
-            selectedAction = 'All';
-            selectedRejectReason = null;
-            selectedStation = null;
-            top10Elements.currentAction.textContent = 'All Types';
-            top10Elements.batchHeader.style.display = 'none';
-            top10Elements.supplierHeader.style.display = 'none';
-            updateActionDropdown();
-            calculateAvailableFilterOptions();
-            buildFilterAssociations();
-            populateMultiSelectOptions();
-            filteredData = [...dateFilteredData];
-            prepareTrendChartData();
-            updateDashboard();
-        }
-
         // Update action dropdown with available actions
         function updateActionDropdown() {
             const actions = new Set();
@@ -2093,7 +2136,7 @@ function createDailyTrendChart() {
             resetOtherFilters();
         }
 
-        // Select only one option in a filter (modified for fix #1)
+        // Select only one option in a filter
         function selectOnlyThisOption(filterName, value) {
             if (isUpdatingFilters) return;
             isUpdatingFilters = true;
@@ -2124,7 +2167,7 @@ function createDailyTrendChart() {
                     });
                 }
                 
-                // Apply filters and update UI - changed to true for fix #1
+                // Apply filters and update UI
                 applyDetailFilters(filterName, true);
             } finally {
                 isUpdatingFilters = false;
@@ -2212,7 +2255,7 @@ function createDailyTrendChart() {
                         option.appendChild(onlyBtn);
                         optionsContainer.appendChild(option);
                         
-                        // Modified for fix #1: Make checkbox apply both filters and update data
+                        // Make checkbox apply both filters and update data
                         checkbox.addEventListener('change', () => {
                             if (isUpdatingFilters) return;
                             if (checkbox.checked) {
@@ -2227,7 +2270,7 @@ function createDailyTrendChart() {
                             }
                             updateHeaderText(multiSelect, key);
                             
-                            // Apply filters and update other filters (added for fix #1)
+                            // Apply filters and update other filters
                             updateAssociatedFilters(key);
                             // Apply filters to data
                             applyDetailFilters(key, true);
@@ -2243,7 +2286,7 @@ function createDailyTrendChart() {
             });
         }
         
-        // New function to update associated filters when a checkbox changes (for fix #1)
+        // Update associated filters when a checkbox changes
         function updateAssociatedFilters(changedFilter) {
             if (isUpdatingFilters) return;
             isUpdatingFilters = true;
@@ -2366,7 +2409,7 @@ function createDailyTrendChart() {
             createStationCostChart();
         }
 
-        // Update metrics display
+        // Update metrics display with assembly data
         function updateMetrics() {
             let dataToUse = filteredData;
             if (selectedAction !== 'All') {
@@ -2378,6 +2421,7 @@ function createDailyTrendChart() {
             if (selectedStation !== null) {
                 dataToUse = dataToUse.filter(item => item.Station === selectedStation);
             }
+            
             const totalCost = dataToUse.reduce((sum, item) => sum + (item.Cost || 0), 0);
             const scrapCount = dataToUse.filter(item => item.ActionSelection === 'Scrap')
                 .reduce((sum, item) => sum + (item.QTY || 0), 0);
@@ -2389,21 +2433,38 @@ function createDailyTrendChart() {
             const scrapPercent = totalQty > 0 ? Math.round((scrapCount / totalQty) * 100) : 0;
             const rtsPercent = totalQty > 0 ? Math.round((rtsCount / totalQty) * 100) : 0;
             const localPercent = totalQty > 0 ? Math.round((localCount / totalQty) * 100) : 0;
+            
+            // Count single parts and assemblies based on the isAssembly flag or part count
             let singlePartsCount = 0;
             let assembliesCount = 0;
+            
             dataToUse.forEach(item => {
-                let parts = [];
-                if (Array.isArray(item.Parts)) {
-                    parts = item.Parts.filter(p => p && p.trim());
-                } else if (typeof item.Parts === 'string') {
-                    parts = item.Parts.split(',').map(p => p.trim()).filter(p => p);
-                }
-                if (parts.length <= 1) {
-                    singlePartsCount += (item.QTY || 0);
+                const qty = item.QTY || 0;
+                
+                // Use the new isAssembly flag if available
+                if (typeof item.isAssembly === 'boolean') {
+                    if (item.isAssembly) {
+                        assembliesCount += qty;
+                    } else {
+                        singlePartsCount += qty;
+                    }
                 } else {
-                    assembliesCount += (item.QTY || 0);
+                    // Fall back to counting parts if isAssembly flag not available
+                    let parts = [];
+                    if (Array.isArray(item.Parts)) {
+                        parts = item.Parts.filter(p => p && p.trim());
+                    } else if (typeof item.Parts === 'string') {
+                        parts = item.Parts.split(',').map(p => p.trim()).filter(p => p);
+                    }
+                    
+                    if (parts.length <= 1) {
+                        singlePartsCount += qty;
+                    } else {
+                        assembliesCount += qty;
+                    }
                 }
             });
+            
             metricElements.totalCost.textContent = `R${totalCost.toFixed(2)}`;
             metricElements.scrapPercent.textContent = `${scrapPercent}%`;
             metricElements.rtsPercent.textContent = `${rtsPercent}%`;
@@ -2425,8 +2486,8 @@ function createDailyTrendChart() {
                 top10Elements.batchHeader.style.display = 'none';
                 top10Elements.supplierHeader.style.display = 'none';
             }
-            let dataToUse = filteredData;
-            if (selectedAction !== 'All') {
+            let dataToUse = filteredData
+if (selectedAction !== 'All') {
                 dataToUse = dataToUse.filter(item => item.ActionSelection === selectedAction);
             }
             if (selectedRejectReason !== null) {
@@ -2499,7 +2560,7 @@ function createDailyTrendChart() {
         }
 
         // Create reject reasons chart
-function createRejectReasonsChart() {
+        function createRejectReasonsChart() {
             const container = chartContainers.reasons;
             let dataToUse = filteredData;
             if (selectedAction !== 'All') {
@@ -2592,349 +2653,352 @@ function createRejectReasonsChart() {
             }
         }
 
-        // Create daily trend chart (line graph implementation)
-function createDailyTrendChart() {
-    const container = chartContainers.trend;
-    container.innerHTML = '';
-    
-    // Use the trend chart data prepared by prepareTrendChartData()
-    const minValue = trendChartData.outsideRange.min;
-    const maxValue = trendChartData.outsideRange.max;
-    const meanValue = trendChartData.outsideRange.mean;
-    const currentData = trendChartData.insideRange.values;
-    
-    if (currentData.length === 0 || filteredData.length === 0) {
-        container.innerHTML = '<div class="no-data">No data available</div>';
-        return;
-    }
-    
-    const margin = { top: 30, right: 60, bottom: 60, left: 60 };
-    const width = container.clientWidth - margin.left - margin.right;
-    const height = container.clientHeight - margin.top - margin.bottom;
-    
-    // Create SVG
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('width', container.clientWidth);
-    svg.setAttribute('height', container.clientHeight);
-    container.appendChild(svg);
-    
-    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
-    svg.appendChild(g);
-    
-    // Find min and max for y-axis scale, considering both reference lines and current data
-    let yMaxValue = Math.max(
-        Math.max(...currentData.map(d => d.value)), 
-        maxValue
-    ) * 1.1;
-    
-    let yMinValue = 0; // Usually we start from 0
-    
-    // Extract dates from current data
-    const dates = currentData.map(d => d.date).sort((a, b) => new Date(a) - new Date(b));
-    
-    // Create scales
-    const xScale = value => {
-        const dateIndex = dates.indexOf(value);
-        return (dateIndex / (dates.length - 1)) * width;
-    };
-    
-    const yScale = value => {
-        return height - ((value - yMinValue) / (yMaxValue - yMinValue)) * height;
-    };
-    
-    // Draw grid lines
-    const gridGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    gridGroup.setAttribute('class', 'grid');
-    
-    // Horizontal grid lines
-    const numGridLines = 5;
-    for (let i = 0; i <= numGridLines; i++) {
-        const y = height * (i / numGridLines);
-        const gridLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        gridLine.setAttribute('x1', 0);
-        gridLine.setAttribute('y1', y);
-        gridLine.setAttribute('x2', width);
-        gridLine.setAttribute('y2', y);
-        gridLine.setAttribute('stroke', '#e0e0e0');
-        gridLine.setAttribute('stroke-width', 1);
-        gridGroup.appendChild(gridLine);
-        
-        // Add y-axis labels
-        const yValue = yMaxValue - (i / numGridLines) * (yMaxValue - yMinValue);
-        const yLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        yLabel.setAttribute('x', -10);
-        yLabel.setAttribute('y', y + 4);
-        yLabel.setAttribute('text-anchor', 'end');
-        yLabel.setAttribute('font-size', '10px');
-        yLabel.setAttribute('fill', '#666');
-        yLabel.textContent = sortTop10By === 'qty' ? 
-            Math.round(yValue) : 
-            'R' + yValue.toFixed(2);
-        gridGroup.appendChild(yLabel);
-    }
-    
-    // Vertical grid lines and date labels
-    const numDates = Math.min(dates.length, 10); // Limit to avoid overcrowding
-    const dateStep = dates.length > 1 ? Math.max(1, Math.floor(dates.length / numDates)) : 1;
-    
-    for (let i = 0; i < dates.length; i += dateStep) {
-        const date = dates[i];
-        const x = xScale(date);
-        
-        const gridLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        gridLine.setAttribute('x1', x);
-        gridLine.setAttribute('y1', 0);
-        gridLine.setAttribute('x2', x);
-        gridLine.setAttribute('y2', height);
-        gridLine.setAttribute('stroke', '#e0e0e0');
-        gridLine.setAttribute('stroke-width', 1);
-        gridGroup.appendChild(gridLine);
-        
-        // Add x-axis labels (dates)
-        const dateLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        dateLabel.setAttribute('x', x);
-        dateLabel.setAttribute('y', height + 20);
-        dateLabel.setAttribute('text-anchor', 'middle');
-        dateLabel.setAttribute('font-size', '10px');
-        dateLabel.setAttribute('fill', '#666');
-        dateLabel.textContent = formatDate(date);
-        gridGroup.appendChild(dateLabel);
-    }
-    
-    g.appendChild(gridGroup);
-    
-    // Add axes
-    const xAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    xAxis.setAttribute('x1', 0);
-    xAxis.setAttribute('y1', height);
-    xAxis.setAttribute('x2', width);
-    xAxis.setAttribute('y2', height);
-    xAxis.setAttribute('stroke', '#666');
-    xAxis.setAttribute('stroke-width', 1.5);
-    g.appendChild(xAxis);
-    
-    const yAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    yAxis.setAttribute('x1', 0);
-    yAxis.setAttribute('y1', 0);
-    yAxis.setAttribute('x2', 0);
-    yAxis.setAttribute('y2', height);
-    yAxis.setAttribute('stroke', '#666');
-    yAxis.setAttribute('stroke-width', 1.5);
-    g.appendChild(yAxis);
-    
-    // Add axis labels
-    const xAxisLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    xAxisLabel.setAttribute('x', width / 2);
-    xAxisLabel.setAttribute('y', height + 40);
-    xAxisLabel.setAttribute('text-anchor', 'middle');
-    xAxisLabel.setAttribute('font-size', '12px');
-    xAxisLabel.setAttribute('fill', '#333');
-    xAxisLabel.textContent = 'Production Date';
-    g.appendChild(xAxisLabel);
-    
-    const yAxisLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    yAxisLabel.setAttribute('transform', `rotate(-90) translate(${-height/2}, ${-40})`);
-    yAxisLabel.setAttribute('text-anchor', 'middle');
-    yAxisLabel.setAttribute('font-size', '12px');
-    yAxisLabel.setAttribute('fill', '#333');
-    yAxisLabel.textContent = sortTop10By === 'qty' ? 'Quantity' : 'Cost (R)';
-    g.appendChild(yAxisLabel);
-    
-    // Draw reference lines (Min, Max, Mean) as horizontal lines
-    const linesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    linesGroup.setAttribute('class', 'lines');
-    
-    // Min line - horizontal
-    if (minValue > 0) {
-        const minLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        minLine.setAttribute('class', 'line line-min');
-        minLine.setAttribute('x1', 0);
-        minLine.setAttribute('y1', yScale(minValue));
-        minLine.setAttribute('x2', width);
-        minLine.setAttribute('y2', yScale(minValue));
-        minLine.setAttribute('stroke', '#3498db');
-        minLine.setAttribute('stroke-width', 2);
-        minLine.setAttribute('stroke-dasharray', '5,5');
-        linesGroup.appendChild(minLine);
-        
-        // Label for Min line
-        const minLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        minLabel.setAttribute('x', width - 5);
-        minLabel.setAttribute('y', yScale(minValue) - 5);
-        minLabel.setAttribute('text-anchor', 'end');
-        minLabel.setAttribute('font-size', '10px');
-        minLabel.setAttribute('fill', '#3498db');
-        minLabel.textContent = 'Min: ' + (sortTop10By === 'qty' ? 
-            Math.round(minValue) : 'R' + minValue.toFixed(2));
-        linesGroup.appendChild(minLabel);
-    }
-    
-    // Max line - horizontal
-    if (maxValue > 0) {
-        const maxLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        maxLine.setAttribute('class', 'line line-max');
-        maxLine.setAttribute('x1', 0);
-        maxLine.setAttribute('y1', yScale(maxValue));
-        maxLine.setAttribute('x2', width);
-        maxLine.setAttribute('y2', yScale(maxValue));
-        maxLine.setAttribute('stroke', '#e74c3c');
-        maxLine.setAttribute('stroke-width', 2);
-        maxLine.setAttribute('stroke-dasharray', '5,5');
-        linesGroup.appendChild(maxLine);
-        
-        // Label for Max line
-        const maxLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        maxLabel.setAttribute('x', width - 5);
-        maxLabel.setAttribute('y', yScale(maxValue) - 5);
-        maxLabel.setAttribute('text-anchor', 'end');
-        maxLabel.setAttribute('font-size', '10px');
-        maxLabel.setAttribute('fill', '#e74c3c');
-        maxLabel.textContent = 'Max: ' + (sortTop10By === 'qty' ? 
-            Math.round(maxValue) : 'R' + maxValue.toFixed(2));
-        linesGroup.appendChild(maxLabel);
-    }
-    
-    // Mean line - horizontal
-    if (meanValue > 0) {
-        const meanLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        meanLine.setAttribute('class', 'line line-mean');
-        meanLine.setAttribute('x1', 0);
-        meanLine.setAttribute('y1', yScale(meanValue));
-        meanLine.setAttribute('x2', width);
-        meanLine.setAttribute('y2', yScale(meanValue));
-        meanLine.setAttribute('stroke', '#2ecc71');
-        meanLine.setAttribute('stroke-width', 2);
-        linesGroup.appendChild(meanLine);
-        
-        // Label for Mean line
-        const meanLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        meanLabel.setAttribute('x', width - 5);
-        meanLabel.setAttribute('y', yScale(meanValue) - 5);
-        meanLabel.setAttribute('text-anchor', 'end');
-        meanLabel.setAttribute('font-size', '10px');
-        meanLabel.setAttribute('fill', '#2ecc71');
-        meanLabel.textContent = 'Mean: ' + (sortTop10By === 'qty' ? 
-            Math.round(meanValue) : 'R' + meanValue.toFixed(2));
-        linesGroup.appendChild(meanLabel);
-    }
-    
-    // Current line - path (unchanged)
-    if (currentData.length >= 2) {
-        let pathD = '';
-        currentData.sort((a, b) => new Date(a.date) - new Date(b.date)).forEach((d, i) => {
-            const x = xScale(d.date);
-            const y = yScale(d.value);
-            pathD += i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`;
-        });
-        
-        const currentLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        currentLine.setAttribute('class', 'line line-current');
-        currentLine.setAttribute('d', pathD);
-        currentLine.setAttribute('stroke', '#9b59b6');
-        currentLine.setAttribute('stroke-width', 3);
-        currentLine.setAttribute('fill', 'none');
-        linesGroup.appendChild(currentLine);
-    }
-    
-    g.appendChild(linesGroup);
-    
-    // Add data points for the current line with hover tooltips
-    const pointsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    pointsGroup.setAttribute('class', 'data-points');
-    
-    currentData.sort((a, b) => new Date(a.date) - new Date(b.date)).forEach(d => {
-        const x = xScale(d.date);
-        const y = yScale(d.value);
-        
-        const point = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        point.setAttribute('class', 'data-point');
-        point.setAttribute('cx', x);
-        point.setAttribute('cy', y);
-        point.setAttribute('r', 4);
-        point.setAttribute('fill', '#9b59b6');
-        point.setAttribute('stroke', '#9b59b6');
-        
-        // Add tooltip on hover
-        point.setAttribute('data-date', formatDate(d.date));
-        point.setAttribute('data-value', sortTop10By === 'qty' ? 
-            `${Math.round(d.value)} units` : 
-            `R${d.value.toFixed(2)}`);
-        
-        point.addEventListener('mouseover', function(e) {
-            const tooltip = document.createElement('div');
-            tooltip.className = 'tooltip';
-            tooltip.innerHTML = `<div>Date: ${this.getAttribute('data-date')}</div>
-                              <div>Value: ${this.getAttribute('data-value')}</div>`;
-            document.body.appendChild(tooltip);
+        // Create daily trend chart
+        function createDailyTrendChart() {
+            const container = chartContainers.trend;
+            container.innerHTML = '';
             
-            // Position the tooltip
-            const rect = this.getBoundingClientRect();
-            tooltip.style.left = `${rect.left + window.scrollX}px`;
-            tooltip.style.top = `${rect.top + window.scrollY - 40}px`;
-        });
-        
-        point.addEventListener('mousemove', function(e) {
-            const tooltip = document.querySelector('.tooltip');
-            if (tooltip) {
-                tooltip.style.left = `${e.pageX + 10}px`;
-                tooltip.style.top = `${e.pageY - 40}px`;
+            // Use the trend chart data prepared by prepareTrendChartData()
+            const minValue = trendChartData.outsideRange.min || 0;
+            const maxValue = trendChartData.outsideRange.max || 0;
+            const meanValue = trendChartData.outsideRange.mean || 0;
+            const currentData = trendChartData.insideRange.values || [];
+            
+            if (currentData.length === 0 || filteredData.length === 0) {
+                container.innerHTML = '<div class="no-data">No data available</div>';
+                return;
             }
-        });
-        
-        point.addEventListener('mouseout', function() {
-            const tooltip = document.querySelector('.tooltip');
-            if (tooltip) {
-                tooltip.remove();
+            
+            const margin = { top: 30, right: 60, bottom: 60, left: 60 };
+            const width = container.clientWidth - margin.left - margin.right;
+            const height = container.clientHeight - margin.top - margin.bottom;
+            
+            // Create SVG
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', container.clientWidth);
+            svg.setAttribute('height', container.clientHeight);
+            container.appendChild(svg);
+            
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
+            svg.appendChild(g);
+            
+            // Find min and max for y-axis scale, considering both reference lines and current data
+            let yMaxValue = Math.max(
+                Math.max(...currentData.map(d => d.value || 0)), 
+                maxValue || 0
+            );
+            
+            // Add some padding to ensure values don't sit right at the top of the chart
+            yMaxValue = yMaxValue > 0 ? yMaxValue * 1.1 : 10;
+            
+            let yMinValue = 0; // Usually we start from 0
+            
+            // Extract dates from current data
+            const dates = currentData.map(d => d.date).sort((a, b) => new Date(a) - new Date(b));
+            
+            // Create scales
+            const xScale = value => {
+                const dateIndex = dates.indexOf(value);
+                return dateIndex >= 0 && dates.length > 1 ? (dateIndex / (dates.length - 1)) * width : 0;
+            };
+            
+            const yScale = value => {
+                return height - ((value - yMinValue) / (yMaxValue - yMinValue)) * height;
+            };
+            
+            // Draw grid lines
+            const gridGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            gridGroup.setAttribute('class', 'grid');
+            
+            // Horizontal grid lines
+            const numGridLines = 5;
+            for (let i = 0; i <= numGridLines; i++) {
+                const y = height * (i / numGridLines);
+                const gridLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                gridLine.setAttribute('x1', 0);
+                gridLine.setAttribute('y1', y);
+                gridLine.setAttribute('x2', width);
+                gridLine.setAttribute('y2', y);
+                gridLine.setAttribute('stroke', '#e0e0e0');
+                gridLine.setAttribute('stroke-width', 1);
+                gridGroup.appendChild(gridLine);
+                
+                // Add y-axis labels
+                const yValue = yMaxValue - (i / numGridLines) * (yMaxValue - yMinValue);
+                const yLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                yLabel.setAttribute('x', -10);
+                yLabel.setAttribute('y', y + 4);
+                yLabel.setAttribute('text-anchor', 'end');
+                yLabel.setAttribute('font-size', '10px');
+                yLabel.setAttribute('fill', '#666');
+                yLabel.textContent = sortTop10By === 'qty' ? 
+                    Math.round(yValue) : 
+                    'R' + yValue.toFixed(2);
+                gridGroup.appendChild(yLabel);
             }
-        });
-        
-        pointsGroup.appendChild(point);
-    });
-    
-    g.appendChild(pointsGroup);
-    
-    // Create a legend
-    const legendGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    legendGroup.setAttribute('class', 'legend');
-    legendGroup.setAttribute('transform', `translate(${width - 150}, 10)`);
-    
-    const legends = [
-        { label: 'Min', color: '#3498db', visible: minValue > 0 },
-        { label: 'Max', color: '#e74c3c', visible: maxValue > 0 },
-        { label: 'Mean', color: '#2ecc71', visible: meanValue > 0 },
-        { label: 'Current', color: '#9b59b6', visible: currentData.length > 0 }
-    ].filter(l => l.visible);
-    
-    legends.forEach((legend, i) => {
-        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-        g.setAttribute('transform', `translate(0, ${i * 20})`);
-        
-        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        line.setAttribute('x1', 0);
-        line.setAttribute('y1', 10);
-        line.setAttribute('x2', 20);
-        line.setAttribute('y2', 10);
-        line.setAttribute('stroke', legend.color);
-        line.setAttribute('stroke-width', 2);
-        if (['Min', 'Max'].includes(legend.label)) {
-            line.setAttribute('stroke-dasharray', '5,5');
+            
+            // Vertical grid lines and date labels
+            const numDates = Math.min(dates.length, 10); // Limit to avoid overcrowding
+            const dateStep = dates.length > 1 ? Math.max(1, Math.floor(dates.length / numDates)) : 1;
+            
+            for (let i = 0; i < dates.length; i += dateStep) {
+                const date = dates[i];
+                const x = xScale(date);
+                
+                const gridLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                gridLine.setAttribute('x1', x);
+                gridLine.setAttribute('y1', 0);
+                gridLine.setAttribute('x2', x);
+                gridLine.setAttribute('y2', height);
+                gridLine.setAttribute('stroke', '#e0e0e0');
+                gridLine.setAttribute('stroke-width', 1);
+                gridGroup.appendChild(gridLine);
+                
+                // Add x-axis labels (dates)
+                const dateLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                dateLabel.setAttribute('x', x);
+                dateLabel.setAttribute('y', height + 20);
+                dateLabel.setAttribute('text-anchor', 'middle');
+                dateLabel.setAttribute('font-size', '10px');
+                dateLabel.setAttribute('fill', '#666');
+                dateLabel.textContent = formatDate(date);
+                gridGroup.appendChild(dateLabel);
+            }
+            
+            g.appendChild(gridGroup);
+            
+            // Add axes
+            const xAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            xAxis.setAttribute('x1', 0);
+            xAxis.setAttribute('y1', height);
+            xAxis.setAttribute('x2', width);
+            xAxis.setAttribute('y2', height);
+            xAxis.setAttribute('stroke', '#666');
+            xAxis.setAttribute('stroke-width', 1.5);
+            g.appendChild(xAxis);
+            
+            const yAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            yAxis.setAttribute('x1', 0);
+            yAxis.setAttribute('y1', 0);
+            yAxis.setAttribute('x2', 0);
+            yAxis.setAttribute('y2', height);
+            yAxis.setAttribute('stroke', '#666');
+            yAxis.setAttribute('stroke-width', 1.5);
+            g.appendChild(yAxis);
+            
+            // Add axis labels
+            const xAxisLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            xAxisLabel.setAttribute('x', width / 2);
+            xAxisLabel.setAttribute('y', height + 40);
+            xAxisLabel.setAttribute('text-anchor', 'middle');
+            xAxisLabel.setAttribute('font-size', '12px');
+            xAxisLabel.setAttribute('fill', '#333');
+            xAxisLabel.textContent = 'Production Date';
+            g.appendChild(xAxisLabel);
+            
+            const yAxisLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            yAxisLabel.setAttribute('transform', `rotate(-90) translate(${-height/2}, ${-40})`);
+            yAxisLabel.setAttribute('text-anchor', 'middle');
+            yAxisLabel.setAttribute('font-size', '12px');
+            yAxisLabel.setAttribute('fill', '#333');
+            yAxisLabel.textContent = sortTop10By === 'qty' ? 'Quantity' : 'Cost (R)';
+            g.appendChild(yAxisLabel);
+            
+            // Draw reference lines (Min, Max, Mean) as horizontal lines
+            const linesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            linesGroup.setAttribute('class', 'lines');
+            
+            // Min line - horizontal
+            if (minValue > 0) {
+                const minLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                minLine.setAttribute('class', 'line line-min');
+                minLine.setAttribute('x1', 0);
+                minLine.setAttribute('y1', yScale(minValue));
+                minLine.setAttribute('x2', width);
+                minLine.setAttribute('y2', yScale(minValue));
+                minLine.setAttribute('stroke', '#3498db');
+                minLine.setAttribute('stroke-width', 2);
+                minLine.setAttribute('stroke-dasharray', '5,5');
+                linesGroup.appendChild(minLine);
+                
+                // Label for Min line
+                const minLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                minLabel.setAttribute('x', width - 5);
+                minLabel.setAttribute('y', yScale(minValue) - 5);
+                minLabel.setAttribute('text-anchor', 'end');
+                minLabel.setAttribute('font-size', '10px');
+                minLabel.setAttribute('fill', '#3498db');
+                minLabel.textContent = 'Min: ' + (sortTop10By === 'qty' ? 
+                    Math.round(minValue) : 'R' + minValue.toFixed(2));
+                linesGroup.appendChild(minLabel);
+            }
+            
+            // Max line - horizontal
+            if (maxValue > 0) {
+                const maxLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                maxLine.setAttribute('class', 'line line-max');
+                maxLine.setAttribute('x1', 0);
+                maxLine.setAttribute('y1', yScale(maxValue));
+                maxLine.setAttribute('x2', width);
+                maxLine.setAttribute('y2', yScale(maxValue));
+                maxLine.setAttribute('stroke', '#e74c3c');
+                maxLine.setAttribute('stroke-width', 2);
+                maxLine.setAttribute('stroke-dasharray', '5,5');
+                linesGroup.appendChild(maxLine);
+                
+                // Label for Max line
+                const maxLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                maxLabel.setAttribute('x', width - 5);
+                maxLabel.setAttribute('y', yScale(maxValue) - 5);
+                maxLabel.setAttribute('text-anchor', 'end');
+                maxLabel.setAttribute('font-size', '10px');
+                maxLabel.setAttribute('fill', '#e74c3c');
+                maxLabel.textContent = 'Max: ' + (sortTop10By === 'qty' ? 
+                    Math.round(maxValue) : 'R' + maxValue.toFixed(2));
+                linesGroup.appendChild(maxLabel);
+            }
+            
+            // Mean line - horizontal
+            if (meanValue > 0) {
+                const meanLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                meanLine.setAttribute('class', 'line line-mean');
+                meanLine.setAttribute('x1', 0);
+                meanLine.setAttribute('y1', yScale(meanValue));
+                meanLine.setAttribute('x2', width);
+                meanLine.setAttribute('y2', yScale(meanValue));
+                meanLine.setAttribute('stroke', '#2ecc71');
+                meanLine.setAttribute('stroke-width', 2);
+                linesGroup.appendChild(meanLine);
+                
+                // Label for Mean line
+                const meanLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                meanLabel.setAttribute('x', width - 5);
+                meanLabel.setAttribute('y', yScale(meanValue) - 5);
+                meanLabel.setAttribute('text-anchor', 'end');
+                meanLabel.setAttribute('font-size', '10px');
+                meanLabel.setAttribute('fill', '#2ecc71');
+                meanLabel.textContent = 'Mean: ' + (sortTop10By === 'qty' ? 
+                    Math.round(meanValue) : 'R' + meanValue.toFixed(2));
+                linesGroup.appendChild(meanLabel);
+            }
+            
+            // Current line - path (unchanged)
+            if (currentData.length >= 2) {
+                let pathD = '';
+                currentData.sort((a, b) => new Date(a.date) - new Date(b.date)).forEach((d, i) => {
+                    const x = xScale(d.date);
+                    const y = yScale(d.value);
+                    pathD += i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`;
+                });
+                
+                const currentLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                currentLine.setAttribute('class', 'line line-current');
+                currentLine.setAttribute('d', pathD);
+                currentLine.setAttribute('stroke', '#9b59b6');
+                currentLine.setAttribute('stroke-width', 3);
+                currentLine.setAttribute('fill', 'none');
+                linesGroup.appendChild(currentLine);
+            }
+            
+            g.appendChild(linesGroup);
+            
+            // Add data points for the current line with hover tooltips
+            const pointsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            pointsGroup.setAttribute('class', 'data-points');
+            
+            currentData.sort((a, b) => new Date(a.date) - new Date(b.date)).forEach(d => {
+                const x = xScale(d.date);
+                const y = yScale(d.value);
+                
+                const point = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                point.setAttribute('class', 'data-point');
+                point.setAttribute('cx', x);
+                point.setAttribute('cy', y);
+                point.setAttribute('r', 4);
+                point.setAttribute('fill', '#9b59b6');
+                point.setAttribute('stroke', '#9b59b6');
+                
+                // Add tooltip on hover
+                point.setAttribute('data-date', formatDate(d.date));
+                point.setAttribute('data-value', sortTop10By === 'qty' ? 
+                    `${Math.round(d.value)} units` : 
+                    `R${d.value.toFixed(2)}`);
+                
+                point.addEventListener('mouseover', function(e) {
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'tooltip';
+                    tooltip.innerHTML = `<div>Date: ${this.getAttribute('data-date')}</div>
+                                      <div>Value: ${this.getAttribute('data-value')}</div>`;
+                    document.body.appendChild(tooltip);
+                    
+                    // Position the tooltip
+                    const rect = this.getBoundingClientRect();
+                    tooltip.style.left = `${rect.left + window.scrollX}px`;
+                    tooltip.style.top = `${rect.top + window.scrollY - 40}px`;
+                });
+                
+                point.addEventListener('mousemove', function(e) {
+                    const tooltip = document.querySelector('.tooltip');
+                    if (tooltip) {
+                        tooltip.style.left = `${e.pageX + 10}px`;
+                        tooltip.style.top = `${e.pageY - 40}px`;
+                    }
+                });
+                
+                point.addEventListener('mouseout', function() {
+                    const tooltip = document.querySelector('.tooltip');
+                    if (tooltip) {
+                        tooltip.remove();
+                    }
+                });
+                
+                pointsGroup.appendChild(point);
+            });
+            
+            g.appendChild(pointsGroup);
+            
+            // Create a legend
+            const legendGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            legendGroup.setAttribute('class', 'legend');
+            legendGroup.setAttribute('transform', `translate(${width - 150}, 10)`);
+            
+            const legends = [
+                { label: 'Min', color: '#3498db', visible: minValue > 0 },
+                { label: 'Max', color: '#e74c3c', visible: maxValue > 0 },
+                { label: 'Mean', color: '#2ecc71', visible: meanValue > 0 },
+                { label: 'Current', color: '#9b59b6', visible: currentData.length > 0 }
+            ].filter(l => l.visible);
+            
+            legends.forEach((legend, i) => {
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                g.setAttribute('transform', `translate(0, ${i * 20})`);
+                
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', 0);
+                line.setAttribute('y1', 10);
+                line.setAttribute('x2', 20);
+                line.setAttribute('y2', 10);
+                line.setAttribute('stroke', legend.color);
+                line.setAttribute('stroke-width', 2);
+                if (['Min', 'Max'].includes(legend.label)) {
+                    line.setAttribute('stroke-dasharray', '5,5');
+                }
+                g.appendChild(line);
+                
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', 25);
+                text.setAttribute('y', 14);
+                text.setAttribute('font-size', '10px');
+                text.setAttribute('class', 'legend-label');
+                text.textContent = legend.label;
+                g.appendChild(text);
+                
+                legendGroup.appendChild(g);
+            });
+            
+            g.appendChild(legendGroup);
         }
-        g.appendChild(line);
-        
-        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        text.setAttribute('x', 25);
-        text.setAttribute('y', 14);
-        text.setAttribute('font-size', '10px');
-        text.setAttribute('class', 'legend-label');
-        text.textContent = legend.label;
-        g.appendChild(text);
-        
-        legendGroup.appendChild(g);
-    });
-    
-    g.appendChild(legendGroup);
-}
 
         // Create top problems chart
         function createTopProblemsChart() {
@@ -3140,421 +3204,8 @@ function createDailyTrendChart() {
             }
         }
 
-
-function createDailyTrendChart() {
-    const container = chartContainers.trend;
-    container.innerHTML = '';
-    
-    // Use the trend chart data prepared by prepareTrendChartData()
-    const minValue = trendChartData.outsideRange.min || 0;
-    const maxValue = trendChartData.outsideRange.max || 0;
-    const meanValue = trendChartData.outsideRange.mean || 0;
-    const currentData = trendChartData.insideRange.values || [];
-    
-    if (currentData.length === 0 || filteredData.length === 0) {
-        container.innerHTML = '<div class="no-data">No data available</div>';
-        return;
-    }
-    
-    const margin = { top: 30, right: 60, bottom: 60, left: 60 };
-    const width = container.clientWidth - margin.left - margin.right;
-    const height = container.clientHeight - margin.top - margin.bottom;
-    
-    // Create SVG
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('width', container.clientWidth);
-    svg.setAttribute('height', container.clientHeight);
-    container.appendChild(svg);
-    
-    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
-    svg.appendChild(g);
-    
-    // Find min and max for y-axis scale, considering both reference lines and current data
-    let yMaxValue = Math.max(
-        Math.max(...currentData.map(d => d.value || 0)), 
-        maxValue || 0
-    );
-    
-    // Add some padding to ensure values don't sit right at the top of the chart
-    yMaxValue = yMaxValue > 0 ? yMaxValue * 1.1 : 10;
-    
-    let yMinValue = 0; // Usually we start from 0
-    
-    // Extract dates from current data
-    const dates = currentData.map(d => d.date).sort((a, b) => new Date(a) - new Date(b));
-    
-    // Create scales
-    const xScale = value => {
-        const dateIndex = dates.indexOf(value);
-        return dateIndex >= 0 && dates.length > 1 ? (dateIndex / (dates.length - 1)) * width : 0;
-    };
-    
-    const yScale = value => {
-        return height - ((value - yMinValue) / (yMaxValue - yMinValue)) * height;
-    };
-    
-    // Draw grid lines
-    const gridGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    gridGroup.setAttribute('class', 'grid');
-    
-    // Horizontal grid lines
-    const numGridLines = 5;
-    for (let i = 0; i <= numGridLines; i++) {
-        const y = height * (i / numGridLines);
-        const gridLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        gridLine.setAttribute('x1', 0);
-        gridLine.setAttribute('y1', y);
-        gridLine.setAttribute('x2', width);
-        gridLine.setAttribute('y2', y);
-        gridLine.setAttribute('stroke', '#e0e0e0');
-        gridLine.setAttribute('stroke-width', 1);
-        gridGroup.appendChild(gridLine);
-        
-        // Add y-axis labels
-        const yValue = yMaxValue - (i / numGridLines) * (yMaxValue - yMinValue);
-        const yLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        yLabel.setAttribute('x', -10);
-        yLabel.setAttribute('y', y + 4);
-        yLabel.setAttribute('text-anchor', 'end');
-        yLabel.setAttribute('font-size', '10px');
-        yLabel.setAttribute('fill', '#666');
-        yLabel.textContent = sortTop10By === 'qty' ? 
-            Math.round(yValue) : 
-            'R' + yValue.toFixed(2);
-        gridGroup.appendChild(yLabel);
-    }
-    
-    // Vertical grid lines and date labels
-    const numDates = Math.min(dates.length, 10); // Limit to avoid overcrowding
-    const dateStep = dates.length > 1 ? Math.max(1, Math.floor(dates.length / numDates)) : 1;
-    
-    for (let i = 0; i < dates.length; i += dateStep) {
-        const date = dates[i];
-        const x = xScale(date);
-        
-        const gridLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        gridLine.setAttribute('x1', x);
-        gridLine.setAttribute('y1', 0);
-        gridLine.setAttribute('x2', x);
-        gridLine.setAttribute('y2', height);
-        gridLine.setAttribute('stroke', '#e0e0e0');
-        gridLine.setAttribute('stroke-width', 1);
-        gridGroup.appendChild(gridLine);
-        
-        // Add x-axis labels (dates)
-        const dateLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        dateLabel.setAttribute('x', x);
-        dateLabel.setAttribute('y', height + 20);
-        dateLabel.setAttribute('text-anchor', 'middle');
-        dateLabel.setAttribute('font-size', '10px');
-        dateLabel.setAttribute('fill', '#666');
-        dateLabel.textContent = formatDate(date);
-        gridGroup.appendChild(dateLabel);
-    }
-    
-    g.appendChild(gridGroup);
-    
-    // Add axes
-    const xAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    xAxis.setAttribute('x1', 0);
-    xAxis.setAttribute('y1', height);
-    xAxis.setAttribute('x2', width);
-    xAxis.setAttribute('y2', height);
-    xAxis.setAttribute('stroke', '#666');
-    xAxis.setAttribute('stroke-width', 1.5);
-    g.appendChild(xAxis);
-    
-    const yAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    yAxis.setAttribute('x1', 0);
-    yAxis.setAttribute('y1', 0);
-    yAxis.setAttribute('x2', 0);
-    yAxis.setAttribute('y2', height);
-    yAxis.setAttribute('stroke', '#666');
-    yAxis.setAttribute('stroke-width', 1.5);
-    g.appendChild(yAxis);
-    
-    // Add axis labels
-    const xAxisLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    xAxisLabel.setAttribute('x', width / 2);
-    xAxisLabel.setAttribute('y', height + 40);
-    xAxisLabel.setAttribute('text-anchor', 'middle');
-    xAxisLabel.setAttribute('font-size', '12px');
-    xAxisLabel.setAttribute('fill', '#333');
-    xAxisLabel.textContent = 'Production Date';
-    g.appendChild(xAxisLabel);
-    
-    const yAxisLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    yAxisLabel.setAttribute('transform', `rotate(-90) translate(${-height/2}, ${-40})`);
-    yAxisLabel.setAttribute('text-anchor', 'middle');
-    yAxisLabel.setAttribute('font-size', '12px');
-    yAxisLabel.setAttribute('fill', '#333');
-    yAxisLabel.textContent = sortTop10By === 'qty' ? 'Quantity' : 'Cost (R)';
-    g.appendChild(yAxisLabel);
-    
-    // Draw reference lines (Min, Max, Mean) as horizontal lines
-    const linesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    linesGroup.setAttribute('class', 'lines');
-    
-    // Min line - horizontal
-    if (minValue > 0) {
-        const minLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        minLine.setAttribute('class', 'line line-min');
-        minLine.setAttribute('x1', 0);
-        minLine.setAttribute('y1', yScale(minValue));
-        minLine.setAttribute('x2', width);
-        minLine.setAttribute('y2', yScale(minValue));
-        minLine.setAttribute('stroke', '#3498db');
-        minLine.setAttribute('stroke-width', 2);
-        minLine.setAttribute('stroke-dasharray', '5,5');
-        linesGroup.appendChild(minLine);
-        
-        // Label for Min line
-        const minLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        minLabel.setAttribute('x', width - 5);
-        minLabel.setAttribute('y', yScale(minValue) - 5);
-        minLabel.setAttribute('text-anchor', 'end');
-        minLabel.setAttribute('font-size', '10px');
-        minLabel.setAttribute('fill', '#3498db');
-        minLabel.textContent = 'Min: ' + (sortTop10By === 'qty' ? 
-            Math.round(minValue) : 'R' + minValue.toFixed(2));
-        linesGroup.appendChild(minLabel);
-    }
-    
-    // Max line - horizontal
-    if (maxValue > 0) {
-        const maxLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        maxLine.setAttribute('class', 'line line-max');
-        maxLine.setAttribute('x1', 0);
-        maxLine.setAttribute('y1', yScale(maxValue));
-        maxLine.setAttribute('x2', width);
-        maxLine.setAttribute('y2', yScale(maxValue));
-        maxLine.setAttribute('stroke', '#e74c3c');
-        maxLine.setAttribute('stroke-width', 2);
-        maxLine.setAttribute('stroke-dasharray', '5,5');
-        linesGroup.appendChild(maxLine);
-        
-        // Label for Max line
-        const maxLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        maxLabel.setAttribute('x', width - 5);
-        maxLabel.setAttribute('y', yScale(maxValue) - 5);
-        maxLabel.setAttribute('text-anchor', 'end');
-        maxLabel.setAttribute('font-size', '10px');
-        maxLabel.setAttribute('fill', '#e74c3c');
-        maxLabel.textContent = 'Max: ' + (sortTop10By === 'qty' ? 
-            Math.round(maxValue) : 'R' + maxValue.toFixed(2));
-        linesGroup.appendChild(maxLabel);
-    }
-    
-    // Mean line - horizontal
-    if (meanValue > 0) {
-        const meanLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        meanLine.setAttribute('class', 'line line-mean');
-        meanLine.setAttribute('x1', 0);
-        meanLine.setAttribute('y1', yScale(meanValue));
-        meanLine.setAttribute('x2', width);
-        meanLine.setAttribute('y2', yScale(meanValue));
-        meanLine.setAttribute('stroke', '#2ecc71');
-        meanLine.setAttribute('stroke-width', 2);
-        linesGroup.appendChild(meanLine);
-        
-        // Label for Mean line
-        const meanLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        meanLabel.setAttribute('x', width - 5);
-        meanLabel.setAttribute('y', yScale(meanValue) - 5);
-        meanLabel.setAttribute('text-anchor', 'end');
-        meanLabel.setAttribute('font-size', '10px');
-        meanLabel.setAttribute('fill', '#2ecc71');
-        meanLabel.textContent = 'Mean: ' + (sortTop10By === 'qty' ? 
-            Math.round(meanValue) : 'R' + meanValue.toFixed(2));
-        linesGroup.appendChild(meanLabel);
-    }
-    
-    // Current line - path (unchanged)
-    if (currentData.length >= 2) {
-        let pathD = '';
-        currentData.sort((a, b) => new Date(a.date) - new Date(b.date)).forEach((d, i) => {
-            const x = xScale(d.date);
-            const y = yScale(d.value);
-            pathD += i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`;
-        });
-        
-        const currentLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        currentLine.setAttribute('class', 'line line-current');
-        currentLine.setAttribute('d', pathD);
-        currentLine.setAttribute('stroke', '#9b59b6');
-        currentLine.setAttribute('stroke-width', 3);
-        currentLine.setAttribute('fill', 'none');
-        linesGroup.appendChild(currentLine);
-    }
-    
-    g.appendChild(linesGroup);
-    
-    // Add data points for the current line with hover tooltips
-    const pointsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    pointsGroup.setAttribute('class', 'data-points');
-    
-    currentData.sort((a, b) => new Date(a.date) - new Date(b.date)).forEach(d => {
-        const x = xScale(d.date);
-        const y = yScale(d.value);
-        
-        const point = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        point.setAttribute('class', 'data-point');
-        point.setAttribute('cx', x);
-        point.setAttribute('cy', y);
-        point.setAttribute('r', 4);
-        point.setAttribute('fill', '#9b59b6');
-        point.setAttribute('stroke', '#9b59b6');
-        
-        // Add tooltip on hover
-        point.setAttribute('data-date', formatDate(d.date));
-        point.setAttribute('data-value', sortTop10By === 'qty' ? 
-            `${Math.round(d.value)} units` : 
-            `R${d.value.toFixed(2)}`);
-        
-        point.addEventListener('mouseover', function(e) {
-            const tooltip = document.createElement('div');
-            tooltip.className = 'tooltip';
-            tooltip.innerHTML = `<div>Date: ${this.getAttribute('data-date')}</div>
-                              <div>Value: ${this.getAttribute('data-value')}</div>`;
-            document.body.appendChild(tooltip);
-            
-            // Position the tooltip
-            const rect = this.getBoundingClientRect();
-            tooltip.style.left = `${rect.left + window.scrollX}px`;
-            tooltip.style.top = `${rect.top + window.scrollY - 40}px`;
-        });
-        
-        point.addEventListener('mousemove', function(e) {
-            const tooltip = document.querySelector('.tooltip');
-            if (tooltip) {
-                tooltip.style.left = `${e.pageX + 10}px`;
-                tooltip.style.top = `${e.pageY - 40}px`;
-            }
-        });
-        
-        point.addEventListener('mouseout', function() {
-            const tooltip = document.querySelector('.tooltip');
-            if (tooltip) {
-                tooltip.remove();
-            }
-        });
-        
-        pointsGroup.appendChild(point);
-    });
-    
-    g.appendChild(pointsGroup);
-    
-    // Create a legend
-    const legendGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    legendGroup.setAttribute('class', 'legend');
-    legendGroup.setAttribute('transform', `translate(${width - 150}, 10)`);
-    
-    const legends = [
-        { label: 'Min', color: '#3498db', visible: minValue > 0 },
-        { label: 'Max', color: '#e74c3c', visible: maxValue > 0 },
-        { label: 'Mean', color: '#2ecc71', visible: meanValue > 0 },
-        { label: 'Current', color: '#9b59b6', visible: currentData.length > 0 }
-    ].filter(l => l.visible);
-    
-    legends.forEach((legend, i) => {
-        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-        g.setAttribute('transform', `translate(0, ${i * 20})`);
-        
-        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        line.setAttribute('x1', 0);
-        line.setAttribute('y1', 10);
-        line.setAttribute('x2', 20);
-        line.setAttribute('y2', 10);
-        line.setAttribute('stroke', legend.color);
-        line.setAttribute('stroke-width', 2);
-        if (['Min', 'Max'].includes(legend.label)) {
-            line.setAttribute('stroke-dasharray', '5,5');
-        }
-        g.appendChild(line);
-        
-        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        text.setAttribute('x', 25);
-        text.setAttribute('y', 14);
-        text.setAttribute('font-size', '10px');
-        text.setAttribute('class', 'legend-label');
-        text.textContent = legend.label;
-        g.appendChild(text);
-        
-        legendGroup.appendChild(g);
-    });
-    
-    g.appendChild(legendGroup);
-}
-        
-        // Get data with all filters applied except date range
-        function getDataWithFiltersExceptDate() {
-            // Start with all data
-            let result = allData;
-            
-            // Apply action filter if selected
-            if (selectedAction !== 'All') {
-                result = result.filter(item => item.ActionSelection === selectedAction);
-            }
-            
-            // Apply reject reason filter if selected
-            if (selectedRejectReason !== null) {
-                result = result.filter(item => item.RejectReason === selectedRejectReason);
-            }
-            
-            // Apply station filter if selected
-            if (selectedStation !== null) {
-                result = result.filter(item => item.Station === selectedStation);
-            }
-            
-            // Apply multi-select filters
-            const hasSelections = Object.values(filterValues).some(values => values.length > 0);
-            if (hasSelections) {
-                result = result.filter(item => {
-                    if (filterValues.supervisor.length > 0 && !filterValues.supervisor.includes(item.LineSupervisor)) {
-                        return false;
-                    }
-                    if (filterValues.product.length > 0 && !filterValues.product.includes(item.Product)) {
-                        return false;
-                    }
-                    if (filterValues.variant.length > 0 && !filterValues.variant.includes(item.Variant)) {
-                        return false;
-                    }
-                    if (filterValues.batch.length > 0) {
-                        const batchStr = item.BatchNumber !== undefined && item.BatchNumber !== null 
-                            ? String(item.BatchNumber) 
-                            : '';
-                        if (!filterValues.batch.includes(batchStr)) {
-                            return false;
-                        }
-                    }
-                    if (filterValues.part.length > 0) {
-                        let partFound = false;
-                        let parts = [];
-                        if (Array.isArray(item.Parts)) {
-                            parts = item.Parts;
-                        } else if (typeof item.Parts === 'string') {
-                            parts = item.Parts.split(',').map(p => p.trim());
-                        }
-                        partFound = parts.some(part => part && filterValues.part.includes(part.trim()));
-                        if (!partFound) return false;
-                    }
-                    if (filterValues.alias.length > 0) {
-                        let aliasFound = false;
-                        let aliases = [];
-                        if (Array.isArray(item.Aliases)) {
-                            aliases = item.Aliases;
-                        } else if (typeof item.Aliases === 'string') {
-                            aliases = item.Aliases.split(',').map(a => a.trim());
-                        }
-                        aliasFound = aliases.some(alias => alias && filterValues.alias.includes(alias.trim()));
-                        if (!aliasFound) return false;
-                    }
-                    return true;
-                });
-            }
-            return result;
-        }
+        // Initialize the dashboard when the page loads
+        window.addEventListener('load', initDashboard);
     </script>
 </body>
 </html>
