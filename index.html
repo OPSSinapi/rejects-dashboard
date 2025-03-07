@@ -1094,7 +1094,7 @@
         let indexData = null; // Will store the index file data
         const GITHUB_REPO = 'OPSSinapi/rejects-dashboard';
         const BASE_URL = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/`;
-        const DATA_URL = `${BASE_URL}RejectsData.json`;
+        const INDEX_URL = `${BASE_URL}RejectsIndex.json`;
         let sortTop10By = 'qty'; // 'qty' or 'cost'
         let selectedAction = 'All'; // For action selection filtering
         let selectedRejectReason = null; // For reject reason filtering
@@ -1230,57 +1230,41 @@
             });
         }
 
+        // Initialize the dashboard when the page loads
+        window.addEventListener('load', initDashboard);
+    </script>
+</body>
+</html>
+
         // Initialize the dashboard
         async function initDashboard() {
             // Show loading indicators
             updateLoadingState(true, "Initializing dashboard...");
             
             try {
-                // First try to fetch index file to see if we need to use the monthly data loading approach
-                const indexResponse = await fetch(`${BASE_URL}RejectsIndex.json`);
+                // Fetch index file
+                const indexResponse = await fetch(INDEX_URL);
                 
-                if (indexResponse.ok) {
-                    // We have an index file, use monthly data loading approach
-                    console.log("Using monthly data loading approach");
-                    indexData = await indexResponse.json();
-                    
-                    // Set up date range options
-                    setupDateRangeOptions(indexData.availablePeriods);
-                    
-                    // Initialize filters and other components
-                    initMultiSelectDropdowns();
-                    initActionDropdown();
-                    initClickableHeaders();
-                    
-                    // Add event listeners
-                    filterElements.applyDateBtn.addEventListener('click', loadDataForDateRange);
-                    filterElements.resetAllBtn.addEventListener('click', resetAllFilters);
-                    
-                    // Load initial data
-                    await loadInitialData();
-                } else {
-                    // Fall back to original approach with single data file
-                    console.log("Falling back to single data file approach");
-                    
-                    // Initialize UI components
-                    initMultiSelectDropdowns();
-                    initActionDropdown();
-                    initClickableHeaders();
-                    
-                    // Set default date range
-                    setDefaultDateRange();
-                    
-                    // Add event listeners
-                    filterElements.applyDateBtn.addEventListener('click', applyDateFilter);
-                    filterElements.resetAllBtn.addEventListener('click', resetAllFilters);
-                    
-                    // Fetch data and initialize dashboard
-                    rejectData = await fetchData();
-                    allData = [...rejectData];
-                    
-                    // Apply initial filters
-                    applyDateFilter();
+                if (!indexResponse.ok) {
+                    throw new Error(`Failed to load index file. Status: ${indexResponse.status}`);
                 }
+                
+                indexData = await indexResponse.json();
+                
+                // Set up date range options
+                setupDateRangeOptions(indexData.availablePeriods);
+                
+                // Initialize filters and other components
+                initMultiSelectDropdowns();
+                initActionDropdown();
+                initClickableHeaders();
+                
+                // Add event listeners
+                filterElements.applyDateBtn.addEventListener('click', loadDataForDateRange);
+                filterElements.resetAllBtn.addEventListener('click', resetAllFilters);
+                
+                // Load initial data
+                await loadInitialData();
                 
                 // Top 10 sort toggle
                 top10Elements.sortByQty.addEventListener('click', () => {
@@ -1355,25 +1339,6 @@
             }
         }
 
-        // Fetch data from GitHub
-        async function fetchData() {
-            try {
-                updateLoadingState(true, "Fetching data...");
-                const response = await fetch(DATA_URL);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-                const data = await response.json();
-                return data.rejectData || [];
-            } catch (error) {
-                console.error('Error fetching data:', error);
-                showDataLoadError("Failed to load data. Please check your connection.");
-                return [];
-            } finally {
-                updateLoadingState(false);
-            }
-        }
-
         // Setup date range selector with available periods
         function setupDateRangeOptions(availablePeriods) {
             if (!availablePeriods || availablePeriods.length === 0) {
@@ -1441,6 +1406,39 @@
             return months;
         }
 
+        // Load ALL available monthly data for calculating metrics
+        async function loadAllAvailableMonthlyData() {
+            if (!indexData || !indexData.availablePeriods || indexData.availablePeriods.length === 0) {
+                throw new Error("No available data periods");
+            }
+            
+            const allMonths = [...indexData.availablePeriods];
+            let allLoadedData = [];
+            
+            for (const month of allMonths) {
+                if (!loadedMonths[month]) {
+                    try {
+                        const monthResponse = await fetch(`${BASE_URL}data/${month}.json`);
+                        if (!monthResponse.ok) {
+                            console.warn(`Month data for ${month} not found or error: ${monthResponse.status}`);
+                            continue;
+                        }
+                        
+                        const monthData = await monthResponse.json();
+                        loadedMonths[month] = monthData.rejectData || [];
+                    } catch (error) {
+                        console.warn(`Error loading data for ${month}:`, error);
+                        continue;
+                    }
+                }
+                
+                // Add this month's data to the all data collection
+                allLoadedData = allLoadedData.concat(loadedMonths[month]);
+            }
+            
+            return allLoadedData;
+        }
+
         // Load data for the selected date range
         async function loadDataForDateRange() {
             if (dataLoadingInProgress) {
@@ -1458,9 +1456,9 @@
                     throw new Error("Please select a valid date range");
                 }
                 
-                // Get list of months that need to be loaded
+                // Get list of months that need to be loaded for the selected date range
                 const monthsToLoad = getMonthsInRange(fromDate, toDate);
-                console.log("Months to load:", monthsToLoad);
+                console.log("Months to load for selected range:", monthsToLoad);
                 
                 if (monthsToLoad.length === 0) {
                     throw new Error("No data available for the selected date range");
@@ -1489,8 +1487,9 @@
                     rejectData = rejectData.concat(loadedMonths[month]);
                 }
                 
-                // Create a copy for all data (used for global metrics)
-                allData = [...rejectData];
+                // Load all available data for trend chart calculations
+                updateLoadingState(true, "Loading all historical data for trend chart calculations...");
+                allData = await loadAllAvailableMonthlyData();
                 
                 // Apply date filtering specifically for the selected range
                 dateFilteredData = rejectData.filter(item => {
@@ -1513,13 +1512,13 @@
                 // Update action dropdown
                 updateActionDropdown();
                 
-                // Prepare trend chart data using pre-calculated statistics when possible
+                // Prepare trend chart data using all historical data for reference lines
                 prepareTrendChartData();
                 
                 // Update dashboard
                 updateDashboard();
                 
-                console.log(`Successfully loaded ${rejectData.length} records, with ${dateFilteredData.length} in date range`);
+                console.log(`Successfully loaded ${rejectData.length} records for selected date range, with ${dateFilteredData.length} in date range, and ${allData.length} total historical records for reference calculation`);
                 
             } catch (error) {
                 console.error("Error loading data for date range:", error);
@@ -1527,52 +1526,6 @@
             } finally {
                 updateLoadingState(false);
             }
-        }
-
-        // Set default date range to the most recent 5 days with rejects
-        function setDefaultDateRange() {
-            const today = new Date();
-            const fiveDaysAgo = new Date(today);
-            fiveDaysAgo.setDate(today.getDate() - 4);
-            
-            filterElements.dateFrom.value = formatDateForInput(fiveDaysAgo);
-            filterElements.dateTo.value = formatDateForInput(today);
-        }
-
-        // Apply date filter (for single file approach)
-        function applyDateFilter() {
-            const dateFrom = filterElements.dateFrom.value ? new Date(filterElements.dateFrom.value) : null;
-            const dateTo = filterElements.dateTo.value ? new Date(filterElements.dateTo.value) : null;
-            
-            if (!dateFrom || !dateTo) {
-                alert("Please select valid From and To dates.");
-                return;
-            }
-            
-            // Add one day to dateTo to include the end date
-            const adjustedDateTo = new Date(dateTo);
-            adjustedDateTo.setDate(adjustedDateTo.getDate() + 1);
-            
-            dateFilteredData = rejectData.filter(item => {
-                if (!item.ProductionDate) return false;
-                const itemDate = new Date(item.ProductionDate);
-                return itemDate >= dateFrom && itemDate < adjustedDateTo;
-            });
-            
-            resetOtherFilters(true);
-            selectedAction = 'All';
-            selectedRejectReason = null;
-            selectedStation = null;
-            top10Elements.currentAction.textContent = 'All Types';
-            top10Elements.batchHeader.style.display = 'none';
-            top10Elements.supplierHeader.style.display = 'none';
-            updateActionDropdown();
-            calculateAvailableFilterOptions();
-            buildFilterAssociations();
-            populateMultiSelectOptions();
-            filteredData = [...dateFilteredData];
-            prepareTrendChartData();
-            updateDashboard();
         }
 
         // Helper function to format date for display
@@ -1606,79 +1559,88 @@
                 return;
             }
             
-            // Filter data based on current filters EXCEPT date range
-            let dataForOutsideRange = getDataWithFiltersExceptDate();
+            // Filter data based on current filters (apply all filters except date range)
+            const filteredAllData = applyFiltersExceptDate(allData);
             
-            // Separate data inside and outside the date range
-            let dataOutsideRange = [];
-            let dataInsideRange = [];
+            // Separate data inside and outside the selected date range
+            let outsideRangeData = [];
+            let insideRangeData = [];
             
-            // Add one day to dateTo for inclusive end date comparison
-            const adjustedDateTo = new Date(dateTo);
-            adjustedDateTo.setDate(adjustedDateTo.getDate() + 1);
-            
-            dataForOutsideRange.forEach(item => {
+            filteredAllData.forEach(item => {
                 if (!item.ProductionDate) return;
                 
                 const itemDate = new Date(item.ProductionDate);
-                if (itemDate >= dateFrom && itemDate < adjustedDateTo) {
-                    dataInsideRange.push(item);
+                
+                if (itemDate >= dateFrom && itemDate <= dateTo) {
+                    insideRangeData.push(item);
                 } else {
-                    dataOutsideRange.push(item);
+                    outsideRangeData.push(item);
                 }
             });
             
-            // Process data outside date range - grouping by date first
-            const outsideDateGroups = {};
+            console.log(`Data split: ${insideRangeData.length} inside selected range, ${outsideRangeData.length} outside selected range`);
             
-            dataOutsideRange.forEach(item => {
+            // Group data outside date range by date
+            const outsideDateGroupsMap = {};
+            
+            outsideRangeData.forEach(item => {
                 if (!item.ProductionDate) return;
                 
                 const date = item.ProductionDate;
-                if (!outsideDateGroups[date]) {
-                    outsideDateGroups[date] = { date, total: 0 };
+                if (!outsideDateGroupsMap[date]) {
+                    outsideDateGroupsMap[date] = { date, total: 0 };
                 }
                 
                 const value = sortTop10By === 'qty' ? (item.QTY || 0) : (item.Cost || 0);
                 if (!isNaN(value)) {
-                    outsideDateGroups[date].total += value;
+                    outsideDateGroupsMap[date].total += value;
                 }
             });
             
-            // Get daily totals as an array
-            const dailyTotals = Object.values(outsideDateGroups).map(group => group.total);
+            // Convert to array for easier processing
+            const outsideDailyTotals = Object.values(outsideDateGroupsMap);
             
-            // Calculate statistics from daily totals
+            // Calculate statistics from daily totals (prevent 0 for min)
             let minValue = 0;
             let maxValue = 0;
             let meanValue = 0;
             
-            if (dailyTotals.length > 0) {
-                minValue = Math.min(...dailyTotals);
-                maxValue = Math.max(...dailyTotals);
-                const sum = dailyTotals.reduce((a, b) => a + b, 0);
-                meanValue = sum / dailyTotals.length;
+            if (outsideDailyTotals.length > 0) {
+                // Filter out zero values for min calculation
+                const nonZeroTotals = outsideDailyTotals
+                    .map(group => group.total)
+                    .filter(total => total > 0);
+                
+                if (nonZeroTotals.length > 0) {
+                    minValue = Math.min(...nonZeroTotals);
+                }
+                
+                const allTotalValues = outsideDailyTotals.map(group => group.total);
+                maxValue = Math.max(...allTotalValues);
+                
+                const sum = allTotalValues.reduce((a, b) => a + b, 0);
+                meanValue = sum / allTotalValues.length;
             }
             
             // Group inside data by date
-            const insideDateGroups = {};
+            const insideDateGroupsMap = {};
             
-            dataInsideRange.forEach(item => {
+            insideRangeData.forEach(item => {
                 if (!item.ProductionDate) return;
                 
                 const date = item.ProductionDate;
-                if (!insideDateGroups[date]) {
-                    insideDateGroups[date] = { date, total: 0 };
+                if (!insideDateGroupsMap[date]) {
+                    insideDateGroupsMap[date] = { date, total: 0 };
                 }
                 
                 const value = sortTop10By === 'qty' ? (item.QTY || 0) : (item.Cost || 0);
                 if (!isNaN(value)) {
-                    insideDateGroups[date].total += value;
+                    insideDateGroupsMap[date].total += value;
                 }
             });
             
             // Convert to array and sort chronologically
-            const currentValues = Object.values(insideDateGroups)
+            const currentValues = Object.values(insideDateGroupsMap)
                 .sort((a, b) => new Date(a.date) - new Date(b.date))
                 .map(group => ({
                     date: group.date,
@@ -1705,10 +1667,10 @@
             );
         }
 
-        // Get data with all filters applied except date range
-        function getDataWithFiltersExceptDate() {
+        // Apply all current filters except date range to the given data
+        function applyFiltersExceptDate(data) {
             // Start with all data
-            let result = allData;
+            let result = data;
             
             // Apply action filter if selected
             if (selectedAction !== 'All') {
@@ -2474,7 +2436,7 @@
                         let parts = [];
                         if (Array.isArray(item.Parts)) {
                             parts = item.Parts;
-} else if (typeof item.Parts === 'string') {
+                        } else if (typeof item.Parts === 'string') {
                             parts = item.Parts.split(',').map(p => p.trim());
                         }
                         partFound = parts.some(part => part && filterValues.part.includes(part.trim()));
@@ -2540,7 +2502,8 @@
             const localPercent = totalQty > 0 ? Math.round((localCount / totalQty) * 100) : 0;
             let singlePartsCount = 0;
             let assembliesCount = 0;
-                            dataToUse.forEach(item => {
+            
+            dataToUse.forEach(item => {
                 let parts = [];
                 if (Array.isArray(item.Parts)) {
                     parts = item.Parts.filter(p => p && p.trim());
@@ -2553,6 +2516,7 @@
                     assembliesCount += (item.QTY || 0);
                 }
             });
+            
             metricElements.totalCost.textContent = `R${totalCost.toFixed(2)}`;
             metricElements.scrapPercent.textContent = `${scrapPercent}%`;
             metricElements.rtsPercent.textContent = `${rtsPercent}%`;
@@ -3339,3 +3303,5 @@
     </script>
 </body>
 </html>
+
+
