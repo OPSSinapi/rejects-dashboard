@@ -1227,110 +1227,98 @@
     }
 
     // Initialize the dashboard when the page loads
-    window.addEventListener('load', initDashboard);
+    document.addEventListener('DOMContentLoaded', initDashboard);
 
     // Initialize the dashboard
-    async function initDashboard() {
-        // Show loading indicators
-        updateLoadingState(true, "Initializing dashboard...");
+async function initDashboard() {
+    // Show loading indicators
+    updateLoadingState(true, "Initializing dashboard...");
+    
+    try {
+        // Initialize filters and other components
+        initMultiSelectDropdowns();
+        initActionDropdown();
+        initClickableHeaders();
         
-        try {
-            // Fetch index file
-            const indexResponse = await fetch('RejectsIndex.json');
+        // Add event listeners
+        filterElements.applyDateBtn.addEventListener('click', loadDataForDateRange);
+        filterElements.resetAllBtn.addEventListener('click', resetAllFilters);
+        
+        // Load initial data for the date range already set in the input fields
+        await loadDataForDateRange();
+        
+        // Top 10 sort toggle
+        top10Elements.sortByQty.addEventListener('click', () => {
+            sortTop10By = 'qty';
+            top10Elements.sortByQty.classList.add('active');
+            top10Elements.sortByCost.classList.remove('active');
             
-            if (!indexResponse.ok) {
-                throw new Error(`Failed to load index file. Status: ${indexResponse.status}`);
+            // Prepare trend chart data with new sort type
+            prepareTrendChartData();
+            
+            // Update all views
+            updateTop10Table();
+            updateRejectReasonMenu();
+            updateStationMenu();
+            createRejectReasonsChart();
+            createTopProblemsChart();
+            createStationCostChart();
+            createDailyTrendChart();
+        });
+        
+        top10Elements.sortByCost.addEventListener('click', () => {
+            sortTop10By = 'cost';
+            top10Elements.sortByCost.classList.add('active');
+            top10Elements.sortByQty.classList.remove('active');
+            
+            // Prepare trend chart data with new sort type
+            prepareTrendChartData();
+            
+            // Update all views
+            updateTop10Table();
+            updateRejectReasonMenu();
+            updateStationMenu();
+            createRejectReasonsChart();
+            createTopProblemsChart();
+            createStationCostChart();
+            createDailyTrendChart();
+        });
+        
+        // Close popup menus when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!top10Elements.rejectReasonHeader.contains(e.target) && 
+                !top10Elements.rejectReasonMenu.contains(e.target)) {
+                top10Elements.rejectReasonMenu.classList.remove('active');
             }
             
-            indexData = await indexResponse.json();
+            if (!top10Elements.stationHeader.contains(e.target) && 
+                !top10Elements.stationMenu.contains(e.target)) {
+                top10Elements.stationMenu.classList.remove('active');
+            }
             
-            // Set up date range options
-            await findLastFiveRejectsDateRange(indexData.availablePeriods);
-            
-            // Initialize filters and other components
-            initMultiSelectDropdowns();
-            initActionDropdown();
-            initClickableHeaders();
-            
-            // Add event listeners
-            filterElements.applyDateBtn.addEventListener('click', loadDataForDateRange);
-            filterElements.resetAllBtn.addEventListener('click', resetAllFilters);
-            
-            // Load initial data
-            await loadInitialData();
-            
-            // Top 10 sort toggle
-            top10Elements.sortByQty.addEventListener('click', () => {
-                sortTop10By = 'qty';
-                top10Elements.sortByQty.classList.add('active');
-                top10Elements.sortByCost.classList.remove('active');
-                
-                // Prepare trend chart data with new sort type
-                prepareTrendChartData();
-                
-                // Update all views
-                updateTop10Table();
-                updateRejectReasonMenu();
-                updateStationMenu();
+            // Close action dropdown if clicking outside
+            if (!top10Elements.actionDropdown.contains(e.target)) {
+                top10Elements.actionDropdownContent.classList.remove('show');
+            }
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (filteredData.length > 0) {
                 createRejectReasonsChart();
+                createDailyTrendChart();
                 createTopProblemsChart();
                 createStationCostChart();
-                createDailyTrendChart();
-            });
-            
-            top10Elements.sortByCost.addEventListener('click', () => {
-                sortTop10By = 'cost';
-                top10Elements.sortByCost.classList.add('active');
-                top10Elements.sortByQty.classList.remove('active');
-                
-                // Prepare trend chart data with new sort type
-                prepareTrendChartData();
-                
-                // Update all views
-                updateTop10Table();
-                updateRejectReasonMenu();
-                updateStationMenu();
-                createRejectReasonsChart();
-                createTopProblemsChart();
-                createStationCostChart();
-                createDailyTrendChart();
-            });
-            
-            // Close popup menus when clicking outside
-            document.addEventListener('click', (e) => {
-                if (!top10Elements.rejectReasonHeader.contains(e.target) && 
-                    !top10Elements.rejectReasonMenu.contains(e.target)) {
-                    top10Elements.rejectReasonMenu.classList.remove('active');
-                }
-                
-                if (!top10Elements.stationHeader.contains(e.target) && 
-                    !top10Elements.stationMenu.contains(e.target)) {
-                    top10Elements.stationMenu.classList.remove('active');
-                }
-                
-                // Close action dropdown if clicking outside
-                if (!top10Elements.actionDropdown.contains(e.target)) {
-                    top10Elements.actionDropdownContent.classList.remove('show');
-                }
-            });
-            
-            // Handle window resize
-            window.addEventListener('resize', () => {
-                if (filteredData.length > 0) {
-                    createRejectReasonsChart();
-                    createDailyTrendChart();
-                    createTopProblemsChart();
-                    createStationCostChart();
-                }
-            });
-            
-        } catch (error) {
-            console.error("Error initializing dashboard:", error);
-            showDataLoadError("Failed to initialize dashboard. Please try again later.");
-        } finally {
-            updateLoadingState(false);
-        }
+            }
+        });
+        
+    } catch (error) {
+        console.error("Error initializing dashboard:", error);
+        showDataLoadError("Failed to initialize dashboard. Please try again later.");
+    } finally {
+        updateLoadingState(false);
     }
+}
 
     // Find the last 5 dates with rejects and set the date range
     async function findLastFiveRejectsDateRange(availablePeriods) {
@@ -3331,7 +3319,6 @@ const y = index * (barHeight + 15) + 10;
     }
 
     // Initialize the dashboard when the page loads
-    window.addEventListener('load', initDashboard);
-</script>
+      document.addEventListener('DOMContentLoaded', initDashboard);</script>
 </body>
 </html>
