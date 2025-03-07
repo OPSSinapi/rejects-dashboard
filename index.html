@@ -1850,7 +1850,7 @@
         top10Elements.rejectReasonHeader.addEventListener('click', (e) => {
             const rect = top10Elements.rejectReasonHeader.getBoundingClientRect();
             top10Elements.rejectReasonMenu.style.top = `${rect.bottom}px`;
-top10Elements.rejectReasonMenu.style.left = ${rect.left}px;
+top10Elements.rejectReasonMenu.style.left = `${rect.left}px`;
 top10Elements.rejectReasonMenu.classList.add('active');
 updateRejectReasonMenu();
 e.stopPropagation();
@@ -2557,7 +2557,7 @@ top10Elements.stationHeader.addEventListener('click', (e) => {
         metricElements.localPercent.textContent = `${localPercent}%`;
         metricElements.scrapMetric.style.display = scrapPercent > 0 ? '' : 'none';
         metricElements.rtsMetric.style.display = rtsPercent > 0 ? '' : 'none';
-        metricElements.localMetric.style.display = localPercent > 0 ? '' : 'none
+        metricElements.localMetric.style.display = localPercent > 0 ? '' : 'none':
 metricElements.singlePartsCount.textContent = singlePartsCount;
 metricElements.assembliesCount.textContent = assembliesCount;
 }
