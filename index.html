@@ -2499,55 +2499,54 @@ top10Elements.stationHeader.addEventListener('click', (e) => {
         createStationCostChart();
     }
 
-    // Update metrics display
-    function updateMetrics() {
-        let dataToUse = filteredData;
-        if (selectedAction !== 'All') {
-            dataToUse = dataToUse.filter(item => item.ActionSelection === selectedAction);
+function updateMetrics() {
+    let dataToUse = filteredData;
+    if (selectedAction !== 'All') {
+        dataToUse = dataToUse.filter(item => item.ActionSelection === selectedAction);
+    }
+    if (selectedRejectReason !== null) {
+        dataToUse = dataToUse.filter(item => item.RejectReason === selectedRejectReason);
+    }
+    if (selectedStation !== null) {
+        dataToUse = dataToUse.filter(item => item.Station === selectedStation);
+    }
+    const totalCost = dataToUse.reduce((sum, item) => sum + (item.Cost || 0), 0);
+    const scrapCount = dataToUse.filter(item => item.ActionSelection === 'Scrap')
+        .reduce((sum, item) => sum + (item.QTY || 0), 0);
+    const rtsCount = dataToUse.filter(item => item.ActionSelection === 'RTS')
+        .reduce((sum, item) => sum + (item.QTY || 0), 0);
+    const localCount = dataToUse.filter(item => item.ActionSelection === 'Local')
+        .reduce((sum, item) => sum + (item.QTY || 0), 0);
+    const totalQty = dataToUse.reduce((sum, item) => sum + (item.QTY || 0), 0);
+    const scrapPercent = totalQty > 0 ? Math.round((scrapCount / totalQty) * 100) : 0;
+    const rtsPercent = totalQty > 0 ? Math.round((rtsCount / totalQty) * 100) : 0;
+    const localPercent = totalQty > 0 ? Math.round((localCount / totalQty) * 100) : 0;
+    let singlePartsCount = 0;
+    let assembliesCount = 0;
+    
+    dataToUse.forEach(item => {
+        let parts = [];
+        if (Array.isArray(item.Parts)) {
+            parts = item.Parts.filter(p => p && p.trim());
+        } else if (typeof item.Parts === 'string') {
+            parts = item.Parts.split(',').map(p => p.trim()).filter(p => p);
         }
-        if (selectedRejectReason !== null) {
-            dataToUse = dataToUse.filter(item => item.RejectReason === selectedRejectReason);
+        if (parts.length <= 1) {
+            singlePartsCount += (item.QTY || 0);
+        } else {
+            assembliesCount += (item.QTY || 0);
         }
-        if (selectedStation !== null) {
-            dataToUse = dataToUse.filter(item => item.Station === selectedStation);
-        }
-        const totalCost = dataToUse.reduce((sum, item) => sum + (item.Cost || 0), 0);
-        const scrapCount = dataToUse.filter(item => item.ActionSelection === 'Scrap')
-            .reduce((sum, item) => sum + (item.QTY || 0), 0);
-        const rtsCount = dataToUse.filter(item => item.ActionSelection === 'RTS')
-            .reduce((sum, item) => sum + (item.QTY || 0), 0);
-        const localCount = dataToUse.filter(item => item.ActionSelection === 'Local')
-            .reduce((sum, item) => sum + (item.QTY || 0), 0);
-        const totalQty = dataToUse.reduce((sum, item) => sum + (item.QTY || 0), 0);
-        const scrapPercent = totalQty > 0 ? Math.round((scrapCount / totalQty) * 100) : 0;
-        const rtsPercent = totalQty > 0 ? Math.round((rtsCount / totalQty) * 100) : 0;
-        const localPercent = totalQty > 0 ? Math.round((localCount / totalQty) * 100) : 0;
-        let singlePartsCount = 0;
-        let assembliesCount = 0;
-        
-        dataToUse.forEach(item => {
-            let parts = [];
-            if (Array.isArray(item.Parts)) {
-                parts = item.Parts.filter(p => p && p.trim());
-            } else if (typeof item.Parts === 'string') {
-                parts = item.Parts.split(',').map(p => p.trim()).filter(p => p);
-            }
-            if (parts.length <= 1) {
-                singlePartsCount += (item.QTY || 0);
-            } else {
-                assembliesCount += (item.QTY || 0);
-            }
-        });
-        
-        metricElements.totalCost.textContent = `R${totalCost.toFixed(2)}`;
-        metricElements.scrapPercent.textContent = `${scrapPercent}%`;
-        metricElements.rtsPercent.textContent = `${rtsPercent}%`;
-        metricElements.localPercent.textContent = `${localPercent}%`;
-        metricElements.scrapMetric.style.display = scrapPercent > 0 ? '' : 'none';
-        metricElements.rtsMetric.style.display = rtsPercent > 0 ? '' : 'none';
-        metricElements.localMetric.style.display = localPercent > 0 ? '' : 'none':
-metricElements.singlePartsCount.textContent = singlePartsCount;
-metricElements.assembliesCount.textContent = assembliesCount;
+    });
+    
+    metricElements.totalCost.textContent = `R${totalCost.toFixed(2)}`;
+    metricElements.scrapPercent.textContent = `${scrapPercent}%`;
+    metricElements.rtsPercent.textContent = `${rtsPercent}%`;
+    metricElements.localPercent.textContent = `${localPercent}%`;
+    metricElements.scrapMetric.style.display = scrapPercent > 0 ? '' : 'none';
+    metricElements.rtsMetric.style.display = rtsPercent > 0 ? '' : 'none';
+    metricElements.localMetric.style.display = localPercent > 0 ? '' : 'none';
+    metricElements.singlePartsCount.textContent = singlePartsCount;
+    metricElements.assembliesCount.textContent = assembliesCount;
 }
 // Update Top 10 rejects table
     function updateTop10Table() {
