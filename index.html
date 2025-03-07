@@ -1628,25 +1628,36 @@
                 }
             });
             
-            // Process data outside date range - getting single values
-            let allOutsideValues = [];
+            // Process data outside date range - grouping by date first
+            const outsideDateGroups = {};
+            
             dataOutsideRange.forEach(item => {
+                if (!item.ProductionDate) return;
+                
+                const date = item.ProductionDate;
+                if (!outsideDateGroups[date]) {
+                    outsideDateGroups[date] = { date, total: 0 };
+                }
+                
                 const value = sortTop10By === 'qty' ? (item.QTY || 0) : (item.Cost || 0);
-                if (!isNaN(value) && value !== null && value !== undefined) {
-                    allOutsideValues.push(value);
+                if (!isNaN(value)) {
+                    outsideDateGroups[date].total += value;
                 }
             });
             
-            // Calculate statistics from outside values
+            // Get daily totals as an array
+            const dailyTotals = Object.values(outsideDateGroups).map(group => group.total);
+            
+            // Calculate statistics from daily totals
             let minValue = 0;
             let maxValue = 0;
             let meanValue = 0;
             
-            if (allOutsideValues.length > 0) {
-                minValue = Math.min(...allOutsideValues);
-                maxValue = Math.max(...allOutsideValues);
-                const sum = allOutsideValues.reduce((a, b) => a + b, 0);
-                meanValue = sum / allOutsideValues.length;
+            if (dailyTotals.length > 0) {
+                minValue = Math.min(...dailyTotals);
+                maxValue = Math.max(...dailyTotals);
+                const sum = dailyTotals.reduce((a, b) => a + b, 0);
+                meanValue = sum / dailyTotals.length;
             }
             
             // Group inside data by date
@@ -2463,7 +2474,7 @@
                         let parts = [];
                         if (Array.isArray(item.Parts)) {
                             parts = item.Parts;
-                        } else if (typeof item.Parts === 'string') {
+} else if (typeof item.Parts === 'string') {
                             parts = item.Parts.split(',').map(p => p.trim());
                         }
                         partFound = parts.some(part => part && filterValues.part.includes(part.trim()));
