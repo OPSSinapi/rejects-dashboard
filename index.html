@@ -1230,26 +1230,54 @@
     document.addEventListener('DOMContentLoaded', initDashboard);
 
     // Initialize the dashboard
+// Initialize the dashboard when the page loads
+document.addEventListener('DOMContentLoaded', initDashboard);
+
 async function initDashboard() {
+    // Show loading state immediately
+    updateLoadingState(true, "Initializing dashboard...");
+    
     try {
+        // Load index data first
         const indexResponse = await fetch('data/index.json');
         if (!indexResponse.ok) throw new Error('Failed to load index data');
-        const indexData = await indexResponse.json();
         
-        // Set default dates based on last 5 reject dates
-        await findLastFiveRejectsDateRange(indexData.availablePeriods);
+        // Set global indexData variable
+        indexData = await indexResponse.json();
+        console.log("Index data loaded successfully");
         
-        // Load data and render visuals for the default date range
+        // Try to set default dates based on last 5 reject dates
+        let datesSet = await findLastFiveRejectsDateRange(indexData.availablePeriods);
+        
+        // If no dates could be set, use a fallback (last month)
+        if (!datesSet) {
+            console.log("Using fallback date range (last month)");
+            const today = new Date();
+            const lastMonth = new Date(today);
+            lastMonth.setMonth(today.getMonth() - 1);
+            
+            filterElements.dateFrom.value = formatDateForInput(lastMonth);
+            filterElements.dateTo.value = formatDateForInput(today);
+        }
+        
+        // Load data for the selected date range
         await loadDataForDateRange();
+        
+        // Clear loading state
+        updateLoadingState(false);
+        
     } catch (error) {
         console.error("Dashboard initialization failed:", error);
+        updateLoadingState(false);
+        showDataLoadError("Failed to initialize dashboard: " + error.message);
     }
 }
 
+// Modify findLastFiveRejectsDateRange to return success/failure
 async function findLastFiveRejectsDateRange(availablePeriods) {
     if (!availablePeriods || availablePeriods.length === 0) {
         console.warn("No data periods available");
-        return;
+        return false;
     }
     
     // Sort periods chronologically and reverse to start with the most recent
@@ -1291,7 +1319,7 @@ async function findLastFiveRejectsDateRange(availablePeriods) {
     
     if (allDates.length === 0) {
         console.warn("No dates with rejects found");
-        return;
+        return false;
     }
     
     // Set "From" and "To" based on the range of the 5 dates
@@ -1302,7 +1330,9 @@ async function findLastFiveRejectsDateRange(availablePeriods) {
     filterElements.dateTo.value = formatDateForInput(toDate);
     
     console.log(`Set date range: ${formatDateForInput(fromDate)} to ${formatDateForInput(toDate)} based on ${allDates.length} reject dates`);
+    return true;
 }
+
 
     // Load initial data for the default date range
     async function loadInitialData() {
@@ -1387,10 +1417,17 @@ async function loadDataForDateRange() {
     updateLoadingState(true, "Loading data for selected date range...");
     
     try {
+        // Verify we have date values before proceeding
+        if (!filterElements.dateFrom.value || !filterElements.dateTo.value) {
+            throw new Error("Date range not properly set. Please select dates and try again.");
+        }
+        
         const fromDate = new Date(filterElements.dateFrom.value);
         const toDate = new Date(filterElements.dateTo.value);
         
-        if (!fromDate || !toDate) throw new Error("Please select a valid date range");
+        if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+            throw new Error("Invalid date format. Please check the date format and try again.");
+        }
         
         const monthsToLoad = getMonthsInRange(fromDate, toDate);
         if (monthsToLoad.length === 0) {
