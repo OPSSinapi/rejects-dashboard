@@ -1232,7 +1232,7 @@
     // Initialize the dashboard
 async function initDashboard() {
     try {
-        const indexResponse = await fetch('data/index.json');
+        const indexResponse = await fetch('RejectsIndex.json');
         if (!indexResponse.ok) throw new Error('Failed to load index data');
         const indexData = await indexResponse.json();
         
