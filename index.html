@@ -1474,80 +1474,86 @@ async function findLastFiveRejectsDateRange(availablePeriods) {
 
     // Load data for the selected date range
 async function loadDataForDateRange() {
+    console.log("Starting loadDataForDateRange()");
+    
+    // Check and prevent concurrent loading
     if (dataLoadingInProgress) {
-        console.log("Data loading already in progress, please wait...");
+        console.warn("Data loading already in progress. Aborting new load attempt.");
         return;
     }
     
-    updateLoadingState(true, "Loading data for selected date range...");
-    
     try {
-        // Verify we have date values before proceeding
-        if (!filterElements.dateFrom.value || !filterElements.dateTo.value) {
-            throw new Error("Date range not properly set. Please select dates and try again.");
-        }
+        dataLoadingInProgress = true;
+        updateLoadingState(true, "Loading data for selected date range...");
         
+        // Verify dates
         const fromDate = new Date(filterElements.dateFrom.value);
         const toDate = new Date(filterElements.dateTo.value);
         
         if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
-            throw new Error("Invalid date format. Please check the date format and try again.");
+            throw new Error("Invalid date format. Please check the date values.");
         }
         
+        // Get months to load
         const monthsToLoad = getMonthsInRange(fromDate, toDate);
+        console.log("Months to load:", monthsToLoad);
+        
         if (monthsToLoad.length === 0) {
-            console.warn("No data periods match the selected date range");
-            showDataLoadError("No data periods match the selected range.");
-            updateLoadingState(false);
-            return;
+            throw new Error("No data periods match the selected date range.");
         }
         
-        console.log(`Loading data for months: ${monthsToLoad.join(', ')}`);
-        
+        // Reset data arrays
         rejectData = [];
         let loadErrors = [];
         
-        // Sequential loading to avoid race conditions
+        // Attempt to load data for each month
         for (const month of monthsToLoad) {
-            if (!loadedMonths[month]) {
-                try {
-                    console.log(`Fetching data for ${month}...`);
-                    const monthResponse = await fetch(`data/${month}.json`);
-                    
-                    if (!monthResponse.ok) {
-                        console.warn(`Month data for ${month} not found: ${monthResponse.status}`);
-                        loadErrors.push(`${month}: HTTP ${monthResponse.status}`);
-                        continue;
-                    }
-                    
-                    const monthData = await monthResponse.json();
-                    if (!monthData.rejectData || !Array.isArray(monthData.rejectData)) {
-                        console.warn(`Invalid data format for ${month}`);
-                        loadErrors.push(`${month}: Invalid data format`);
-                        continue;
-                    }
-                    
-                    loadedMonths[month] = monthData.rejectData || [];
-                    console.log(`Loaded ${loadedMonths[month].length} records for ${month}`);
-                } catch (error) {
-                    console.error(`Error loading data for ${month}:`, error);
-                    loadErrors.push(`${month}: ${error.message}`);
+            try {
+                console.log(`Attempting to load data for month: ${month}`);
+                
+                // Check if data is already cached
+                if (loadedMonths[month]) {
+                    console.log(`Using cached data for ${month}`);
+                    rejectData = rejectData.concat(loadedMonths[month]);
                     continue;
                 }
-            } else {
-                console.log(`Using cached data for ${month}: ${loadedMonths[month].length} records`);
+                
+                // Fetch data
+                const response = await fetch(`data/${month}.json`);
+                
+                if (!response.ok) {
+                    console.warn(`Failed to fetch data for ${month}: HTTP ${response.status}`);
+                    loadErrors.push(`${month}: HTTP ${response.status}`);
+                    continue;
+                }
+                
+                const monthData = await response.json();
+                
+                if (!monthData.rejectData || !Array.isArray(monthData.rejectData)) {
+                    console.warn(`Invalid data format for ${month}`);
+                    loadErrors.push(`${month}: Invalid data format`);
+                    continue;
+                }
+                
+                // Cache and add data
+                loadedMonths[month] = monthData.rejectData;
+                rejectData = rejectData.concat(loadedMonths[month]);
+                
+                console.log(`Loaded ${loadedMonths[month].length} records for ${month}`);
+                
+            } catch (monthLoadError) {
+                console.error(`Error loading data for ${month}:`, monthLoadError);
+                loadErrors.push(`${month}: ${monthLoadError.message}`);
             }
-            
-            rejectData = rejectData.concat(loadedMonths[month]);
         }
         
+        // Check if any data was loaded
         if (rejectData.length === 0) {
-            if (loadErrors.length > 0) {
-                showDataLoadError(`Failed to load data: ${loadErrors.join(', ')}`);
-            } else {
-                showDataLoadError("No data found for the selected date range.");
-            }
-            updateLoadingState(false);
+            const errorMessage = loadErrors.length > 0 
+                ? `Failed to load data: ${loadErrors.join(', ')}` 
+                : "No data found for the selected date range.";
+            console.warn(errorMessage);
+            showDataLoadError(errorMessage);
             return;
         }
         
@@ -1557,33 +1563,41 @@ async function loadDataForDateRange() {
         dateFilteredData = rejectData.filter(item => {
             if (!item.ProductionDate) return false;
             const itemDate = new Date(item.ProductionDate);
-            return !isNaN(itemDate.getTime()) && itemDate >= fromDate && itemDate <= toDate;
+            return !isNaN(itemDate.getTime()) && 
+                   itemDate >= fromDate && 
+                   itemDate <= toDate;
         });
         
         console.log(`Records in date range: ${dateFilteredData.length}`);
         
         if (dateFilteredData.length === 0) {
             showDataLoadError("No rejects found within the selected date range.");
-            updateLoadingState(false);
             return;
         }
         
-        // Apply existing filters to the new date-filtered data
-        filteredData = [...dateFilteredData]; // Start with all date-filtered data
+        // Prepare all data for metrics and associations
+        allData = await loadAllAvailableMonthlyData();
+        
+        // Apply existing filters
+        filteredData = [...dateFilteredData];
         applyExistingFilters();
         
-        // Update filter options and visuals
+        // Update filters and dashboard
         calculateAvailableFilterOptions();
+        buildFilterAssociations();
         populateMultiSelectOptions();
+        updateActionDropdown();
+        
         prepareTrendChartData();
         updateDashboard();
         
-        console.log(`Completed loading: ${rejectData.length} total records, ${dateFilteredData.length} in date range, ${filteredData.length} after filters`);
+        console.log("Data loading completed successfully");
         
     } catch (error) {
-        console.error("Error loading data:", error);
-        showDataLoadError(`${error.message}`);
+        console.error("Comprehensive data loading error:", error);
+        showDataLoadError(error.message || "Unexpected error during data loading");
     } finally {
+        dataLoadingInProgress = false;
         updateLoadingState(false);
     }
 }
