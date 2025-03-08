@@ -1216,121 +1216,59 @@
     }
 
     // Show data loading error
-// Show data loading error
-function showDataLoadError(message) {
-    console.error("Data load error:", message);
-    
-    // Clear loading state
-    updateLoadingState(false);
-    
-    // Show error message in all chart containers
-    Object.values(chartContainers).forEach(container => {
-        if (container) {
-            container.innerHTML = `
-                <div class="no-data" style="color: #e74c3c; text-align: center; padding: 20px;">
-                    <div style="font-weight: bold; margin-bottom: 5px;">Error Loading Data</div>
-                    <div>${message}</div>
-                    <div style="margin-top: 10px; font-style: italic; font-size: 0.8em;">
-                        Try refreshing the page or selecting a different date range.
-                    </div>
-                </div>
-            `;
-        }
-    });
-    
-    // Also update the top 10 table
-    if (top10Elements && top10Elements.tableBody) {
-        const colSpan = 7; // Use maximum possible columns
-        top10Elements.tableBody.innerHTML = `
-            <tr>
-                <td colspan="${colSpan}" style="color: #e74c3c; text-align: center; padding: 20px;">
-                    <div style="font-weight: bold;">Error Loading Data</div>
-                    <div>${message}</div>
-                </td>
-            </tr>
-        `;
+    function showDataLoadError(message) {
+        Object.values(chartContainers).forEach(container => {
+            if (container) {
+                container.innerHTML = `
+                    <div class="no-data">Error: ${message}</div>
+                `;
+            }
+        });
     }
-    
-    // Update metric elements to show zeros
-    if (metricElements) {
-        if (metricElements.totalCost) metricElements.totalCost.textContent = 'R0.00';
-        if (metricElements.scrapPercent) metricElements.scrapPercent.textContent = '0%';
-        if (metricElements.rtsPercent) metricElements.rtsPercent.textContent = '0%';
-        if (metricElements.localPercent) metricElements.localPercent.textContent = '0%';
-        if (metricElements.singlePartsCount) metricElements.singlePartsCount.textContent = '0';
-        if (metricElements.assembliesCount) metricElements.assembliesCount.textContent = '0';
-    }
-}
 
     // Initialize the dashboard when the page loads
     document.addEventListener('DOMContentLoaded', initDashboard);
 
     // Initialize the dashboard
-// Initialize the dashboard when the page loads
-document.addEventListener('DOMContentLoaded', initDashboard);
-
 async function initDashboard() {
-    // Show loading state immediately
-    updateLoadingState(true, "Initializing dashboard...");
-    
     try {
-        // Load index data first
-const indexResponse = await fetch('RejectsIndex.json');
+        const indexResponse = await fetch('data/index.json');
         if (!indexResponse.ok) throw new Error('Failed to load index data');
+        const indexData = await indexResponse.json();
         
-        // Set global indexData variable
-        indexData = await indexResponse.json();
-        console.log("Index data loaded successfully");
+        // Set default dates based on last 5 reject dates
+        await findLastFiveRejectsDateRange(indexData.availablePeriods);
         
-        // Try to set default dates based on last 5 reject dates
-        let datesSet = await findLastFiveRejectsDateRange(indexData.availablePeriods);
-        
-        // If no dates could be set, use a fallback (last month)
-        if (!datesSet) {
-            console.log("Using fallback date range (last month)");
-            const today = new Date();
-            const lastMonth = new Date(today);
-            lastMonth.setMonth(today.getMonth() - 1);
-            
-            filterElements.dateFrom.value = formatDateForInput(lastMonth);
-            filterElements.dateTo.value = formatDateForInput(today);
-        }
-        
-        // Load data for the selected date range
+        // Load data and render visuals for the default date range
         await loadDataForDateRange();
-        
-        // Clear loading state
-        updateLoadingState(false);
-        
     } catch (error) {
         console.error("Dashboard initialization failed:", error);
-        updateLoadingState(false);
-        showDataLoadError("Failed to initialize dashboard: " + error.message);
     }
 }
 
-// Modify findLastFiveRejectsDateRange to return success/failure
 async function findLastFiveRejectsDateRange(availablePeriods) {
     if (!availablePeriods || availablePeriods.length === 0) {
         console.warn("No data periods available");
-        return false;
+        return;
     }
-    
-    console.log("Finding date range from available periods:", availablePeriods);
     
     // Sort periods chronologically and reverse to start with the most recent
     const recentPeriods = [...availablePeriods].sort().reverse();
     let allDates = [];
     
-    // Try using the most recent month first
-    const latestPeriod = recentPeriods[0];
-    console.log(`Attempting to load most recent month: ${latestPeriod}`);
-    
-    try {
-        // First check if we have this month's data in cache
-        if (loadedMonths[latestPeriod]) {
-            console.log(`Using cached data for ${latestPeriod}`);
-            const rejectsData = loadedMonths[latestPeriod];
+    for (const period of recentPeriods) {
+        try {
+            const monthResponse = await fetch(`data/${period}.json`);
+            if (!monthResponse.ok) {
+                console.warn(`Month data for ${period} not found: ${monthResponse.status}`);
+                continue;
+            }
+            
+            const monthData = await monthResponse.json();
+            const rejectsData = monthData.rejectData || [];
+            
+            // Cache the data for later use
+            loadedMonths[period] = rejectsData;
             
             // Get unique dates with rejects from this month
             const datesWithRejects = [...new Set(rejectsData
@@ -1338,55 +1276,25 @@ async function findLastFiveRejectsDateRange(availablePeriods) {
                 .map(item => item.ProductionDate)
             )];
             
-            allDates = [...datesWithRejects];
-        } else {
-            // Load from server
-            console.log(`Fetching data for ${latestPeriod}...`);
-            const monthResponse = await fetch(`data/${latestPeriod}.json`);
+            allDates = [...allDates, ...datesWithRejects];
             
-            if (!monthResponse.ok) {
-                console.warn(`Month data for ${latestPeriod} not found: ${monthResponse.status}`);
-            } else {
-                const monthData = await monthResponse.json();
-                const rejectsData = monthData.rejectData || [];
-                
-                // Cache the data for later use
-                loadedMonths[latestPeriod] = rejectsData;
-                
-                // Get unique dates with rejects from this month
-                const datesWithRejects = [...new Set(rejectsData
-                    .filter(item => item.ProductionDate)
-                    .map(item => item.ProductionDate)
-                )];
-                
-                allDates = [...datesWithRejects];
-            }
+            // Sort by date (descending) and take the 5 most recent unique dates
+            allDates.sort((a, b) => new Date(b) - new Date(a));
+            allDates = [...new Set(allDates)].slice(0, 5);
+            
+            // Stop if we have at least 5 dates
+            if (allDates.length >= 5) break;
+        } catch (error) {
+            console.warn(`Error loading data for ${period}:`, error);
         }
-        
-        // Sort by date (descending) and take up to 5 dates
-        allDates.sort((a, b) => new Date(b) - new Date(a));
-        allDates = [...new Set(allDates)].slice(0, 5);
-        
-    } catch (error) {
-        console.warn(`Error finding dates: ${error.message}`);
     }
     
     if (allDates.length === 0) {
-        console.warn("No dates with rejects found, using fallback date range");
-        
-        // Fallback: Use the current month range
-        const now = new Date();
-        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-        
-        filterElements.dateFrom.value = formatDateForInput(firstDay);
-        filterElements.dateTo.value = formatDateForInput(lastDay);
-        
-        console.log(`Set fallback date range: ${formatDateForInput(firstDay)} to ${formatDateForInput(lastDay)}`);
-        return true;
+        console.warn("No dates with rejects found");
+        return;
     }
     
-    // Set "From" and "To" based on the range of dates found
+    // Set "From" and "To" based on the range of the 5 dates
     const fromDate = new Date(Math.min(...allDates.map(d => new Date(d))));
     const toDate = new Date(Math.max(...allDates.map(d => new Date(d))));
     
@@ -1394,10 +1302,7 @@ async function findLastFiveRejectsDateRange(availablePeriods) {
     filterElements.dateTo.value = formatDateForInput(toDate);
     
     console.log(`Set date range: ${formatDateForInput(fromDate)} to ${formatDateForInput(toDate)} based on ${allDates.length} reject dates`);
-    return true;
 }
-
-
 
     // Load initial data for the default date range
     async function loadInitialData() {
@@ -1474,130 +1379,69 @@ async function findLastFiveRejectsDateRange(availablePeriods) {
 
     // Load data for the selected date range
 async function loadDataForDateRange() {
-    console.log("Starting loadDataForDateRange()");
-    
-    // Check and prevent concurrent loading
     if (dataLoadingInProgress) {
-        console.warn("Data loading already in progress. Aborting new load attempt.");
+        console.log("Data loading already in progress, please wait...");
         return;
     }
     
+    updateLoadingState(true, "Loading data for selected date range...");
+    
     try {
-        dataLoadingInProgress = true;
-        updateLoadingState(true, "Loading data for selected date range...");
-        
-        // Verify dates
         const fromDate = new Date(filterElements.dateFrom.value);
         const toDate = new Date(filterElements.dateTo.value);
         
-        if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
-            throw new Error("Invalid date format. Please check the date values.");
-        }
+        if (!fromDate || !toDate) throw new Error("Please select a valid date range");
         
-        // Get months to load
         const monthsToLoad = getMonthsInRange(fromDate, toDate);
-        console.log("Months to load:", monthsToLoad);
-        
         if (monthsToLoad.length === 0) {
-            throw new Error("No data periods match the selected date range.");
-        }
-        
-        // Reset data arrays
-        rejectData = [];
-        let loadErrors = [];
-        
-        // Attempt to load data for each month
-        for (const month of monthsToLoad) {
-            try {
-                console.log(`Attempting to load data for month: ${month}`);
-                
-                // Check if data is already cached
-                if (loadedMonths[month]) {
-                    console.log(`Using cached data for ${month}`);
-                    rejectData = rejectData.concat(loadedMonths[month]);
-                    continue;
-                }
-                
-                // Fetch data
-                const response = await fetch(`data/${month}.json`);
-                
-                if (!response.ok) {
-                    console.warn(`Failed to fetch data for ${month}: HTTP ${response.status}`);
-                    loadErrors.push(`${month}: HTTP ${response.status}`);
-                    continue;
-                }
-                
-                const monthData = await response.json();
-                
-                if (!monthData.rejectData || !Array.isArray(monthData.rejectData)) {
-                    console.warn(`Invalid data format for ${month}`);
-                    loadErrors.push(`${month}: Invalid data format`);
-                    continue;
-                }
-                
-                // Cache and add data
-                loadedMonths[month] = monthData.rejectData;
-                rejectData = rejectData.concat(loadedMonths[month]);
-                
-                console.log(`Loaded ${loadedMonths[month].length} records for ${month}`);
-                
-            } catch (monthLoadError) {
-                console.error(`Error loading data for ${month}:`, monthLoadError);
-                loadErrors.push(`${month}: ${monthLoadError.message}`);
-            }
-        }
-        
-        // Check if any data was loaded
-        if (rejectData.length === 0) {
-            const errorMessage = loadErrors.length > 0 
-                ? `Failed to load data: ${loadErrors.join(', ')}` 
-                : "No data found for the selected date range.";
-            console.warn(errorMessage);
-            showDataLoadError(errorMessage);
+            console.warn("No data periods match the selected date range");
+            showDataLoadError("No data periods match the selected range.");
             return;
         }
         
-        console.log(`Total records loaded: ${rejectData.length}`);
+        rejectData = [];
+        for (const month of monthsToLoad) {
+            if (!loadedMonths[month]) {
+                const monthResponse = await fetch(`data/${month}.json`);
+                if (!monthResponse.ok) {
+                    console.warn(`Month data for ${month} not found: ${monthResponse.status}`);
+                    continue;
+                }
+                loadedMonths[month] = (await monthResponse.json()).rejectData || [];
+            }
+            rejectData = rejectData.concat(loadedMonths[month]);
+        }
+        
+        if (rejectData.length === 0) {
+            showDataLoadError("No data found for the selected date range.");
+            return;
+        }
         
         // Filter by date range
         dateFilteredData = rejectData.filter(item => {
-            if (!item.ProductionDate) return false;
             const itemDate = new Date(item.ProductionDate);
-            return !isNaN(itemDate.getTime()) && 
-                   itemDate >= fromDate && 
-                   itemDate <= toDate;
+            return itemDate >= fromDate && itemDate <= toDate;
         });
-        
-        console.log(`Records in date range: ${dateFilteredData.length}`);
         
         if (dateFilteredData.length === 0) {
             showDataLoadError("No rejects found within the selected date range.");
             return;
         }
         
-        // Prepare all data for metrics and associations
-        allData = await loadAllAvailableMonthlyData();
-        
-        // Apply existing filters
-        filteredData = [...dateFilteredData];
+        // Apply existing filters to the new date-filtered data
         applyExistingFilters();
         
-        // Update filters and dashboard
+        // Update filter options and visuals
         calculateAvailableFilterOptions();
-        buildFilterAssociations();
         populateMultiSelectOptions();
-        updateActionDropdown();
-        
-        prepareTrendChartData();
         updateDashboard();
         
-        console.log("Data loading completed successfully");
+        console.log(`Loaded ${rejectData.length} records, ${dateFilteredData.length} in date range, ${filteredData.length} after filters`);
         
     } catch (error) {
-        console.error("Comprehensive data loading error:", error);
-        showDataLoadError(error.message || "Unexpected error during data loading");
+        console.error("Error loading data:", error);
+        showDataLoadError(error.message);
     } finally {
-        dataLoadingInProgress = false;
         updateLoadingState(false);
     }
 }
@@ -2614,115 +2458,87 @@ function updateMetrics() {
     metricElements.assembliesCount.textContent = assembliesCount;
 }
 // Update Top 10 rejects table
-// Update Top 10 rejects table
-function updateTop10Table() {
-    top10Elements.tableBody.innerHTML = '';
-    
-    // Check if we should display batch/supplier columns
-    if (selectedAction === 'RTS' || selectedAction === 'Local') {
-        top10Elements.batchHeader.style.display = '';
-        top10Elements.supplierHeader.style.display = '';
-    } else {
-        top10Elements.batchHeader.style.display = 'none';
-        top10Elements.supplierHeader.style.display = 'none';
-    }
-    
-    // Apply filters to data
-    let dataToUse = filteredData;
-    if (selectedAction !== 'All') {
-        dataToUse = dataToUse.filter(item => item.ActionSelection === selectedAction);
-    }
-    if (selectedRejectReason !== null) {
-        dataToUse = dataToUse.filter(item => item.RejectReason === selectedRejectReason);
-    }
-    if (selectedStation !== null) {
-        dataToUse = dataToUse.filter(item => item.Station === selectedStation);
-    }
-    
-    // Show "no data" message if needed
-    if (dataToUse.length === 0) {
-        const colSpan = selectedAction === 'RTS' || selectedAction === 'Local' ? 7 : 5;
-        top10Elements.tableBody.innerHTML = `
-            <tr>
-                <td colspan="${colSpan}" class="no-data" style="text-align: center; padding: 20px;">
-                    No data available for the selected filters
-                </td>
-            </tr>`;
-        return;
-    }
-    
-    // Group data by station and reject reason
-    const groupedData = {};
-    dataToUse.forEach(item => {
-        const key = `${item.Station || 'Unknown'}-${item.RejectReason || 'Unknown'}`;
-        if (!groupedData[key]) {
-            let parts = [];
-            if (Array.isArray(item.Parts)) {
-                parts = item.Parts.filter(p => p);
-            } else if (typeof item.Parts === 'string') {
-                parts = item.Parts.split(',').map(p => p.trim()).filter(p => p);
-            }
-            groupedData[key] = {
-                station: item.Station || 'Unknown',
-                rejectReason: item.RejectReason || 'Unknown',
-                batchNumber: item.BatchNumber,
-                supplier: item.PartSupplier || 'Unknown',
-                parts: new Set(parts),
-                items: [item],
-                qty: 0,
-                cost: 0
-            };
-        } else {
-            groupedData[key].items.push(item);
-            let parts = [];
-            if (Array.isArray(item.Parts)) {
-                parts = item.Parts.filter(p => p);
-            } else if (typeof item.Parts === 'string') {
-                parts = item.Parts.split(',').map(p => p.trim()).filter(p => p);
-            }
-            parts.forEach(part => {
-                if (part) groupedData[key].parts.add(part);
-            });
-        }
-        groupedData[key].qty += (item.QTY || 0);
-        groupedData[key].cost += (item.Cost || 0);
-    });
-    
-    // Sort and limit to top 10
-    let top10Data = Object.values(groupedData);
-    if (sortTop10By === 'qty') {
-        top10Data.sort((a, b) => b.qty - a.qty);
-    } else {
-        top10Data.sort((a, b) => b.cost - a.cost);
-    }
-    top10Data = top10Data.slice(0, 10);
-    
-    // Create table rows
-    top10Data.forEach(item => {
-        const row = document.createElement('tr');
-        const partsString = Array.from(item.parts).join(', ');
-        
-        // Create cells
-        let cells = `<td title="${item.station}">${item.station}</td>
-                    <td class="truncated" title="${partsString}">${partsString}</td>`;
-        
-        // Add batch/supplier columns if applicable
+    function updateTop10Table() {
+        top10Elements.tableBody.innerHTML = '';
         if (selectedAction === 'RTS' || selectedAction === 'Local') {
-            const batchNumber = item.batchNumber !== undefined && item.batchNumber !== null 
-                ? item.batchNumber 
-                : '';
-            cells += `<td>${batchNumber}</td><td>${item.supplier}</td>`;
+            top10Elements.batchHeader.style.display = '';
+            top10Elements.supplierHeader.style.display = '';
+        } else {
+            top10Elements.batchHeader.style.display = 'none';
+            top10Elements.supplierHeader.style.display = 'none';
         }
-        
-        // Add remaining cells
-        cells += `<td title="${item.rejectReason}">${item.rejectReason}</td>
-                <td>${item.qty}</td>
-                <td>R${item.cost.toFixed(2)}</td>`;
-        
-        row.innerHTML = cells;
-        top10Elements.tableBody.appendChild(row);
-    });
-}
+        let dataToUse = filteredData;
+        if (selectedAction !== 'All') {
+            dataToUse = dataToUse.filter(item => item.ActionSelection === selectedAction);
+        }
+        if (selectedRejectReason !== null) {
+            dataToUse = dataToUse.filter(item => item.RejectReason === selectedRejectReason);
+        }
+        if (selectedStation !== null) {
+            dataToUse = dataToUse.filter(item => item.Station === selectedStation);
+        }
+        if (dataToUse.length === 0) {
+            const row = document.createElement('tr');
+            const colSpan = selectedAction === 'RTS' || selectedAction === 'Local' ? 7 : 5;
+            row.innerHTML = `<td colspan="${colSpan}" class="no-data">No data available</td>`;
+            top10Elements.tableBody.appendChild(row);
+            return;
+        }
+        const groupedData = {};
+        dataToUse.forEach(item => {
+            const key = `${item.Station || 'Unknown'}-${item.RejectReason || 'Unknown'}`;
+            if (!groupedData[key]) {
+                let parts = [];
+                if (Array.isArray(item.Parts)) {
+                    parts = item.Parts.filter(p => p);
+                } else if (typeof item.Parts === 'string') {
+                    parts = item.Parts.split(',').map(p => p.trim()).filter(p => p);
+                }
+                groupedData[key] = {
+                    station: item.Station || 'Unknown',
+                    rejectReason: item.RejectReason || 'Unknown',
+                    batchNumber: item.BatchNumber,
+                    supplier: item.Supplier || 'Unknown',
+                    parts: new Set(parts),
+                    items: [item],
+                    qty: 0,
+                    cost: 0
+                };
+            } else {
+                groupedData[key].items.push(item);
+                let parts = [];
+                if (Array.isArray(item.Parts)) {
+                    parts = item.Parts.filter(p => p);
+                } else if (typeof item.Parts === 'string') {
+                    parts = item.Parts.split(',').map(p => p.trim()).filter(p => p);
+                }
+                parts.forEach(part => {
+                    if (part) groupedData[key].parts.add(part);
+                });
+            }
+            groupedData[key].qty += (item.QTY || 0);
+            groupedData[key].cost += (item.Cost || 0);
+        });
+        let top10Data = Object.values(groupedData);
+        if (sortTop10By === 'qty') {
+            top10Data.sort((a, b) => b.qty - a.qty);
+        } else {
+            top10Data.sort((a, b) => b.cost - a.cost);
+        }
+        top10Data = top10Data.slice(0, 10);
+        top10Data.forEach(item => {
+            const row = document.createElement('tr');
+            const partsString = Array.from(item.parts).join(', ');
+            let cells = `<td title="${item.station}">${item.station}</td><td class="truncated" title="${partsString}">${partsString}</td>`;
+            if (selectedAction === 'RTS' || selectedAction === 'Local') {
+                const batchNumber = item.batchNumber !== undefined && item.batchNumber !== null ? item.batchNumber : '';
+                cells += `<td>${batchNumber}</td><td>${item.supplier}</td>`;
+            }
+            cells += `<td title="${item.rejectReason}">${item.rejectReason}</td><td>${item.qty}</td><td>R${item.cost.toFixed(2)}</td>`;
+            row.innerHTML = cells;
+            top10Elements.tableBody.appendChild(row);
+        });
+    }
 
     // Create daily trend chart with improved legend placement
     function createDailyTrendChart() {
