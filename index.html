@@ -1043,7 +1043,7 @@
                 </div>
 <div class="right-panel">
                 <div class="chart-card">
-                    <h2 class="card-title">Reject Reasons Distribution (Top 3)</h2>
+                  <h2 class="card-title">Top 3 Reject Reasons</h2>
                     <div id="reasons-chart" class="card-content">
                         <div class="chart-area">
                             <div class="loading">
@@ -1055,7 +1055,7 @@
                 </div>
                 
                 <div class="chart-card">
-                    <h2 class="card-title">Top Problem Parts (Top 3)</h2>
+                <h2 class="card-title">Top 3 Rejected Parts</h2>
                     <div id="parts-chart" class="card-content">
                         <div class="chart-area">
                             <div class="loading">
@@ -1067,7 +1067,7 @@
                 </div>
                 
                 <div class="chart-card">
-                    <h2 class="card-title">Cost by Station (Top 3)</h2>
+                 <h2 class="card-title" id="station-chart-title">Top 3 Station By Reject <span id="station-metric-type">Quantity</span></h2>
                     <div id="station-chart" class="card-content">
                         <div class="chart-area">
                             <div class="loading">
@@ -1174,21 +1174,22 @@
         station: document.querySelector('#station-chart .chart-area')
     };
 
-    const top10Elements = {
-        tableBody: document.getElementById('top10-table-body'),
-        sortByQty: document.getElementById('sort-by-qty'),
-        sortByCost: document.getElementById('sort-by-cost'),
-        actionDropdown: document.getElementById('action-dropdown'),
-        actionDropdownContent: document.getElementById('action-dropdown-content'),
-        currentAction: document.getElementById('current-action'),
-        rejectReasonHeader: document.getElementById('reject-reason-header'),
-        stationHeader: document.getElementById('station-header'),
-        rejectReasonMenu: document.getElementById('reject-reason-menu'),
-        stationMenu: document.getElementById('station-menu'),
-        partsHeader: document.getElementById('parts-header'),
-        batchHeader: document.getElementById('batch-header'),
-        supplierHeader: document.getElementById('supplier-header')
-    };
+const top10Elements = {
+    tableBody: document.getElementById('top10-table-body'),
+    sortByQty: document.getElementById('sort-by-qty'),
+    sortByCost: document.getElementById('sort-by-cost'),
+    actionDropdown: document.getElementById('action-dropdown'),
+    actionDropdownContent: document.getElementById('action-dropdown-content'),
+    currentAction: document.getElementById('current-action'),
+    rejectReasonHeader: document.getElementById('reject-reason-header'),
+    stationHeader: document.getElementById('station-header'),
+    rejectReasonMenu: document.getElementById('reject-reason-menu'),
+    stationMenu: document.getElementById('station-menu'),
+    partsHeader: document.getElementById('parts-header'),
+    batchHeader: document.getElementById('batch-header'),
+    supplierHeader: document.getElementById('supplier-header'),
+    stationChartTitle: document.getElementById('station-metric-type')
+};
 
     // Color schemes
     const colors = [
@@ -1264,21 +1265,29 @@ async function initDashboard() {
         await loadDataForDateRange();
 
         // Top 10 sort toggle (rest of your existing code remains here)
-        top10Elements.sortByQty.addEventListener('click', () => {
-            sortTop10By = 'qty';
-            top10Elements.sortByQty.classList.add('active');
-            top10Elements.sortByCost.classList.remove('active');
-            prepareTrendChartData();
-            updateDashboard();
-        });
+top10Elements.sortByQty.addEventListener('click', () => {
+    sortTop10By = 'qty';
+    top10Elements.sortByQty.classList.add('active');
+    top10Elements.sortByCost.classList.remove('active');
+    // Update station chart title to show Quantity
+    if (top10Elements.stationChartTitle) {
+        top10Elements.stationChartTitle.textContent = 'Quantity';
+    }
+    prepareTrendChartData();
+    updateDashboard();
+});
 
-        top10Elements.sortByCost.addEventListener('click', () => {
-            sortTop10By = 'cost';
-            top10Elements.sortByCost.classList.add('active');
-            top10Elements.sortByQty.classList.remove('active');
-            prepareTrendChartData();
-            updateDashboard();
-        });
+top10Elements.sortByCost.addEventListener('click', () => {
+    sortTop10By = 'cost';
+    top10Elements.sortByCost.classList.add('active');
+    top10Elements.sortByQty.classList.remove('active');
+    // Update station chart title to show Cost
+    if (top10Elements.stationChartTitle) {
+        top10Elements.stationChartTitle.textContent = 'Cost';
+    }
+    prepareTrendChartData();
+    updateDashboard();
+});
 
         // Remaining event listeners (close popup menus, resize, etc.) remain unchanged
 
@@ -2981,8 +2990,8 @@ function updateMetrics() {
 
     // Create reject reasons chart
     function createRejectReasonsChart() {
-        const container = chartContainers.reasons;
-        container.innerHTML = '';
+    const container = chartContainers.reasons;
+    container.innerHTML = '';
         
         let dataToUse = filteredData;
         if (selectedAction !== 'All') {
@@ -3023,7 +3032,7 @@ function updateMetrics() {
             return;
         }
         
-        const margin = { top: 10, right: 80, bottom: 20, left: 120 };
+    const margin = { top: 10, right: 80, bottom: 20, left: 140 };
         const width = container.clientWidth - margin.left - margin.right;
         const height = container.clientHeight - margin.top - margin.bottom;
         
@@ -3075,6 +3084,41 @@ function updateMetrics() {
             const maxLength = 25;
             reasonText.textContent = reason.length > maxLength ? reason.substring(0, maxLength) + '...' : reason;
             g.appendChild(reasonText);
+        // Add tooltip interaction
+        bar.setAttribute('data-reason', reason);
+        bar.setAttribute('data-count', reasonCounts[reason].count);
+        bar.setAttribute('data-cost', reasonCounts[reason].cost.toFixed(2));
+        
+        bar.addEventListener('mouseover', function(e) {
+            const tooltip = document.createElement('div');
+            tooltip.className = 'tooltip';
+            tooltip.innerHTML = `
+                <div><strong>Reason:</strong> ${this.getAttribute('data-reason')}</div>
+                <div><strong>Quantity:</strong> ${this.getAttribute('data-count')}</div>
+                <div><strong>Cost:</strong> R${this.getAttribute('data-cost')}</div>
+            `;
+            document.body.appendChild(tooltip);
+            
+            // Position the tooltip
+            tooltip.style.left = `${e.pageX + 10}px`;
+            tooltip.style.top = `${e.pageY - 40}px`;
+        });
+        
+        bar.addEventListener('mousemove', function(e) {
+            const tooltip = document.querySelector('.tooltip');
+            if (tooltip) {
+                tooltip.style.left = `${e.pageX + 10}px`;
+                tooltip.style.top = `${e.pageY - 40}px`;
+            }
+        });
+        
+        bar.addEventListener('mouseout', function() {
+            const tooltip = document.querySelector('.tooltip');
+            if (tooltip) {
+                tooltip.remove();
+            }
+        });
+            
         });
     }
 
@@ -3132,7 +3176,7 @@ function updateMetrics() {
             return;
         }
         
-        const margin = { top: 10, right: 20, bottom: 50, left: 120 };
+    const margin = { top: 10, right: 20, bottom: 50, left: 140 };
         const width = container.clientWidth - margin.left - margin.right;
         const height = container.clientHeight - margin.top - margin.bottom;
         
@@ -3183,6 +3227,45 @@ const y = index * (barHeight + 15) + 10;
             const maxLength = 20;
             partText.textContent = part.length > maxLength ? part.substring(0, maxLength) + '...' : part;
             g.appendChild(partText);
+            // Add tooltip to the bars
+    topParts.forEach((part, index) => {
+        // ... existing bar creation code ...
+        
+        // Add tooltip interaction
+        bar.setAttribute('data-part', part);
+        bar.setAttribute('data-count', partCounts[part].count);
+        bar.setAttribute('data-cost', partCounts[part].cost.toFixed(2));
+        
+        bar.addEventListener('mouseover', function(e) {
+            const tooltip = document.createElement('div');
+            tooltip.className = 'tooltip';
+            tooltip.innerHTML = `
+                <div><strong>Part:</strong> ${this.getAttribute('data-part')}</div>
+                <div><strong>Quantity:</strong> ${this.getAttribute('data-count')}</div>
+                <div><strong>Cost:</strong> R${this.getAttribute('data-cost')}</div>
+            `;
+            document.body.appendChild(tooltip);
+            
+            // Position the tooltip
+            tooltip.style.left = `${e.pageX + 10}px`;
+            tooltip.style.top = `${e.pageY - 40}px`;
+        });
+        
+        bar.addEventListener('mousemove', function(e) {
+            const tooltip = document.querySelector('.tooltip');
+            if (tooltip) {
+                tooltip.style.left = `${e.pageX + 10}px`;
+                tooltip.style.top = `${e.pageY - 40}px`;
+            }
+        });
+        
+        bar.addEventListener('mouseout', function() {
+            const tooltip = document.querySelector('.tooltip');
+            if (tooltip) {
+                tooltip.remove();
+            }
+        });
+        
         });
     }
 
@@ -3232,7 +3315,7 @@ const y = index * (barHeight + 15) + 10;
             return;
         }
         
-        const margin = { top: 10, right: 20, bottom: 50, left: 120 };
+    const margin = { top: 10, right: 20, bottom: 50, left: 140 };
         const width = container.clientWidth - margin.left - margin.right;
         const height = container.clientHeight - margin.top - margin.bottom;
         
@@ -3284,6 +3367,46 @@ const y = index * (barHeight + 15) + 10;
             const maxLength = 20;
             stationText.textContent = station.length > maxLength ? station.substring(0, maxLength) + '...' : station;
             g.appendChild(stationText);
+
+                // Add tooltip to the bars
+    topStations.forEach((station, index) => {
+        // ... existing bar creation code ...
+        
+        // Add tooltip interaction
+        bar.setAttribute('data-station', station);
+        bar.setAttribute('data-count', stationCounts[station].count);
+        bar.setAttribute('data-cost', stationCounts[station].cost.toFixed(2));
+        
+        bar.addEventListener('mouseover', function(e) {
+            const tooltip = document.createElement('div');
+            tooltip.className = 'tooltip';
+            tooltip.innerHTML = `
+                <div><strong>Station:</strong> ${this.getAttribute('data-station')}</div>
+                <div><strong>Quantity:</strong> ${this.getAttribute('data-count')}</div>
+                <div><strong>Cost:</strong> R${this.getAttribute('data-cost')}</div>
+            `;
+            document.body.appendChild(tooltip);
+            
+            // Position the tooltip
+            tooltip.style.left = `${e.pageX + 10}px`;
+            tooltip.style.top = `${e.pageY - 40}px`;
+        });
+        
+        bar.addEventListener('mousemove', function(e) {
+            const tooltip = document.querySelector('.tooltip');
+            if (tooltip) {
+                tooltip.style.left = `${e.pageX + 10}px`;
+                tooltip.style.top = `${e.pageY - 40}px`;
+            }
+        });
+        
+        bar.addEventListener('mouseout', function() {
+            const tooltip = document.querySelector('.tooltip');
+            if (tooltip) {
+                tooltip.remove();
+            }
+        });
+
         });
     }
 
