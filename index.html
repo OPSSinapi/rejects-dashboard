@@ -2988,7 +2988,7 @@ function updateMetrics() {
         g.appendChild(pointsGroup);
     }
 
-    // Create reject reasons chart
+// Create reject reasons chart with enhanced tooltips
 function createRejectReasonsChart() {
     const container = chartContainers.reasons;
     container.innerHTML = '';
@@ -3009,14 +3009,26 @@ function createRejectReasonsChart() {
         return;
     }
     
+    // Group data by reason and collect associated info for tooltips
     const reasonCounts = {};
     dataToUse.forEach(item => {
         const reason = item.RejectReason || 'Unknown';
         if (!reasonCounts[reason]) {
-            reasonCounts[reason] = { count: 0, cost: 0 };
+            reasonCounts[reason] = { 
+                count: 0, 
+                cost: 0,
+                products: new Set(),
+                variants: new Set(),
+                stations: new Set() 
+            };
         }
         reasonCounts[reason].count += (item.QTY || 0);
         reasonCounts[reason].cost += (item.Cost || 0);
+        
+        // Collect associated metadata for tooltips
+        if (item.Product) reasonCounts[reason].products.add(item.Product);
+        if (item.Variant) reasonCounts[reason].variants.add(item.Variant);
+        if (item.Station) reasonCounts[reason].stations.add(item.Station);
     });
     
     const sortedReasons = Object.keys(reasonCounts).sort((a, b) => 
@@ -3064,18 +3076,22 @@ function createRejectReasonsChart() {
         bar.setAttribute('height', barHeight);
         bar.setAttribute('fill', colors[index % colors.length]);
         
-        // Add tooltip interaction
-        bar.setAttribute('data-reason', reason);
-        bar.setAttribute('data-count', reasonCounts[reason].count);
-        bar.setAttribute('data-cost', reasonCounts[reason].cost.toFixed(2));
+        // Format tooltip information
+        const products = Array.from(reasonCounts[reason].products).join(', ');
+        const variants = Array.from(reasonCounts[reason].variants).join(', ');
+        const stations = Array.from(reasonCounts[reason].stations).join(', ');
         
+        // Add tooltip interaction with enhanced information
         bar.addEventListener('mouseover', function(e) {
             const tooltip = document.createElement('div');
             tooltip.className = 'tooltip';
             tooltip.innerHTML = `
-                <div><strong>Reason:</strong> ${this.getAttribute('data-reason')}</div>
-                <div><strong>Quantity:</strong> ${this.getAttribute('data-count')}</div>
-                <div><strong>Cost:</strong> R${this.getAttribute('data-cost')}</div>
+                <div><strong>Reason:</strong> ${reason}</div>
+                <div><strong>Quantity:</strong> ${reasonCounts[reason].count}</div>
+                <div><strong>Cost:</strong> R${reasonCounts[reason].cost.toFixed(2)}</div>
+                <div><strong>Product:</strong> ${products || 'N/A'}</div>
+                <div><strong>Variant:</strong> ${variants || 'N/A'}</div>
+                <div><strong>Station:</strong> ${stations || 'N/A'}</div>
             `;
             document.body.appendChild(tooltip);
             
@@ -3123,7 +3139,7 @@ function createRejectReasonsChart() {
     });
 }
 
-// Create top problems chart
+// Create top problems chart with enhanced tooltips
 function createTopProblemsChart() {
     const container = chartContainers.parts;
     container.innerHTML = '';
@@ -3144,7 +3160,7 @@ function createTopProblemsChart() {
         return;
     }
     
-    // Group data by part
+    // Group data by part and collect associated info for tooltips
     const partCounts = {};
     dataToUse.forEach(item => {
         let parts = [];
@@ -3156,10 +3172,23 @@ function createTopProblemsChart() {
         
         parts.forEach(part => {
             if (!partCounts[part]) {
-                partCounts[part] = { count: 0, cost: 0 };
+                partCounts[part] = { 
+                    count: 0, 
+                    cost: 0,
+                    products: new Set(),
+                    variants: new Set(),
+                    stations: new Set(),
+                    reasons: new Set()
+                };
             }
             partCounts[part].count += (item.QTY || 0);
             partCounts[part].cost += (item.Cost || 0);
+            
+            // Collect associated metadata for tooltips
+            if (item.Product) partCounts[part].products.add(item.Product);
+            if (item.Variant) partCounts[part].variants.add(item.Variant);
+            if (item.Station) partCounts[part].stations.add(item.Station);
+            if (item.RejectReason) partCounts[part].reasons.add(item.RejectReason);
         });
     });
     
@@ -3208,18 +3237,24 @@ function createTopProblemsChart() {
         bar.setAttribute('height', barHeight);
         bar.setAttribute('fill', colors[index % colors.length]);
         
-        // Add tooltip interaction
-        bar.setAttribute('data-part', part);
-        bar.setAttribute('data-count', partCounts[part].count);
-        bar.setAttribute('data-cost', partCounts[part].cost.toFixed(2));
+        // Format tooltip information
+        const products = Array.from(partCounts[part].products).join(', ');
+        const variants = Array.from(partCounts[part].variants).join(', ');
+        const stations = Array.from(partCounts[part].stations).join(', ');
+        const reasons = Array.from(partCounts[part].reasons).join(', ');
         
+        // Add tooltip interaction with enhanced information
         bar.addEventListener('mouseover', function(e) {
             const tooltip = document.createElement('div');
             tooltip.className = 'tooltip';
             tooltip.innerHTML = `
-                <div><strong>Part:</strong> ${this.getAttribute('data-part')}</div>
-                <div><strong>Quantity:</strong> ${this.getAttribute('data-count')}</div>
-                <div><strong>Cost:</strong> R${this.getAttribute('data-cost')}</div>
+                <div><strong>Part:</strong> ${part}</div>
+                <div><strong>Quantity:</strong> ${partCounts[part].count}</div>
+                <div><strong>Cost:</strong> R${partCounts[part].cost.toFixed(2)}</div>
+                <div><strong>Product:</strong> ${products || 'N/A'}</div>
+                <div><strong>Variant:</strong> ${variants || 'N/A'}</div>
+                <div><strong>Station:</strong> ${stations || 'N/A'}</div>
+                <div><strong>Reject Reason:</strong> ${reasons || 'N/A'}</div>
             `;
             document.body.appendChild(tooltip);
             
@@ -3267,7 +3302,7 @@ function createTopProblemsChart() {
     });
 }
 
-// Create station cost chart
+// Create station cost chart with enhanced tooltips
 function createStationCostChart() {
     const container = chartContainers.station;
     container.innerHTML = '';
@@ -3288,15 +3323,26 @@ function createStationCostChart() {
         return;
     }
     
-    // Group data by station
+    // Group data by station and collect associated info for tooltips
     const stationCounts = {};
     dataToUse.forEach(item => {
         const station = item.Station || 'Unknown';
         if (!stationCounts[station]) {
-            stationCounts[station] = { count: 0, cost: 0 };
+            stationCounts[station] = { 
+                count: 0, 
+                cost: 0,
+                products: new Set(),
+                variants: new Set(),
+                reasons: new Set()
+            };
         }
         stationCounts[station].count += (item.QTY || 0);
         stationCounts[station].cost += (item.Cost || 0);
+        
+        // Collect associated metadata for tooltips
+        if (item.Product) stationCounts[station].products.add(item.Product);
+        if (item.Variant) stationCounts[station].variants.add(item.Variant);
+        if (item.RejectReason) stationCounts[station].reasons.add(item.RejectReason);
     });
     
     // Sort and take top 3
@@ -3345,18 +3391,22 @@ function createStationCostChart() {
         bar.setAttribute('height', barHeight);
         bar.setAttribute('fill', colors[index % colors.length]);
         
-        // Add tooltip interaction
-        bar.setAttribute('data-station', station);
-        bar.setAttribute('data-count', stationCounts[station].count);
-        bar.setAttribute('data-cost', stationCounts[station].cost.toFixed(2));
+        // Format tooltip information
+        const products = Array.from(stationCounts[station].products).join(', ');
+        const variants = Array.from(stationCounts[station].variants).join(', ');
+        const reasons = Array.from(stationCounts[station].reasons).join(', ');
         
+        // Add tooltip interaction with enhanced information
         bar.addEventListener('mouseover', function(e) {
             const tooltip = document.createElement('div');
             tooltip.className = 'tooltip';
             tooltip.innerHTML = `
-                <div><strong>Station:</strong> ${this.getAttribute('data-station')}</div>
-                <div><strong>Quantity:</strong> ${this.getAttribute('data-count')}</div>
-                <div><strong>Cost:</strong> R${this.getAttribute('data-cost')}</div>
+                <div><strong>Station:</strong> ${station}</div>
+                <div><strong>Quantity:</strong> ${stationCounts[station].count}</div>
+                <div><strong>Cost:</strong> R${stationCounts[station].cost.toFixed(2)}</div>
+                <div><strong>Product:</strong> ${products || 'N/A'}</div>
+                <div><strong>Variant:</strong> ${variants || 'N/A'}</div>
+                <div><strong>Reject Reason:</strong> ${reasons || 'N/A'}</div>
             `;
             document.body.appendChild(tooltip);
             
