@@ -3048,6 +3048,42 @@ function updateMetrics() {
         // Create horizontal bars for each top reason
         topReasons.forEach((reason, index) => {
             const barHeight = 20;
+
+                    // Add tooltip interaction
+        bar.setAttribute('data-reason', reason);
+        bar.setAttribute('data-count', reasonCounts[reason].count);
+        bar.setAttribute('data-cost', reasonCounts[reason].cost.toFixed(2));
+        
+        bar.addEventListener('mouseover', function(e) {
+            const tooltip = document.createElement('div');
+            tooltip.className = 'tooltip';
+            tooltip.innerHTML = `
+                <div><strong>Reason:</strong> ${this.getAttribute('data-reason')}</div>
+                <div><strong>Quantity:</strong> ${this.getAttribute('data-count')}</div>
+                <div><strong>Cost:</strong> R${this.getAttribute('data-cost')}</div>
+            `;
+            document.body.appendChild(tooltip);
+            
+            // Position the tooltip
+            tooltip.style.left = `${e.pageX + 10}px`;
+            tooltip.style.top = `${e.pageY - 40}px`;
+        });
+        
+        bar.addEventListener('mousemove', function(e) {
+            const tooltip = document.querySelector('.tooltip');
+            if (tooltip) {
+                tooltip.style.left = `${e.pageX + 10}px`;
+                tooltip.style.top = `${e.pageY - 40}px`;
+            }
+        });
+        
+        bar.addEventListener('mouseout', function() {
+            const tooltip = document.querySelector('.tooltip');
+            if (tooltip) {
+                tooltip.remove();
+            }
+        });
+            
             const barValue = sortTop10By === 'qty' ? reasonCounts[reason].count : reasonCounts[reason].cost;
             const maxValue = Math.max(...topReasons.map(r => 
                 sortTop10By === 'qty' ? reasonCounts[r].count : reasonCounts[r].cost
@@ -3084,40 +3120,6 @@ function updateMetrics() {
             const maxLength = 25;
             reasonText.textContent = reason.length > maxLength ? reason.substring(0, maxLength) + '...' : reason;
             g.appendChild(reasonText);
-        // Add tooltip interaction
-        bar.setAttribute('data-reason', reason);
-        bar.setAttribute('data-count', reasonCounts[reason].count);
-        bar.setAttribute('data-cost', reasonCounts[reason].cost.toFixed(2));
-        
-        bar.addEventListener('mouseover', function(e) {
-            const tooltip = document.createElement('div');
-            tooltip.className = 'tooltip';
-            tooltip.innerHTML = `
-                <div><strong>Reason:</strong> ${this.getAttribute('data-reason')}</div>
-                <div><strong>Quantity:</strong> ${this.getAttribute('data-count')}</div>
-                <div><strong>Cost:</strong> R${this.getAttribute('data-cost')}</div>
-            `;
-            document.body.appendChild(tooltip);
-            
-            // Position the tooltip
-            tooltip.style.left = `${e.pageX + 10}px`;
-            tooltip.style.top = `${e.pageY - 40}px`;
-        });
-        
-        bar.addEventListener('mousemove', function(e) {
-            const tooltip = document.querySelector('.tooltip');
-            if (tooltip) {
-                tooltip.style.left = `${e.pageX + 10}px`;
-                tooltip.style.top = `${e.pageY - 40}px`;
-            }
-        });
-        
-        bar.addEventListener('mouseout', function() {
-            const tooltip = document.querySelector('.tooltip');
-            if (tooltip) {
-                tooltip.remove();
-            }
-        });
             
         });
     }
@@ -3192,41 +3194,7 @@ function updateMetrics() {
         // Create horizontal bars for each top part
         topParts.forEach((part, index) => {
             const barHeight = 25;
-            const barValue = sortTop10By === 'qty' ? partCounts[part].count : partCounts[part].cost;
-            const maxValue = Math.max(...topParts.map(p => 
-                sortTop10By === 'qty' ? partCounts[p].count : partCounts[p].cost
-            ));
-const barWidth = (barValue / maxValue) * (width - 20);
-const y = index * (barHeight + 15) + 10;
-            
-            const bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            bar.setAttribute('class', 'horizontal-bar');
-            bar.setAttribute('x', 0);
-            bar.setAttribute('y', y);
-            bar.setAttribute('width', barWidth);
-            bar.setAttribute('height', barHeight);
-            bar.setAttribute('fill', colors[index % colors.length]);
-            g.appendChild(bar);
-            
-            const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            label.setAttribute('class', 'horizontal-bar-label');
-            label.setAttribute('x', barWidth + 5);
-            label.setAttribute('y', y + barHeight / 2 + 5);
-            label.textContent = sortTop10By === 'qty' ? 
-                `${partCounts[part].count} (R${partCounts[part].cost.toFixed(2)})` : 
-                `R${partCounts[part].cost.toFixed(2)} (${partCounts[part].count})`;
-            g.appendChild(label);
-            
-            const partText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            partText.setAttribute('x', 0);
-            partText.setAttribute('y', y - 5);
-            partText.setAttribute('font-size', '12px');
-            partText.setAttribute('fill', '#333');
-            
-            // Truncate long text with ellipsis
-            const maxLength = 20;
-            partText.textContent = part.length > maxLength ? part.substring(0, maxLength) + '...' : part;
-            g.appendChild(partText);
+
             // Add tooltip to the bars
     topParts.forEach((part, index) => {
         // ... existing bar creation code ...
@@ -3265,7 +3233,43 @@ const y = index * (barHeight + 15) + 10;
                 tooltip.remove();
             }
         });
-        
+
+            
+            const barValue = sortTop10By === 'qty' ? partCounts[part].count : partCounts[part].cost;
+            const maxValue = Math.max(...topParts.map(p => 
+                sortTop10By === 'qty' ? partCounts[p].count : partCounts[p].cost
+            ));
+const barWidth = (barValue / maxValue) * (width - 20);
+const y = index * (barHeight + 15) + 10;
+            
+            const bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            bar.setAttribute('class', 'horizontal-bar');
+            bar.setAttribute('x', 0);
+            bar.setAttribute('y', y);
+            bar.setAttribute('width', barWidth);
+            bar.setAttribute('height', barHeight);
+            bar.setAttribute('fill', colors[index % colors.length]);
+            g.appendChild(bar);
+            
+            const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            label.setAttribute('class', 'horizontal-bar-label');
+            label.setAttribute('x', barWidth + 5);
+            label.setAttribute('y', y + barHeight / 2 + 5);
+            label.textContent = sortTop10By === 'qty' ? 
+                `${partCounts[part].count} (R${partCounts[part].cost.toFixed(2)})` : 
+                `R${partCounts[part].cost.toFixed(2)} (${partCounts[part].count})`;
+            g.appendChild(label);
+            
+            const partText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            partText.setAttribute('x', 0);
+            partText.setAttribute('y', y - 5);
+            partText.setAttribute('font-size', '12px');
+            partText.setAttribute('fill', '#333');
+            
+            // Truncate long text with ellipsis
+            const maxLength = 20;
+            partText.textContent = part.length > maxLength ? part.substring(0, maxLength) + '...' : part;
+            g.appendChild(partText);        
         });
     }
 
@@ -3331,42 +3335,6 @@ const y = index * (barHeight + 15) + 10;
         // Create horizontal bars for each top station
         topStations.forEach((station, index) => {
             const barHeight = 25;
-            const barValue = sortTop10By === 'qty' ? stationCounts[station].count : stationCounts[station].cost;
-            const maxValue = Math.max(...topStations.map(s => 
-                sortTop10By === 'qty' ? stationCounts[s].count : stationCounts[s].cost
-            ));
-            const barWidth = (barValue / maxValue) * (width - 20);
-            
-            const y = index * (barHeight + 15) + 10;
-            
-            const bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            bar.setAttribute('class', 'horizontal-bar');
-            bar.setAttribute('x', 0);
-            bar.setAttribute('y', y);
-            bar.setAttribute('width', barWidth);
-            bar.setAttribute('height', barHeight);
-            bar.setAttribute('fill', colors[index % colors.length]);
-            g.appendChild(bar);
-            
-            const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            label.setAttribute('class', 'horizontal-bar-label');
-            label.setAttribute('x', barWidth + 5);
-            label.setAttribute('y', y + barHeight / 2 + 5);
-            label.textContent = sortTop10By === 'qty' ? 
-                `${stationCounts[station].count} (R${stationCounts[station].cost.toFixed(2)})` : 
-                `R${stationCounts[station].cost.toFixed(2)} (${stationCounts[station].count})`;
-            g.appendChild(label);
-            
-            const stationText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            stationText.setAttribute('x', 0);
-            stationText.setAttribute('y', y - 5);
-            stationText.setAttribute('font-size', '12px');
-            stationText.setAttribute('fill', '#333');
-            
-            // Truncate long text with ellipsis
-            const maxLength = 20;
-            stationText.textContent = station.length > maxLength ? station.substring(0, maxLength) + '...' : station;
-            g.appendChild(stationText);
 
                 // Add tooltip to the bars
     topStations.forEach((station, index) => {
@@ -3405,7 +3373,43 @@ const y = index * (barHeight + 15) + 10;
             if (tooltip) {
                 tooltip.remove();
             }
-        });
+        });            
+            const barValue = sortTop10By === 'qty' ? stationCounts[station].count : stationCounts[station].cost;
+            const maxValue = Math.max(...topStations.map(s => 
+                sortTop10By === 'qty' ? stationCounts[s].count : stationCounts[s].cost
+            ));
+            const barWidth = (barValue / maxValue) * (width - 20);
+            
+            const y = index * (barHeight + 15) + 10;
+            
+            const bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            bar.setAttribute('class', 'horizontal-bar');
+            bar.setAttribute('x', 0);
+            bar.setAttribute('y', y);
+            bar.setAttribute('width', barWidth);
+            bar.setAttribute('height', barHeight);
+            bar.setAttribute('fill', colors[index % colors.length]);
+            g.appendChild(bar);
+            
+            const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            label.setAttribute('class', 'horizontal-bar-label');
+            label.setAttribute('x', barWidth + 5);
+            label.setAttribute('y', y + barHeight / 2 + 5);
+            label.textContent = sortTop10By === 'qty' ? 
+                `${stationCounts[station].count} (R${stationCounts[station].cost.toFixed(2)})` : 
+                `R${stationCounts[station].cost.toFixed(2)} (${stationCounts[station].count})`;
+            g.appendChild(label);
+            
+            const stationText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            stationText.setAttribute('x', 0);
+            stationText.setAttribute('y', y - 5);
+            stationText.setAttribute('font-size', '12px');
+            stationText.setAttribute('fill', '#333');
+            
+            // Truncate long text with ellipsis
+            const maxLength = 20;
+            stationText.textContent = station.length > maxLength ? station.substring(0, maxLength) + '...' : station;
+            g.appendChild(stationText);
 
         });
     }
