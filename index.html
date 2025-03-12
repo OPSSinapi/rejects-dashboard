@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manufacturing Rejects Dashboard</title>
     <style>
-        /* Reset and Base Styles */
+/* Reset and Base Styles */
 * {
     margin: 0;
     padding: 0;
@@ -33,6 +33,7 @@ body {
     width: 100vw;
     display: flex;
     flex-direction: column;
+    isolation: isolate; /* Create proper stacking context */
 }
 
 /* Compact Header with Nav Bar Style */
@@ -46,6 +47,7 @@ body {
     flex: 0 0 auto;
     position: relative;
     z-index: 25 !important;
+    isolation: isolate; /* Create proper stacking context */
 }
 
 .header-title {
@@ -104,8 +106,7 @@ body {
     position: relative;
     z-index: 20 !important; /* Higher base z-index */
     isolation: isolate; /* Create new stacking context */
-        overflow-y: hidden;
-
+    overflow-y: hidden;
 }
 
 .filter-bar::-webkit-scrollbar {
@@ -131,14 +132,7 @@ body {
     font-size: 0.75rem;
 }
 
-/* Compact Multi-select dropdown styles *
-
-/* Add this new rule below the above rule */
-.compact-select-dropdown.active {
-  position: fixed !important; /* Use fixed positioning */
-  z-index: 9999 !important; /* Very high z-index */
-  box-shadow: 0 6px 16px rgba(0,0,0,0.2) !important;
-}        
+/* Compact Multi-select dropdown styles */
 .compact-select {
     position: relative;
     font-size: 0.75rem;
@@ -172,10 +166,10 @@ body {
 }
 
 .compact-select-dropdown {
-    position: absolute;
+    position: fixed !important; /* Always use fixed positioning */
     top: 100%;
     left: 0;
-    z-index: 9999 !important; /* Very high z-index */
+    z-index: 10000 !important; /* Extremely high z-index */
     background-color: white;
     border: 1px solid rgba(0,0,0,0.15) !important;
     border-radius: 3px;
@@ -189,8 +183,8 @@ body {
 
 .compact-select-dropdown.active {
     display: block !important;
-    position: absolute !important;
-    z-index: 9999 !important; /* Very high z-index */
+    position: fixed !important;
+    z-index: 10000 !important; /* Very high z-index */
 }
 
 .compact-select-search {
@@ -300,6 +294,7 @@ button.active {
     flex: 0 0 auto;
     position: relative;
     z-index: 5 !important;
+    isolation: isolate; /* Create proper stacking context */
 }
 
 .metrics-left {
@@ -391,11 +386,11 @@ button.active {
 
 .dropdown-content {
     display: none;
-    position: absolute;
+    position: fixed !important; /* Changed to fixed */
     background-color: white;
     min-width: 140px;
     box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-    z-index: 9999 !important;
+    z-index: 10000 !important; /* Increased z-index */
     border-radius: 3px;
     overflow: hidden;
     right: 0;
@@ -445,6 +440,7 @@ button.active {
     padding: 5px 8px;
     position: relative;
     z-index: 1 !important;
+    isolation: isolate; /* Create proper stacking context */
 }
 
 .main-container {
@@ -748,7 +744,7 @@ svg {
     color: white;
     border-radius: 3px;
     pointer-events: none;
-    z-index: 9999 !important;
+    z-index: 10001 !important; /* Increased z-index to be above dropdowns */
     font-size: 0.7rem;
     max-width: 160px;
     box-shadow: 0 3px 14px rgba(0, 0, 0, 0.4);
@@ -767,11 +763,11 @@ svg {
 
 /* Popup Menu */
 .popup-menu {
-    position: absolute;
+    position: fixed !important; /* Changed to fixed */
     background-color: white;
     border-radius: 3px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-    z-index: 9999 !important;
+    z-index: 10000 !important; /* Increased z-index */
     max-height: 250px;
     overflow-y: auto;
     min-width: 150px;
