@@ -270,6 +270,66 @@
             background-color: #2c3e50;
         }
 
+
+
+/* Add these styles to ensure proper dropdown positioning */
+
+.compact-select {
+    position: relative;
+    font-size: 0.75rem;
+    min-width: 130px;
+    max-width: 160px;
+    height: 26px;
+    z-index: 10; /* Increase base z-index */
+}
+
+.compact-select-dropdown {
+    position: absolute;
+    /* These will be set dynamically by JavaScript */
+    /* top: 100%; */ 
+    left: 0;
+    z-index: 1500; /* Higher z-index to ensure it appears above other elements */
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    width: 220px;
+    /* max-height will be set dynamically */
+    overflow-y: auto;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2); /* Stronger shadow for better visibility */
+    display: none;
+    margin-top: 2px;
+}
+
+/* When a dropdown is active, make sure it has higher z-index than other page elements */
+.compact-select-dropdown.active {
+    display: block;
+}
+
+/* Style for the dropdown container to ensure it's properly positioned */
+.filter-bar {
+    position: relative; /* Ensure this is properly positioned */
+    z-index: 100; /* Higher than normal content but lower than active dropdowns */
+}
+
+/* Ensure popups have appropriate z-index */
+.popup-menu.active {
+    z-index: 1600; /* Higher than dropdowns */
+}
+
+/* Fix for any elements that might obscure dropdowns */
+.metrics-bar {
+    position: relative;
+    z-index: 5; /* Lower than filter-bar */
+}
+
+.dashboard-content {
+    position: relative;
+    z-index: 1; /* Lower than all UI controls */
+}
+
+        
+        
+
         /* Metrics Bar */
         .metrics-bar {
             background-color: white;
@@ -2117,6 +2177,43 @@ top10Elements.stationHeader.addEventListener('click', (e) => {
         updateMetrics();
     }
 
+// Add this function to the JavaScript code to fix dropdown positioning
+
+// Function to properly position filter dropdowns
+function positionFilterDropdown(dropdown) {
+    // Get the dropdown dimensions
+    const dropdownRect = dropdown.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    
+    // Calculate if dropdown would extend beyond viewport bottom
+    const spaceBelow = viewportHeight - dropdownRect.bottom;
+    const dropdownHeight = dropdownRect.height;
+    
+    // If there's not enough space below, position it above the trigger element
+    if (spaceBelow < dropdownHeight && dropdownRect.top > dropdownHeight) {
+        // Position above by changing styles
+        dropdown.style.bottom = '100%';
+        dropdown.style.top = 'auto';
+        dropdown.style.maxHeight = `${Math.min(dropdownRect.top - 10, 230)}px`;
+    } else {
+        // Position below (default)
+        dropdown.style.top = '100%';
+        dropdown.style.bottom = 'auto';
+        dropdown.style.maxHeight = `${Math.min(spaceBelow - 10, 230)}px`;
+    }
+    
+    // Ensure dropdown is fully visible horizontally as well
+    const rightEdge = dropdownRect.right;
+    const viewportWidth = window.innerWidth;
+    
+    if (rightEdge > viewportWidth) {
+        // Align right edge of dropdown with right edge of trigger element
+        dropdown.style.right = '0';
+        dropdown.style.left = 'auto';
+    }
+}
+
+    
     // Initialize multi-select dropdowns
     function initMultiSelectDropdowns() {
         Object.keys(filterElements.multiSelects).forEach(key => {
