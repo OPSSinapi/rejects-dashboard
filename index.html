@@ -1912,25 +1912,35 @@ function setDefaultDateRange() {
     
     // Initialize action dropdown
     function initActionDropdown() {
-        // Apply smart positioning to Action dropdown
-        const dropdownBtn = top10Elements.actionDropdown.querySelector('.dropdown-btn');
-        const dropdownContent = top10Elements.actionDropdownContent;
+    const dropdownBtn = top10Elements.actionDropdown.querySelector('.dropdown-btn');
+    const dropdownContent = top10Elements.actionDropdownContent;
+    
+    dropdownBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
         
-        dropdownBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            
-            // Close any open filter dropdowns
-            document.querySelectorAll('.compact-select-dropdown.active').forEach(el => {
-                el.classList.remove('active');
-            });
-            
-            dropdownContent.classList.toggle('show');
-            
-            // Position check
-            if (dropdownContent.classList.contains('show')) {
-                positionFilterDropdown(dropdownContent);
-            }
+        // Close any open filter dropdowns
+        document.querySelectorAll('.compact-select-dropdown.active').forEach(el => {
+            el.classList.remove('active');
         });
+        
+        dropdownContent.classList.toggle('show');
+        
+        // Custom positioning for the action dropdown
+        if (dropdownContent.classList.contains('show')) {
+            const rect = dropdownBtn.getBoundingClientRect();
+            dropdownContent.style.position = 'fixed';
+            dropdownContent.style.top = `${rect.bottom + 2}px`;
+            dropdownContent.style.right = `${window.innerWidth - rect.right}px`;
+            dropdownContent.style.zIndex = '10000';
+            
+            // Ensure dropdown doesn't go off-screen
+            const dropdownHeight = dropdownContent.offsetHeight;
+            if (rect.bottom + dropdownHeight > window.innerHeight) {
+                dropdownContent.style.top = `${rect.top - dropdownHeight - 2}px`;
+            }
+        }
+    });
+
         
         dropdownContent.addEventListener('click', (e) => {
             if (e.target.classList.contains('dropdown-item')) {
