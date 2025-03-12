@@ -153,7 +153,7 @@
             position: absolute;
             top: 100%;
             left: 0;
-            z-index: 100;
+            z-index: 1000;
             background-color: white;
             border: 1px solid #ddd;
             border-radius: 3px;
@@ -1124,6 +1124,13 @@
             alias: document.getElementById('alias-select')
         }
     };
+    
+    // Fix for pluralization in dropdown text
+    function getFilterDisplayName(filterName) {
+        if (filterName === 'batch') return 'Batches';
+        if (filterName === 'alias') return 'Aliases';
+        return filterName.charAt(0).toUpperCase() + filterName.slice(1) + 's';
+    }
 
     const metricElements = {
         totalCost: document.getElementById('total-cost'),
@@ -2073,6 +2080,7 @@ top10Elements.stationHeader.addEventListener('click', (e) => {
     function initMultiSelectDropdowns() {
         Object.keys(filterElements.multiSelects).forEach(key => {
             const multiSelect = filterElements.multiSelects[key];
+            // Update selectors to match the new class names
             const header = multiSelect.querySelector('.compact-select-header');
             const dropdown = multiSelect.querySelector('.compact-select-dropdown');
             const headerText = multiSelect.querySelector('.compact-select-header-text');
@@ -2083,14 +2091,35 @@ top10Elements.stationHeader.addEventListener('click', (e) => {
             header.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const isActive = dropdown.classList.contains('active');
+                
+                // Close all other dropdowns first
                 document.querySelectorAll('.compact-select-dropdown.active').forEach(el => {
                     if (el !== dropdown) {
                         el.classList.remove('active');
                     }
                 });
+                
+                // Toggle this dropdown
                 dropdown.classList.toggle('active');
+                
                 if (!isActive) {
                     search.focus();
+                    
+                    // Make sure dropdown is visible within viewport
+                    setTimeout(() => {
+                        const rect = dropdown.getBoundingClientRect();
+                        if (rect.right > window.innerWidth) {
+                            dropdown.style.left = 'auto';
+                            dropdown.style.right = '0';
+                        }
+                        
+                        if (rect.bottom > window.innerHeight) {
+                            dropdown.style.top = 'auto';
+                            dropdown.style.bottom = '100%';
+                            dropdown.style.marginTop = '0';
+                            dropdown.style.marginBottom = '2px';
+                        }
+                    }, 0);
                 }
             });
             document.addEventListener('click', () => {
@@ -2146,7 +2175,7 @@ top10Elements.stationHeader.addEventListener('click', (e) => {
         const headerText = multiSelect.querySelector('.compact-select-header-text');
         const selectedValues = filterValues[filterName];
         if (selectedValues.length === 0) {
-            headerText.textContent = `All ${filterName.charAt(0).toUpperCase() + filterName.slice(1)}s`;
+            headerText.textContent = `All ${getFilterDisplayName(filterName)}`;
         } else if (selectedValues.length === 1) {
             headerText.textContent = selectedValues[0];
         } else {
