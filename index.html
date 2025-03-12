@@ -2205,6 +2205,9 @@ function positionFilterDropdown(dropdown) {
 header.addEventListener('click', (e) => {
     e.stopPropagation();
     
+    // Get current active state before toggling
+    const isActive = dropdown.classList.contains('active');
+    
     // Close all other dropdowns first
     document.querySelectorAll('.compact-select-dropdown.active, .dropdown-content.show').forEach(el => {
         if (el !== dropdown) {
@@ -2217,8 +2220,8 @@ header.addEventListener('click', (e) => {
     dropdown.classList.toggle('active');
     
     // If now active, position it properly
-    if (dropdown.classList.contains('active')) {
-        // Force immediate positioning
+    if (!isActive) {
+        // Force immediate positioning with a slight delay to ensure DOM updates
         window.setTimeout(() => {
             positionFilterDropdown(dropdown);
             search.focus();
@@ -2227,6 +2230,8 @@ header.addEventListener('click', (e) => {
 });
             document.addEventListener('click', () => {
                 dropdown.classList.remove('active');
+                    dropdown.style.display = 'none';
+
             });
             dropdown.addEventListener('click', (e) => {
                 e.stopPropagation();
