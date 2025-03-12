@@ -2243,12 +2243,12 @@ top10Elements.stationHeader.addEventListener('click', (e) => {
         return result;
     }
 
-    // Select only one option in a filter
+// Select only one option in a filter
 function selectOnlyThisOption(filterName, value) {
     if (isUpdatingFilters) return;
     isUpdatingFilters = true;
     try {
-        // Reset all filters first
+        // Reset other filter types first
         selectedAction = 'All';
         selectedRejectReason = null;
         selectedStation = null;
@@ -2261,6 +2261,10 @@ function selectOnlyThisOption(filterName, value) {
                 item.classList.add('active');
             }
         });
+        
+        // Reset batch and supplier headers visibility if needed
+        top10Elements.batchHeader.style.display = 'none';
+        top10Elements.supplierHeader.style.display = 'none';
         
         // Clear all filter values for this filter name and set only the selected value
         filterValues[filterName] = [value];
@@ -2288,16 +2292,67 @@ function selectOnlyThisOption(filterName, value) {
             });
         }
         
-        // Apply filters
-        applyDetailFilters(filterName, true);
+        // Apply filters to filteredData
+        filteredData = dateFilteredData.filter(item => {
+            if (filterValues.supervisor.length > 0 && !filterValues.supervisor.includes(item.LineSupervisor)) {
+                return false;
+            }
+            if (filterValues.product.length > 0 && !filterValues.product.includes(item.Product)) {
+                return false;
+            }
+            if (filterValues.variant.length > 0 && !filterValues.variant.includes(item.Variant)) {
+                return false;
+            }
+            if (filterValues.batch.length > 0) {
+                const batchStr = item.BatchNumber !== undefined && item.BatchNumber !== null 
+                    ? String(item.BatchNumber) 
+                    : '';
+                if (!filterValues.batch.includes(batchStr)) {
+                    return false;
+                }
+            }
+            if (filterValues.part.length > 0) {
+                let partFound = false;
+                let parts = [];
+                if (Array.isArray(item.Parts)) {
+                    parts = item.Parts;
+                } else if (typeof item.Parts === 'string') {
+                    parts = item.Parts.split(',').map(p => p.trim());
+                }
+                partFound = parts.some(part => part && filterValues.part.includes(part.trim()));
+                if (!partFound) return false;
+            }
+            if (filterValues.alias.length > 0) {
+                let aliasFound = false;
+                let aliases = [];
+                if (Array.isArray(item.Aliases)) {
+                    aliases = item.Aliases;
+                } else if (typeof item.Aliases === 'string') {
+                    aliases = item.Aliases.split(',').map(a => a.trim());
+                }
+                aliasFound = aliases.some(alias => alias && filterValues.alias.includes(alias.trim()));
+                if (!aliasFound) return false;
+            }
+            return true;
+        });
         
-        // Force complete redraw of all charts after the filter updates
+        // Force complete redraw of all charts
         prepareTrendChartData();
-        updateDashboardWithActionFilter();
+        updateDashboard(); // This will update all visuals including metrics and tables
+        
+        // Update filter menus since selections have changed
+        updateRejectReasonMenu();
+        updateStationMenu();
+        
+        // Don't need to call applyDetailFilters since we've done the filtering directly
+        if (!true) {
+            applyDetailFilters(filterName, true);
+        }
         
     } finally {
         isUpdatingFilters = false;
     }
+}
 
 
     // Populate multi-select options based on available options
