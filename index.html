@@ -1372,6 +1372,10 @@ async function loadDataForDateRangeInitial() {
         
         console.log(`Loaded a total of ${rejectData.length} reject records`);
         
+        // Load all available data for trend chart calculations
+        updateLoadingState(true, "Loading all historical data for trend chart calculations...");
+        allData = await loadAllAvailableMonthlyData();
+        
         // Apply date filtering specifically for the selected range
         dateFilteredData = rejectData.filter(item => {
             if (!item.ProductionDate) return false;
@@ -1401,7 +1405,7 @@ async function loadDataForDateRangeInitial() {
         // Update dashboard
         updateDashboard();
         
-        console.log(`Successfully loaded ${rejectData.length} records for selected date range, with ${dateFilteredData.length} in date range`);
+        console.log(`Successfully loaded ${rejectData.length} records for selected date range, with ${dateFilteredData.length} in date range, and ${allData.length} total historical records for reference calculation`);
         
     } catch (error) {
         console.error("Error loading initial data for date range:", error);
