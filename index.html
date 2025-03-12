@@ -2273,7 +2273,19 @@ top10Elements.stationHeader.addEventListener('click', (e) => {
                     }
                 });
             }
+                        // Reset other filter types (dropdown/menu selections)
+            selectedAction = 'All';
+            selectedRejectReason = null;
+            selectedStation = null;
             
+            // Update UI to reflect these changes
+            top10Elements.currentAction.textContent = 'All Types';
+            document.querySelectorAll('#action-dropdown-content .dropdown-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.getAttribute('data-action') === 'All') {
+                    item.classList.add('active');
+                }
+            });
             // Apply filters and update UI
             applyDetailFilters(filterName, true);
         } finally {
