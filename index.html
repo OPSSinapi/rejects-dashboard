@@ -2147,20 +2147,19 @@ top10Elements.stationHeader.addEventListener('click', (e) => {
 // Add this function to the JavaScript code to fix dropdown positioning
 
 // Update the positioning function for dropdowns
-// Update the positioning function for dropdowns
 function positionFilterDropdown(dropdown) {
-    // Force display to perform calculations
+    // Force display block for calculations
     dropdown.style.display = 'block';
     
     const parent = dropdown.closest('.compact-select');
     const parentRect = parent.getBoundingClientRect();
     
-    // Ensure proper positioning
+    // Force the dropdown to be visible above everything
     dropdown.style.position = 'fixed';
     dropdown.style.top = `${parentRect.bottom + 2}px`;
     dropdown.style.left = `${parentRect.left}px`;
     dropdown.style.width = '220px';
-    dropdown.style.zIndex = '9999';
+    dropdown.style.zIndex = '10000'; // Even higher z-index
     
     // Calculate dimensions
     const viewportHeight = window.innerHeight;
@@ -2188,6 +2187,36 @@ function positionFilterDropdown(dropdown) {
     
     dropdown.style.maxHeight = `${Math.min(maxHeight, 230)}px`;
 }
+
+// Modify the document click event listener (outside of any function)
+document.addEventListener('click', (e) => {
+    // Only close dropdowns if click is outside dropdown and header
+    if (!e.target.closest('.compact-select-dropdown') && 
+        !e.target.closest('.compact-select-header')) {
+        
+        document.querySelectorAll('.compact-select-dropdown').forEach(el => {
+            // Force removal of active class
+            el.classList.remove('active');
+            el.style.display = 'none';
+        });
+    }
+    
+    // Handle other click-away cases
+    if (!e.target.closest('.popup-menu') && 
+        !e.target.closest('#reject-reason-header') && 
+        !e.target.closest('#station-header')) {
+        document.querySelectorAll('.popup-menu').forEach(el => {
+            el.classList.remove('active');
+        });
+    }
+    
+    if (!e.target.closest('.dropdown-content') && 
+        !e.target.closest('.dropdown-btn')) {
+        document.querySelectorAll('.dropdown-content').forEach(el => {
+            el.classList.remove('show');
+        });
+    }
+});
     
     // Initialize multi-select dropdowns
     function initMultiSelectDropdowns() {
@@ -2213,19 +2242,21 @@ header.addEventListener('click', (e) => {
         if (el !== dropdown) {
             el.classList.remove('active');
             el.classList.remove('show');
+            el.style.display = 'none'; // Force hide
         }
     });
     
     // Toggle the active state
     dropdown.classList.toggle('active');
     
-    // If now active, position it properly
+    // Toggle display property directly
     if (!isActive) {
-        // Force immediate positioning with a slight delay to ensure DOM updates
-        window.setTimeout(() => {
-            positionFilterDropdown(dropdown);
-            search.focus();
-        }, 0);
+        dropdown.style.display = 'block';
+        // Force immediate positioning
+        positionFilterDropdown(dropdown);
+        search.focus();
+    } else {
+        dropdown.style.display = 'none';
     }
 });
             document.addEventListener('click', () => {
