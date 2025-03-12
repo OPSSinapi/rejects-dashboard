@@ -1682,6 +1682,31 @@ async function findLastFiveRejectsDateRange(availablePeriods) {
         return `${year}-${month}-${day}`;
     }
 
+    // Helper function to format date for date input elements
+function formatDateForInput(date) {
+    if (!date || !(date instanceof Date)) return '';
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+// Helper function to set a default date range (last 30 days)
+function setDefaultDateRange() {
+    const today = new Date();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+    
+    filterElements.dateFrom.value = formatDateForInput(thirtyDaysAgo);
+    filterElements.dateTo.value = formatDateForInput(today);
+    
+    console.log(`Set default date range: ${filterElements.dateFrom.value} to ${filterElements.dateTo.value}`);
+}
+
+// Prepare data for trend chart
+function prepareTrendChartData() {
+    // existing code...
+
     // Prepare data for trend chart
     function prepareTrendChartData() {
         const dateFrom = filterElements.dateFrom.value ? new Date(filterElements.dateFrom.value) : null;
