@@ -1231,6 +1231,7 @@ const top10Elements = {
     document.addEventListener('DOMContentLoaded', initDashboard);
 
 // Initialize the dashboard
+// Initialize the dashboard
 async function initDashboard() {
     // Show loading indicators
     updateLoadingState(true, "Initializing dashboard...");
@@ -1258,7 +1259,6 @@ async function initDashboard() {
             sortTop10By = 'qty';
             top10Elements.sortByQty.classList.add('active');
             top10Elements.sortByCost.classList.remove('active');
-            // Update station chart title to show Quantity
             if (top10Elements.stationChartTitle) {
                 top10Elements.stationChartTitle.textContent = 'Quantity';
             }
@@ -1270,7 +1270,6 @@ async function initDashboard() {
             sortTop10By = 'cost';
             top10Elements.sortByCost.classList.add('active');
             top10Elements.sortByQty.classList.remove('active');
-            // Update station chart title to show Cost
             if (top10Elements.stationChartTitle) {
                 top10Elements.stationChartTitle.textContent = 'Cost';
             }
@@ -1287,6 +1286,9 @@ async function initDashboard() {
             });
         });
 
+        // Reset the loading flag to ensure we can load data
+        dataLoadingInProgress = false;
+
         // Set default dates based on the last 5 days with rejects
         if (indexData.availablePeriods && indexData.availablePeriods.length > 0) {
             console.log("Finding last five rejects date range...");
@@ -1296,29 +1298,16 @@ async function initDashboard() {
             throw new Error("No available data periods found in RejectsIndex.json");
         }
 
+        // Important: Force the loading flag to false before loading initial data
+        dataLoadingInProgress = false;
+        
         // Load initial data for the default date range
         console.log("Loading initial data for date range...");
-        await loadDataForDateRange();
         
-        // Additional check to ensure data was loaded properly
-        if (filteredData.length === 0) {
-            console.warn("No data loaded after initial load. Checking for issues...");
-            
-            // Retry with broader date range if no data was found
-            if (filterElements.dateFrom.value && filterElements.dateTo.value) {
-                const fromDate = new Date(filterElements.dateFrom.value);
-                const toDate = new Date(filterElements.dateTo.value);
-                
-                // Expand date range by 30 days in both directions
-                fromDate.setDate(fromDate.getDate() - 30);
-                toDate.setDate(toDate.getDate() + 30);
-                
-                filterElements.dateFrom.value = formatDateForInput(fromDate);
-                filterElements.dateTo.value = formatDateForInput(toDate);
-                
-                console.log("Retrying with expanded date range:", filterElements.dateFrom.value, "to", filterElements.dateTo.value);
-                await loadDataForDateRange();
-            }
+        if (filterElements.dateFrom.value && filterElements.dateTo.value) {
+            await loadDataForDateRangeInitial(); // Use a special version for initial load
+        } else {
+            console.error("Date range not set properly");
         }
         
         console.log("Dashboard initialization complete");
@@ -1327,8 +1316,99 @@ async function initDashboard() {
     } catch (error) {
         console.error("Error initializing dashboard:", error);
         showDataLoadError("Failed to initialize dashboard: " + error.message);
+        dataLoadingInProgress = false;
     } finally {
         updateLoadingState(false);
+    }
+}
+
+// Special version just for initial loading - bypasses the inProgress check
+async function loadDataForDateRangeInitial() {
+    updateLoadingState(true, "Loading data for selected date range (initial)...");
+    
+    try {
+        const fromDate = filterElements.dateFrom.value ? new Date(filterElements.dateFrom.value) : null;
+        const toDate = filterElements.dateTo.value ? new Date(filterElements.dateTo.value) : null;
+        
+        if (!fromDate || !toDate) {
+            throw new Error("Please select a valid date range");
+        }
+        
+        console.log(`Loading initial data from ${fromDate.toISOString()} to ${toDate.toISOString()}`);
+        
+        // Get list of months that need to be loaded for the selected date range
+        const monthsToLoad = getMonthsInRange(fromDate, toDate);
+        console.log("Months to load for selected range:", monthsToLoad);
+        
+        if (monthsToLoad.length === 0) {
+            throw new Error("No data available for the selected date range");
+        }
+        
+        // Reset data arrays
+        rejectData = [];
+        
+        // Load each month's data if not already cached
+        for (const month of monthsToLoad) {
+            updateLoadingState(true, `Loading data for ${month}...`);
+            
+            if (!loadedMonths[month]) {
+                // Fetch this month's data
+                const monthResponse = await fetch(`data/${month}.json`);
+                if (!monthResponse.ok) {
+                    console.warn(`Month data for ${month} not found or error: ${monthResponse.status}`);
+                    continue;
+                }
+                
+                const monthData = await monthResponse.json();
+                loadedMonths[month] = monthData.rejectData || [];
+                console.log(`Loaded ${loadedMonths[month].length} records for ${month}`);
+            } else {
+                console.log(`Using cached ${loadedMonths[month].length} records for ${month}`);
+            }
+            
+            // Add this month's data to the current dataset
+            rejectData = rejectData.concat(loadedMonths[month]);
+        }
+        
+        console.log(`Loaded a total of ${rejectData.length} reject records`);
+        
+        // Apply date filtering specifically for the selected range
+        dateFilteredData = rejectData.filter(item => {
+            if (!item.ProductionDate) return false;
+            const itemDate = new Date(item.ProductionDate);
+            return itemDate >= fromDate && itemDate <= toDate;
+        });
+        
+        console.log(`After date filtering: ${dateFilteredData.length} records within range`);
+        
+        // Reset all other filters
+        resetOtherFilters(true);
+        
+        // Calculate available filter options
+        calculateAvailableFilterOptions();
+        buildFilterAssociations();
+        populateMultiSelectOptions();
+        
+        // Set filtered data to date-filtered data
+        filteredData = [...dateFilteredData];
+        
+        // Update action dropdown
+        updateActionDropdown();
+        
+        // Prepare trend chart data 
+        prepareTrendChartData();
+        
+        // Update dashboard
+        updateDashboard();
+        
+        console.log(`Successfully loaded ${rejectData.length} records for selected date range, with ${dateFilteredData.length} in date range`);
+        
+    } catch (error) {
+        console.error("Error loading initial data for date range:", error);
+        showDataLoadError(error.message);
+    } finally {
+        updateLoadingState(false);
+        dataLoadingInProgress = false;
     }
 }
 
@@ -1433,32 +1513,6 @@ async function findLastFiveRejectsDateRange(availablePeriods) {
     
     console.log(`Set date range inputs: ${filterElements.dateFrom.value} to ${filterElements.dateTo.value}`);
 }
-
-// Helper function to set a default date range (last 30 days)
-function setDefaultDateRange() {
-    const today = new Date();
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(today.getDate() - 30);
-    
-    filterElements.dateFrom.value = formatDateForInput(thirtyDaysAgo);
-    filterElements.dateTo.value = formatDateForInput(today);
-    
-    console.log(`Set default date range: ${filterElements.dateFrom.value} to ${filterElements.dateTo.value}`);
-}
-
-    // Load initial data for the default date range
-    async function loadInitialData() {
-        updateLoadingState(true, "Loading initial data...");
-        
-        try {
-            await loadDataForDateRange();
-        } catch (error) {
-            console.error("Error loading initial data:", error);
-            showDataLoadError(error.message);
-        } finally {
-            updateLoadingState(false);
-        }
-    }
 
     // Get array of month strings (YYYY-MM) between two dates
     function getMonthsInRange(fromDate, toDate) {
