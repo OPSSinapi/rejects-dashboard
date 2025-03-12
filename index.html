@@ -10,13 +10,13 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: Arial, Helvetica, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
         body {
-            background-color: #f5f5f5;
+            background-color: #f5f7fa;
             color: #333;
-            line-height: 1.6;
+            line-height: 1.5;
             height: 100vh;
             overflow: hidden;
         }
@@ -24,191 +24,205 @@
         .container {
             height: 100vh;
             width: 100vw;
-            padding: 10px;
             display: flex;
             flex-direction: column;
         }
 
-        /* Header Styles */
-        header {
+        /* Compact Header with Nav Bar Style */
+        .top-nav {
             background-color: #2c3e50;
-            color: white;
-            padding: 8px 10px;
-            margin-bottom: 5px;
-            border-radius: 6px;
-            flex: 0 0 auto;
+            padding: 6px 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-        }
-
-        .header-title {
-            font-size: 1.5rem;
-            white-space: nowrap;
-        }
-
-        .header-date-controls {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        h1 {
-            text-align: left;
-            font-size: 1.5rem;
-        }
-
-        h2 {
-            margin: 3px 0;
-            color: #2c3e50;
-            border-bottom: 2px solid #e67e22;
-            padding-bottom: 2px;
-            font-size: 1rem;
-        }
-
-        /* Filter Section */
-        .filters {
-            background-color: white;
-            padding: 8px;
-            border-radius: 6px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            margin-bottom: 5px;
+            height: 42px;
             flex: 0 0 auto;
         }
 
-        .filter-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 5px;
-            align-items: center;
+        .header-title {
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+            white-space: nowrap;
         }
 
-        .date-filter-row {
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .date-control {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            padding: 2px 5px;
+        }
+
+        .date-control label {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.75rem;
+            margin-right: 3px;
+        }
+
+        .date-control input[type="date"] {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 0.75rem;
+            width: 115px;
+            padding: 2px;
+        }
+
+        .date-control input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            opacity: 0.7;
+            scale: 0.8;
+        }
+
+        /* Filters Bar */
+        .filter-bar {
+            background-color: white;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 6px 10px;
             display: flex;
             flex-wrap: nowrap;
-            gap: 8px;
             align-items: center;
+            height: 38px;
+            overflow-x: auto;
+            flex: 0 0 auto;
+        }
+
+        .filter-bar::-webkit-scrollbar {
+            height: 3px;
+        }
+
+        .filter-bar::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 3px;
         }
 
         .filter-group {
             display: flex;
             align-items: center;
-            gap: 5px;
+            white-space: nowrap;
+            gap: 3px;
+            margin-right: 10px;
         }
 
         .filter-group label {
-            font-weight: bold;
+            font-weight: 500;
             color: #555;
-            font-size: 0.8rem;
-            white-space: nowrap;
+            font-size: 0.75rem;
         }
 
-        .filter-group input[type="date"] {
-            padding: 5px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            width: 130px;
-        }
-
-        /* Multi-select dropdown styles */
-        .multi-select {
+        /* Compact Multi-select dropdown styles */
+        .compact-select {
             position: relative;
-            width: 180px;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
+            min-width: 130px;
+            max-width: 160px;
+            height: 26px;
         }
         
-        .multi-select-header {
-            padding: 5px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+        .compact-select-header {
+            padding: 2px 8px;
+            border: 1px solid #e0e0e0;
+            border-radius: 3px;
             background-color: white;
             cursor: pointer;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            height: 100%;
         }
         
-        .multi-select-header-text {
+        .compact-select-header:hover {
+            border-color: #bbb;
+        }
+        
+        .compact-select-header-text {
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            max-width: 150px;
+            max-width: 120px;
         }
         
-        .multi-select-dropdown {
+        .compact-select-dropdown {
             position: absolute;
             top: 100%;
             left: 0;
             z-index: 100;
             background-color: white;
             border: 1px solid #ddd;
-            border-radius: 4px;
-            width: 250px;
-            max-height: 250px;
+            border-radius: 3px;
+            width: 220px;
+            max-height: 230px;
             overflow-y: auto;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
             display: none;
+            margin-top: 2px;
         }
         
-        .multi-select-dropdown.active {
+        .compact-select-dropdown.active {
             display: block;
         }
         
-        .multi-select-search {
-            padding: 5px;
+        .compact-select-search {
+            padding: 4px;
             width: 100%;
             border: none;
             border-bottom: 1px solid #eee;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
         }
         
-        .multi-select-actions {
-            padding: 5px;
+        .compact-select-actions {
+            padding: 3px 4px;
             display: flex;
             justify-content: space-between;
             border-bottom: 1px solid #eee;
         }
         
-        .multi-select-actions button {
+        .compact-select-actions button {
             padding: 2px 5px;
             font-size: 0.7rem;
         }
         
-        .multi-select-options {
+        .compact-select-options {
             max-height: 150px;
             overflow-y: auto;
         }
         
-        .multi-select-option {
-            padding: 5px;
+        .compact-select-option {
+            padding: 3px 4px;
             cursor: pointer;
             display: flex;
             align-items: center;
         }
         
-        .multi-select-option:hover {
+        .compact-select-option:hover {
             background-color: #f5f5f5;
         }
         
-        .multi-select-option input[type="checkbox"] {
+        .compact-select-option input[type="checkbox"] {
             margin-right: 5px;
+            scale: 0.8;
         }
 
-        .multi-select-option.disabled {
+        .compact-select-option.disabled {
             opacity: 0.5;
             pointer-events: none;
         }
 
         .only-btn {
-            margin-left: 5px;
-            padding: 1px 3px;
+            margin-left: 3px;
+            padding: 0px 3px;
             font-size: 0.65rem;
             background-color: #2980b9;
             color: white;
             border: none;
-            border-radius: 3px;
+            border-radius: 2px;
             cursor: pointer;
         }
 
@@ -219,18 +233,18 @@
         /* Filter buttons */
         .filter-buttons {
             display: flex;
-            gap: 5px;
+            gap: 4px;
             margin-left: auto;
         }
 
         button {
-            padding: 4px 8px;
+            padding: 3px 8px;
             background-color: #3498db;
             color: white;
             border: none;
-            border-radius: 4px;
+            border-radius: 3px;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: background-color 0.2s;
             font-size: 0.75rem;
         }
 
@@ -250,12 +264,158 @@
             background-color: #2c3e50;
         }
 
+        /* Metrics Bar */
+        .metrics-bar {
+            background-color: white;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 5px 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 38px;
+            flex: 0 0 auto;
+        }
+
+        .metrics-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .metrics-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .cost-display {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .total-cost {
+            font-size: 1rem;
+            font-weight: bold;
+            color: #e67e22;
+            line-height: 1;
+        }
+
+        .total-cost-label {
+            font-size: 0.65rem;
+            color: #7f8c8d;
+        }
+
+        .type-metrics {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .type-metric {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 0.75rem;
+        }
+
+        .type-percent {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .parts-metrics {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .parts-metric {
+            font-size: 0.75rem;
+            color: #7f8c8d;
+        }
+
+        .parts-metric-value {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .type-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .type-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-btn {
+            background-color: #3498db;
+            color: white;
+            padding: 3px 8px;
+            font-size: 0.75rem;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: white;
+            min-width: 140px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            z-index: 1;
+            border-radius: 3px;
+            overflow: hidden;
+            right: 0;
+        }
+
+        .dropdown-content.show {
+            display: block;
+        }
+
+        .dropdown-item {
+            padding: 6px 12px;
+            display: block;
+            font-size: 0.75rem;
+            color: #333;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .dropdown-item:hover {
+            background-color: #f5f5f5;
+        }
+
+        .dropdown-item.active {
+            background-color: #e1f0fa;
+            font-weight: bold;
+        }
+
+        .sort-toggle {
+            display: flex;
+            gap: 4px;
+            font-size: 0.7rem;
+            align-items: center;
+        }
+
+        .sort-toggle button {
+            padding: 2px 6px;
+            font-size: 0.7rem;
+        }
+
         /* Dashboard Content */
         .dashboard-content {
             flex: 1;
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            padding: 5px 8px;
         }
 
         .main-container {
@@ -281,147 +441,11 @@
             overflow: hidden;
         }
 
-        .metrics-bar {
-            background-color: white;
-            border-radius: 6px;
-            padding: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            margin-bottom: 5px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .metrics-left {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .metrics-right {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .total-cost-container {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .cost-display {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .total-cost {
-            font-size: 1.3rem;
-            font-weight: bold;
-            color: #e67e22;
-        }
-
-        .total-cost-label {
-            font-size: 0.7rem;
-            color: #7f8c8d;
-        }
-
-        .type-metrics {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .type-metric {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 0.8rem;
-        }
-
-        .type-percent {
-            font-weight: bold;
-            color: #2c3e50;
-        }
-
-        .type-selector {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .type-dropdown {
-            position: relative;
-            display: inline-block;
-        }
-
-        .dropdown-btn {
-            background-color: #3498db;
-            color: white;
-            padding: 4px 8px;
-            font-size: 0.75rem;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .dropdown-content {
-            display: none;
-            position: absolute;
-            background-color: white;
-            min-width: 160px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-            z-index: 1;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-
-        .dropdown-content.show {
-            display: block;
-        }
-
-        .dropdown-item {
-            padding: 8px 12px;
-            display: block;
-            font-size: 0.8rem;
-            color: #333;
-            cursor: pointer;
-            text-decoration: none;
-        }
-
-        .dropdown-item:hover {
-            background-color: #f5f5f5;
-        }
-
-        .dropdown-item.active {
-            background-color: #e1f0fa;
-            font-weight: bold;
-        }
-
-        .parts-metrics {
-            display: flex;
-            gap: 20px;
-            align-items: center;
-        }
-
-        .parts-metric {
-            font-size: 0.8rem;
-            color: #7f8c8d;
-        }
-
-        .parts-metric-value {
-            font-weight: bold;
-            color: #2c3e50;
-        }
-
         .top10-container {
             background-color: white;
-            border-radius: 6px;
-            padding: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+            padding: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
             flex: 1;
             display: flex;
             flex-direction: column;
@@ -432,29 +456,13 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 5px;
+            margin-bottom: 2px;
         }
 
         .top10-title {
             display: flex;
             align-items: center;
             gap: 8px;
-        }
-
-        .sort-toggle {
-            display: flex;
-            gap: 5px;
-            font-size: 0.7rem;
-            align-items: center;
-        }
-
-        .sort-toggle button {
-            padding: 2px 6px;
-            font-size: 0.7rem;
-        }
-
-        .sort-toggle button.active {
-            background-color: #2c3e50;
         }
 
         .table-container {
@@ -465,9 +473,9 @@
 
         .chart-card {
             background-color: white;
-            border-radius: 6px;
-            padding: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+            padding: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
             flex: 1;
             display: flex;
             flex-direction: column;
@@ -476,7 +484,10 @@
 
         .card-title {
             flex: 0 0 auto;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
+            font-size: 0.9rem;
+            color: #2c3e50;
+            font-weight: 600;
         }
 
         .card-content {
@@ -493,9 +504,9 @@
         }
 
         .chart-legend {
-            width: 120px;
-            padding-left: 10px;
-            font-size: 0.75rem;
+            width: 110px;
+            padding-left: 8px;
+            font-size: 0.7rem;
         }
 
         /* Tables */
@@ -506,18 +517,18 @@
         }
 
         th, td {
-            padding: 4px;
+            padding: 3px 4px;
             text-align: left;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid #eee;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
         }
 
         th {
-            background-color: #f2f2f2;
-            font-weight: bold;
+            background-color: #f7f9fc;
+            font-weight: 600;
             position: sticky;
             top: 0;
             z-index: 10;
@@ -534,12 +545,12 @@
 
         th.clickable::after {
             content: " ▼";
-            font-size: 0.7rem;
+            font-size: 0.6rem;
             color: #2980b9;
         }
 
         tr:hover {
-            background-color: #f5f5f5;
+            background-color: #f5f9ff;
         }
 
         /* SVG-based Charts */
@@ -609,7 +620,7 @@
 
         .line-current {
             stroke: #9b59b6;
-            stroke-width: 3;
+            stroke-width: 2;
         }
 
         .data-point {
@@ -620,13 +631,13 @@
         .legend-item {
             display: flex;
             align-items: center;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .legend-color {
-            width: 20px;
+            width: 18px;
             height: 3px;
-            margin-right: 5px;
+            margin-right: 4px;
         }
 
         .legend-color.dashed {
@@ -635,41 +646,15 @@
         }
 
         .legend-color-dot {
-            width: 8px;
-            height: 8px;
+            width: 7px;
+            height: 7px;
             border-radius: 50%;
-            margin-right: 5px;
+            margin-right: 4px;
         }
 
         .legend-label {
-            font-size: 10px;
+            font-size: 0.65rem;
             color: #333;
-        }
-
-        /* Box plot */
-        .box-plot {
-            stroke: #333;
-            stroke-width: 1;
-            fill: #e8f4fb;
-        }
-
-        .median-line {
-            stroke: #2c3e50;
-            stroke-width: 2;
-        }
-
-        .whisker-line {
-            stroke: #333;
-            stroke-width: 1;
-        }
-
-        .outlier {
-            fill: #e74c3c;
-        }
-
-        .date-marker {
-            stroke: #e74c3c;
-            stroke-width: 2;
         }
 
         /* Loading Indicator */
@@ -678,7 +663,7 @@
             justify-content: center;
             align-items: center;
             height: 100%;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             color: #7f8c8d;
         }
 
@@ -686,8 +671,8 @@
             border: 3px solid #f3f3f3;
             border-top: 3px solid #3498db;
             border-radius: 50%;
-            width: 16px;
-            height: 16px;
+            width: 14px;
+            height: 14px;
             animation: spin 1s linear infinite;
             margin-right: 8px;
         }
@@ -710,8 +695,8 @@
             border: 5px solid #f3f3f3;
             border-top: 5px solid #3498db;
             border-radius: 50%;
-            width: 50px;
-            height: 50px;
+            width: 40px;
+            height: 40px;
             animation: spin 1s linear infinite;
             margin-bottom: 15px;
         }
@@ -726,22 +711,13 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* Legend Styles */
-        .legend {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 5px;
-            font-size: 0.75rem;
-        }
-
         /* Tooltip Styles */
         .tooltip {
             position: absolute;
-            padding: 5px;
+            padding: 5px 8px;
             background-color: rgba(0, 0, 0, 0.8);
             color: white;
-            border-radius: 4px;
+            border-radius: 3px;
             pointer-events: none;
             z-index: 100;
             font-size: 0.7rem;
@@ -764,7 +740,7 @@
         .popup-menu {
             position: absolute;
             background-color: white;
-            border-radius: 4px;
+            border-radius: 3px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
             z-index: 100;
             max-height: 250px;
@@ -778,9 +754,9 @@
         }
 
         .popup-menu-item {
-            padding: 8px 12px;
+            padding: 6px 10px;
             cursor: pointer;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             border-bottom: 1px solid #eee;
         }
 
@@ -802,141 +778,136 @@
             position: relative;
             cursor: pointer;
         }
-        
-        /* Box plot label */
-        .box-plot-label {
-            font-size: 8px;
-            fill: #333;
-        }
     </style>
 </head>
 <body>
     <div class="container">
-        <header>
+        <!-- Compact Top Navigation -->
+        <div class="top-nav">
             <h1 class="header-title">Manufacturing Rejects Dashboard</h1>
-            <div class="header-date-controls">
-                <div class="filter-group">
+            <div class="header-controls">
+                <div class="date-control">
                     <label for="date-from">From:</label>
                     <input type="date" id="date-from">
                 </div>
-                <div class="filter-group">
+                <div class="date-control">
                     <label for="date-to">To:</label>
                     <input type="date" id="date-to">
                 </div>
-                <button id="apply-date">Apply Dates</button>
+                <button id="apply-date">Apply</button>
             </div>
-        </header>
+        </div>
 
-        <section class="filters">
-            <div class="filter-row">
-                <div class="filter-group">
-                    <label for="supervisor">Supervisor:</label>
-                    <div id="supervisor-select" class="multi-select">
-                        <div class="multi-select-header">
-                            <span class="multi-select-header-text">All Supervisors</span>
-                            <span>▼</span>
-                        </div>
-                        <div class="multi-select-dropdown">
-                            <input type="text" class="multi-select-search" placeholder="Search...">
-                            <div class="multi-select-actions">
-                                <button class="select-all">Select All</button>
-                                <button class="clear-all">Clear All</button>
-                            </div>
-                            <div class="multi-select-options"></div>
-                        </div>
+        <!-- Compact Filter Bar -->
+        <div class="filter-bar">
+            <div class="filter-group">
+                <label for="supervisor">Supervisor:</label>
+                <div id="supervisor-select" class="compact-select">
+                    <div class="compact-select-header">
+                        <span class="compact-select-header-text">All Supervisors</span>
+                        <span>▼</span>
                     </div>
-                </div>
-                <div class="filter-group">
-                    <label for="product">Product:</label>
-                    <div id="product-select" class="multi-select">
-                        <div class="multi-select-header">
-                            <span class="multi-select-header-text">All Products</span>
-                            <span>▼</span>
+                    <div class="compact-select-dropdown">
+                        <input type="text" class="compact-select-search" placeholder="Search...">
+                        <div class="compact-select-actions">
+                            <button class="select-all">All</button>
+                            <button class="clear-all">Clear</button>
                         </div>
-                        <div class="multi-select-dropdown">
-                            <input type="text" class="multi-select-search" placeholder="Search...">
-                            <div class="multi-select-actions">
-                                <button class="select-all">Select All</button>
-                                <button class="clear-all">Clear All</button>
-                            </div>
-                            <div class="multi-select-options"></div>
-                        </div>
+                        <div class="compact-select-options"></div>
                     </div>
-                </div>
-                <div class="filter-group">
-                    <label for="variant">Variant:</label>
-                    <div id="variant-select" class="multi-select">
-                        <div class="multi-select-header">
-                            <span class="multi-select-header-text">All Variants</span>
-                            <span>▼</span>
-                        </div>
-                        <div class="multi-select-dropdown">
-                            <input type="text" class="multi-select-search" placeholder="Search...">
-                            <div class="multi-select-actions">
-                                <button class="select-all">Select All</button>
-                                <button class="clear-all">Clear All</button>
-                            </div>
-                            <div class="multi-select-options"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="filter-group">
-                    <label for="batch">Batch:</label>
-                    <div id="batch-select" class="multi-select">
-                        <div class="multi-select-header">
-                            <span class="multi-select-header-text">All Batches</span>
-                            <span>▼</span>
-                        </div>
-                        <div class="multi-select-dropdown">
-                            <input type="text" class="multi-select-search" placeholder="Search...">
-                            <div class="multi-select-actions">
-                                <button class="select-all">Select All</button>
-                                <button class="clear-all">Clear All</button>
-                            </div>
-                            <div class="multi-select-options"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="filter-group">
-                    <label for="part">Part:</label>
-                    <div id="part-select" class="multi-select">
-                        <div class="multi-select-header">
-                            <span class="multi-select-header-text">All Parts</span>
-                            <span>▼</span>
-                        </div>
-                        <div class="multi-select-dropdown">
-                            <input type="text" class="multi-select-search" placeholder="Search...">
-                            <div class="multi-select-actions">
-                                <button class="select-all">Select All</button>
-                                <button class="clear-all">Clear All</button>
-                            </div>
-                            <div class="multi-select-options"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="filter-group">
-                    <label for="alias">Alias:</label>
-                    <div id="alias-select" class="multi-select">
-                        <div class="multi-select-header">
-                            <span class="multi-select-header-text">All Aliases</span>
-                            <span>▼</span>
-                        </div>
-                        <div class="multi-select-dropdown">
-                            <input type="text" class="multi-select-search" placeholder="Search...">
-                            <div class="multi-select-actions">
-                                <button class="select-all">Select All</button>
-                                <button class="clear-all">Clear All</button>
-                            </div>
-                            <div class="multi-select-options"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="filter-buttons">
-                    <button id="reset-all-filters" class="reset">Reset All</button>
                 </div>
             </div>
-        </section>
+            <div class="filter-group">
+                <label for="product">Product:</label>
+                <div id="product-select" class="compact-select">
+                    <div class="compact-select-header">
+                        <span class="compact-select-header-text">All Products</span>
+                        <span>▼</span>
+                    </div>
+                    <div class="compact-select-dropdown">
+                        <input type="text" class="compact-select-search" placeholder="Search...">
+                        <div class="compact-select-actions">
+                            <button class="select-all">All</button>
+                            <button class="clear-all">Clear</button>
+                        </div>
+                        <div class="compact-select-options"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="filter-group">
+                <label for="variant">Variant:</label>
+                <div id="variant-select" class="compact-select">
+                    <div class="compact-select-header">
+                        <span class="compact-select-header-text">All Variants</span>
+                        <span>▼</span>
+                    </div>
+                    <div class="compact-select-dropdown">
+                        <input type="text" class="compact-select-search" placeholder="Search...">
+                        <div class="compact-select-actions">
+                            <button class="select-all">All</button>
+                            <button class="clear-all">Clear</button>
+                        </div>
+                        <div class="compact-select-options"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="filter-group">
+                <label for="batch">Batch:</label>
+                <div id="batch-select" class="compact-select">
+                    <div class="compact-select-header">
+                        <span class="compact-select-header-text">All Batches</span>
+                        <span>▼</span>
+                    </div>
+                    <div class="compact-select-dropdown">
+                        <input type="text" class="compact-select-search" placeholder="Search...">
+                        <div class="compact-select-actions">
+                            <button class="select-all">All</button>
+                            <button class="clear-all">Clear</button>
+                        </div>
+                        <div class="compact-select-options"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="filter-group">
+                <label for="part">Part:</label>
+                <div id="part-select" class="compact-select">
+                    <div class="compact-select-header">
+                        <span class="compact-select-header-text">All Parts</span>
+                        <span>▼</span>
+                    </div>
+                    <div class="compact-select-dropdown">
+                        <input type="text" class="compact-select-search" placeholder="Search...">
+                        <div class="compact-select-actions">
+                            <button class="select-all">All</button>
+                            <button class="clear-all">Clear</button>
+                        </div>
+                        <div class="compact-select-options"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="filter-group">
+                <label for="alias">Alias:</label>
+                <div id="alias-select" class="compact-select">
+                    <div class="compact-select-header">
+                        <span class="compact-select-header-text">All Aliases</span>
+                        <span>▼</span>
+                    </div>
+                    <div class="compact-select-dropdown">
+                        <input type="text" class="compact-select-search" placeholder="Search...">
+                        <div class="compact-select-actions">
+                            <button class="select-all">All</button>
+                            <button class="clear-all">Clear</button>
+                        </div>
+                        <div class="compact-select-options"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="filter-buttons">
+                <button id="reset-all-filters" class="reset">Reset</button>
+            </div>
+        </div>
 
+        <!-- Metrics Bar -->
         <div class="metrics-bar">
             <div class="metrics-left">
                 <div class="cost-display">
@@ -977,25 +948,25 @@
                         </button>
                         <div class="dropdown-content" id="action-dropdown-content">
                             <a href="#" class="dropdown-item active" data-action="All">All Types</a>
-                            <!-- Actions will be populated dynamically -->
                         </div>
                     </div>
                 </div>
                 <div class="sort-toggle">
-                    <span>Sort by:</span>
-                    <button id="sort-by-qty" class="active">Quantity</button>
+                    <span>Sort:</span>
+                    <button id="sort-by-qty" class="active">Qty</button>
                     <button id="sort-by-cost">Cost</button>
                 </div>
             </div>
         </div>
 
+        <!-- Dashboard Content -->
         <div class="dashboard-content">
             <div class="main-container">
                 <div class="left-panel">
                     <div class="top10-container">
                         <div class="top10-header">
                             <div class="top10-title">
-                                <h2>Top 10 Rejects</h2>
+                                <div class="card-title">Top 10 Rejects</div>
                             </div>
                         </div>
                         <div class="table-container">
@@ -1027,7 +998,7 @@
                     </div>
                     
                     <div class="chart-card">
-                        <h2 class="card-title">Daily Rejects Trend</h2>
+                        <div class="card-title">Daily Rejects Trend</div>
                         <div id="trend-chart" class="card-content">
                             <div class="chart-area">
                                 <div class="loading">
@@ -1041,38 +1012,39 @@
                         </div>
                     </div>
                 </div>
-<div class="right-panel">
-                <div class="chart-card">
-                  <h2 class="card-title">Top 3 Reject Reasons</h2>
-                    <div id="reasons-chart" class="card-content">
-                        <div class="chart-area">
-                            <div class="loading">
-                                <div class="spinner"></div>
-                                <span>Loading data...</span>
+                <div class="right-panel">
+                    <div class="chart-card">
+                        <div class="card-title">Top 3 Reject Reasons</div>
+                        <div id="reasons-chart" class="card-content">
+                            <div class="chart-area">
+                                <div class="loading">
+                                    <div class="spinner"></div>
+                                    <span>Loading data...</span>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                
-                <div class="chart-card">
-                <h2 class="card-title">Top 3 Rejected Parts</h2>
-                    <div id="parts-chart" class="card-content">
-                        <div class="chart-area">
-                            <div class="loading">
-                                <div class="spinner"></div>
-                                <span>Loading data...</span>
+                    
+                    <div class="chart-card">
+                        <div class="card-title">Top 3 Rejected Parts</div>
+                        <div id="parts-chart" class="card-content">
+                            <div class="chart-area">
+                                <div class="loading">
+                                    <div class="spinner"></div>
+                                    <span>Loading data...</span>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                
-                <div class="chart-card">
-                 <h2 class="card-title" id="station-chart-title">Top 3 Station By Reject <span id="station-metric-type">Quantity</span></h2>
-                    <div id="station-chart" class="card-content">
-                        <div class="chart-area">
-                            <div class="loading">
-                                <div class="spinner"></div>
-                                <span>Loading data...</span>
+                    
+                    <div class="chart-card">
+                        <div class="card-title">Top 3 Station By Reject <span id="station-metric-type">Quantity</span></div>
+                        <div id="station-chart" class="card-content">
+                            <div class="chart-area">
+                                <div class="loading">
+                                    <div class="spinner"></div>
+                                    <span>Loading data...</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1080,7 +1052,6 @@
             </div>
         </div>
     </div>
-</div>
 
 <script>
     // Global variables
@@ -1174,22 +1145,22 @@
         station: document.querySelector('#station-chart .chart-area')
     };
 
-const top10Elements = {
-    tableBody: document.getElementById('top10-table-body'),
-    sortByQty: document.getElementById('sort-by-qty'),
-    sortByCost: document.getElementById('sort-by-cost'),
-    actionDropdown: document.getElementById('action-dropdown'),
-    actionDropdownContent: document.getElementById('action-dropdown-content'),
-    currentAction: document.getElementById('current-action'),
-    rejectReasonHeader: document.getElementById('reject-reason-header'),
-    stationHeader: document.getElementById('station-header'),
-    rejectReasonMenu: document.getElementById('reject-reason-menu'),
-    stationMenu: document.getElementById('station-menu'),
-    partsHeader: document.getElementById('parts-header'),
-    batchHeader: document.getElementById('batch-header'),
-    supplierHeader: document.getElementById('supplier-header'),
-    stationChartTitle: document.getElementById('station-metric-type')
-};
+    const top10Elements = {
+        tableBody: document.getElementById('top10-table-body'),
+        sortByQty: document.getElementById('sort-by-qty'),
+        sortByCost: document.getElementById('sort-by-cost'),
+        actionDropdown: document.getElementById('action-dropdown'),
+        actionDropdownContent: document.getElementById('action-dropdown-content'),
+        currentAction: document.getElementById('current-action'),
+        rejectReasonHeader: document.getElementById('reject-reason-header'),
+        stationHeader: document.getElementById('station-header'),
+        rejectReasonMenu: document.getElementById('reject-reason-menu'),
+        stationMenu: document.getElementById('station-menu'),
+        partsHeader: document.getElementById('parts-header'),
+        batchHeader: document.getElementById('batch-header'),
+        supplierHeader: document.getElementById('supplier-header'),
+        stationChartTitle: document.getElementById('station-metric-type')
+    };
 
     // Color schemes
     const colors = [
@@ -1230,7 +1201,6 @@ const top10Elements = {
     // Initialize the dashboard when the page loads
     document.addEventListener('DOMContentLoaded', initDashboard);
 
-// Initialize the dashboard
 // Initialize the dashboard
 async function initDashboard() {
     // Show loading indicators
@@ -2103,17 +2073,17 @@ top10Elements.stationHeader.addEventListener('click', (e) => {
     function initMultiSelectDropdowns() {
         Object.keys(filterElements.multiSelects).forEach(key => {
             const multiSelect = filterElements.multiSelects[key];
-            const header = multiSelect.querySelector('.multi-select-header');
-            const dropdown = multiSelect.querySelector('.multi-select-dropdown');
-            const headerText = multiSelect.querySelector('.multi-select-header-text');
-            const search = multiSelect.querySelector('.multi-select-search');
-            const optionsContainer = multiSelect.querySelector('.multi-select-options');
+            const header = multiSelect.querySelector('.compact-select-header');
+            const dropdown = multiSelect.querySelector('.compact-select-dropdown');
+            const headerText = multiSelect.querySelector('.compact-select-header-text');
+            const search = multiSelect.querySelector('.compact-select-search');
+            const optionsContainer = multiSelect.querySelector('.compact-select-options');
             const selectAllBtn = multiSelect.querySelector('.select-all');
             const clearAllBtn = multiSelect.querySelector('.clear-all');
             header.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const isActive = dropdown.classList.contains('active');
-                document.querySelectorAll('.multi-select-dropdown.active').forEach(el => {
+                document.querySelectorAll('.compact-select-dropdown.active').forEach(el => {
                     if (el !== dropdown) {
                         el.classList.remove('active');
                     }
@@ -2131,7 +2101,7 @@ top10Elements.stationHeader.addEventListener('click', (e) => {
             });
             search.addEventListener('input', () => {
                 const searchTerm = search.value.toLowerCase();
-                const options = optionsContainer.querySelectorAll('.multi-select-option');
+                const options = optionsContainer.querySelectorAll('.compact-select-option');
                 options.forEach(option => {
                     const text = option.textContent.toLowerCase();
                     if (text.includes(searchTerm)) {
@@ -2143,7 +2113,7 @@ top10Elements.stationHeader.addEventListener('click', (e) => {
             });
             selectAllBtn.addEventListener('click', () => {
                 if (isUpdatingFilters) return;
-                const visibleOptions = Array.from(optionsContainer.querySelectorAll('.multi-select-option'))
+                const visibleOptions = Array.from(optionsContainer.querySelectorAll('.compact-select-option'))
                     .filter(option => option.style.display !== 'none' && !option.classList.contains('disabled'));
                 visibleOptions.forEach(option => {
                     const checkbox = option.querySelector('input[type="checkbox"]');
@@ -2157,7 +2127,7 @@ top10Elements.stationHeader.addEventListener('click', (e) => {
             });
             clearAllBtn.addEventListener('click', () => {
                 if (isUpdatingFilters) return;
-                const visibleOptions = Array.from(optionsContainer.querySelectorAll('.multi-select-option'))
+                const visibleOptions = Array.from(optionsContainer.querySelectorAll('.compact-select-option'))
                     .filter(option => option.style.display !== 'none');
                 visibleOptions.forEach(option => {
                     const checkbox = option.querySelector('input[type="checkbox"]');
@@ -2173,7 +2143,7 @@ top10Elements.stationHeader.addEventListener('click', (e) => {
 
     // Update multi-select header text based on selections
     function updateHeaderText(multiSelect, filterName) {
-        const headerText = multiSelect.querySelector('.multi-select-header-text');
+        const headerText = multiSelect.querySelector('.compact-select-header-text');
         const selectedValues = filterValues[filterName];
         if (selectedValues.length === 0) {
             headerText.textContent = `All ${filterName.charAt(0).toUpperCase() + filterName.slice(1)}s`;
@@ -2508,13 +2478,13 @@ function selectOnlyThisOption(filterName, value) {
         const availableOptions = getAvailableOptionsForFilters();
         Object.keys(filterElements.multiSelects).forEach(key => {
             const multiSelect = filterElements.multiSelects[key];
-            const optionsContainer = multiSelect.querySelector('.multi-select-options');
+            const optionsContainer = multiSelect.querySelector('.compact-select-options');
             const allValues = [...availableFilterOptions[key]].filter(val => val).sort();
             const availableValues = new Set(availableOptions[key]);
             optionsContainer.innerHTML = '';
             if (allValues.length === 0) {
                 const noOptions = document.createElement('div');
-                noOptions.className = 'multi-select-option';
+                noOptions.className = 'compact-select-option';
                 noOptions.textContent = 'No options available';
                 noOptions.style.fontStyle = 'italic';
                 noOptions.style.color = '#999';
@@ -2522,7 +2492,7 @@ function selectOnlyThisOption(filterName, value) {
             } else {
                 allValues.forEach(value => {
                     const option = document.createElement('div');
-                    option.className = 'multi-select-option';
+                    option.className = 'compact-select-option';
                     const isAvailable = availableValues.has(value);
                     if (!isAvailable) {
                         option.classList.add('disabled');
@@ -2851,7 +2821,7 @@ function updateMetrics() {
             return;
         }
         
-        const margin = { top: 30, right: 30, bottom: 60, left: 60 };
+        const margin = { top: 20, right: 20, bottom: 40, left: 50 };
         const width = container.clientWidth - margin.left - margin.right;
         const height = container.clientHeight - margin.top - margin.bottom;
         
@@ -2919,14 +2889,14 @@ function updateMetrics() {
             // Add y-axis labels
             const yValue = yMaxValue - (i / numGridLines) * (yMaxValue - yMinValue);
             const yLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            yLabel.setAttribute('x', -10);
-            yLabel.setAttribute('y', y + 4);
+            yLabel.setAttribute('x', -8);
+            yLabel.setAttribute('y', y + 3);
             yLabel.setAttribute('text-anchor', 'end');
-            yLabel.setAttribute('font-size', '10px');
+            yLabel.setAttribute('font-size', '9px');
             yLabel.setAttribute('fill', '#666');
             yLabel.textContent = sortTop10By === 'qty' ? 
                 Math.round(yValue) : 
-                'R' + yValue.toFixed(2);
+                'R' + yValue.toFixed(0);
             gridGroup.appendChild(yLabel);
         }
         
@@ -2972,9 +2942,9 @@ function updateMetrics() {
                 // Add x-axis labels
                 const dateLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                 dateLabel.setAttribute('x', x);
-                dateLabel.setAttribute('y', height + 20);
+                dateLabel.setAttribute('y', height + 15);
                 dateLabel.setAttribute('text-anchor', 'middle');
-                dateLabel.setAttribute('font-size', '10px');
+                dateLabel.setAttribute('font-size', '9px');
                 dateLabel.setAttribute('fill', '#666');
                 dateLabel.textContent = dateFormatter.format(date);
                 gridGroup.appendChild(dateLabel);
@@ -3005,17 +2975,17 @@ function updateMetrics() {
         // Add axis labels
         const xAxisLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         xAxisLabel.setAttribute('x', width / 2);
-        xAxisLabel.setAttribute('y', height + 40);
+        xAxisLabel.setAttribute('y', height + 30);
         xAxisLabel.setAttribute('text-anchor', 'middle');
-        xAxisLabel.setAttribute('font-size', '12px');
+        xAxisLabel.setAttribute('font-size', '10px');
         xAxisLabel.setAttribute('fill', '#333');
         xAxisLabel.textContent = 'Production Date';
         g.appendChild(xAxisLabel);
         
         const yAxisLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        yAxisLabel.setAttribute('transform', `rotate(-90) translate(${-height/2}, ${-40})`);
+        yAxisLabel.setAttribute('transform', `rotate(-90) translate(${-height/2}, ${-35})`);
         yAxisLabel.setAttribute('text-anchor', 'middle');
-        yAxisLabel.setAttribute('font-size', '12px');
+        yAxisLabel.setAttribute('font-size', '10px');
         yAxisLabel.setAttribute('fill', '#333');
         yAxisLabel.textContent = sortTop10By === 'qty' ? 'Quantity' : 'Cost (R)';
         g.appendChild(yAxisLabel);
@@ -3045,7 +3015,7 @@ function updateMetrics() {
             minLegendColor.style.borderColor = '#3498db';
             const minLegendLabel = document.createElement('div');
             minLegendLabel.className = 'legend-label';
-            minLegendLabel.textContent = `Min: ${sortTop10By === 'qty' ? Math.round(minValue) : 'R' + minValue.toFixed(2)}`;
+            minLegendLabel.textContent = `Min: ${sortTop10By === 'qty' ? Math.round(minValue) : 'R' + minValue.toFixed(0)}`;
             minLegendItem.appendChild(minLegendColor);
             minLegendItem.appendChild(minLegendLabel);
             legendContainer.appendChild(minLegendItem);
@@ -3072,7 +3042,7 @@ function updateMetrics() {
             maxLegendColor.style.borderColor = '#e74c3c';
             const maxLegendLabel = document.createElement('div');
             maxLegendLabel.className = 'legend-label';
-            maxLegendLabel.textContent = `Max: ${sortTop10By === 'qty' ? Math.round(maxValue) : 'R' + maxValue.toFixed(2)}`;
+            maxLegendLabel.textContent = `Max: ${sortTop10By === 'qty' ? Math.round(maxValue) : 'R' + maxValue.toFixed(0)}`;
             maxLegendItem.appendChild(maxLegendColor);
             maxLegendItem.appendChild(maxLegendLabel);
             legendContainer.appendChild(maxLegendItem);
@@ -3099,7 +3069,7 @@ function updateMetrics() {
             meanLegendColor.style.height = '2px';
             const meanLegendLabel = document.createElement('div');
             meanLegendLabel.className = 'legend-label';
-            meanLegendLabel.textContent = `Mean: ${sortTop10By === 'qty' ? Math.round(meanValue) : 'R' + meanValue.toFixed(2)}`;
+            meanLegendLabel.textContent = `Mean: ${sortTop10By === 'qty' ? Math.round(meanValue) : 'R' + meanValue.toFixed(0)}`;
             meanLegendItem.appendChild(meanLegendColor);
             meanLegendItem.appendChild(meanLegendLabel);
             legendContainer.appendChild(meanLegendItem);
@@ -3128,7 +3098,7 @@ function updateMetrics() {
             currentLine.setAttribute('class', 'line line-current');
             currentLine.setAttribute('d', pathD);
             currentLine.setAttribute('stroke', '#9b59b6');
-            currentLine.setAttribute('stroke-width', 3);
+            currentLine.setAttribute('stroke-width', 2);
             currentLine.setAttribute('fill', 'none');
             linesGroup.appendChild(currentLine);
             
@@ -3138,7 +3108,7 @@ function updateMetrics() {
             const currentLegendColor = document.createElement('div');
             currentLegendColor.className = 'legend-color';
             currentLegendColor.style.backgroundColor = '#9b59b6';
-            currentLegendColor.style.height = '3px';
+            currentLegendColor.style.height = '2px';
             const currentLegendLabel = document.createElement('div');
             currentLegendLabel.className = 'legend-label';
             currentLegendLabel.textContent = 'Current';
@@ -3165,7 +3135,7 @@ function updateMetrics() {
             point.setAttribute('class', 'data-point');
             point.setAttribute('cx', x);
             point.setAttribute('cy', y);
-            point.setAttribute('r', 4);
+            point.setAttribute('r', 3);
             point.setAttribute('fill', '#fff');
             point.setAttribute('stroke', '#9b59b6');
             point.setAttribute('stroke-width', 2);
@@ -3266,7 +3236,7 @@ function createRejectReasonsChart() {
         return;
     }
     
-    const margin = { top: 10, right: 80, bottom: 20, left: 140 };
+    const margin = { top: 5, right: 70, bottom: 5, left: 120 };
     const width = container.clientWidth - margin.left - margin.right;
     const height = container.clientHeight - margin.top - margin.bottom;
     
@@ -3288,7 +3258,7 @@ function createRejectReasonsChart() {
         ));
         const barWidth = (barValue / maxValue) * (width - 20);
         
-        const y = index * (barHeight + 15) + 10;
+        const y = index * (barHeight + 15) + 15;
         
         const bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
         bar.setAttribute('class', 'horizontal-bar');
@@ -3343,19 +3313,21 @@ function createRejectReasonsChart() {
         label.setAttribute('class', 'horizontal-bar-label');
         label.setAttribute('x', barWidth + 5);
         label.setAttribute('y', y + barHeight / 2 + 4);
+        label.setAttribute('font-size', '10px');
         label.textContent = sortTop10By === 'qty' ? 
-            `${reasonCounts[reason].count} (R${reasonCounts[reason].cost.toFixed(2)})` : 
-            `R${reasonCounts[reason].cost.toFixed(2)} (${reasonCounts[reason].count})`;
+            `${reasonCounts[reason].count} (R${reasonCounts[reason].cost.toFixed(0)})` : 
+            `R${reasonCounts[reason].cost.toFixed(0)} (${reasonCounts[reason].count})`;
         g.appendChild(label);
         
         const reasonText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        reasonText.setAttribute('x', 0);
-        reasonText.setAttribute('y', y - 5);
+        reasonText.setAttribute('x', -5);
+        reasonText.setAttribute('y', y + barHeight / 2 + 4);
         reasonText.setAttribute('font-size', '10px');
+        reasonText.setAttribute('text-anchor', 'end');
         reasonText.setAttribute('fill', '#333');
         
         // Truncate long text with ellipsis
-        const maxLength = 25;
+        const maxLength = 20;
         reasonText.textContent = reason.length > maxLength ? reason.substring(0, maxLength) + '...' : reason;
         g.appendChild(reasonText);
     });
@@ -3428,7 +3400,7 @@ function createTopProblemsChart() {
         return;
     }
     
-    const margin = { top: 10, right: 20, bottom: 50, left: 140 };
+    const margin = { top: 5, right: 70, bottom: 5, left: 120 };
     const width = container.clientWidth - margin.left - margin.right;
     const height = container.clientHeight - margin.top - margin.bottom;
     
@@ -3443,13 +3415,13 @@ function createTopProblemsChart() {
     
     // Create horizontal bars for each top part
     topParts.forEach((part, index) => {
-        const barHeight = 25;
+        const barHeight = 20;
         const barValue = sortTop10By === 'qty' ? partCounts[part].count : partCounts[part].cost;
         const maxValue = Math.max(...topParts.map(p => 
             sortTop10By === 'qty' ? partCounts[p].count : partCounts[p].cost
         ));
         const barWidth = (barValue / maxValue) * (width - 20);
-        const y = index * (barHeight + 15) + 10;
+        const y = index * (barHeight + 15) + 15;
         
         const bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
         bar.setAttribute('class', 'horizontal-bar');
@@ -3476,7 +3448,7 @@ function createTopProblemsChart() {
                 <div><strong>Product:</strong> ${products || 'N/A'}</div>
                 <div><strong>Variant:</strong> ${variants || 'N/A'}</div>
                 <div><strong>Station:</strong> ${stations || 'N/A'}</div>
-                <div><strong>Reject Reason:</strong> ${reasons || 'N/A'}</div>
+                <div><strong>Reason:</strong> ${reasons || 'N/A'}</div>
             `;
             document.body.appendChild(tooltip);
             
@@ -3505,20 +3477,22 @@ function createTopProblemsChart() {
         const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         label.setAttribute('class', 'horizontal-bar-label');
         label.setAttribute('x', barWidth + 5);
-        label.setAttribute('y', y + barHeight / 2 + 5);
+        label.setAttribute('y', y + barHeight / 2 + 4);
+        label.setAttribute('font-size', '10px');
         label.textContent = sortTop10By === 'qty' ? 
-            `${partCounts[part].count} (R${partCounts[part].cost.toFixed(2)})` : 
-            `R${partCounts[part].cost.toFixed(2)} (${partCounts[part].count})`;
+            `${partCounts[part].count} (R${partCounts[part].cost.toFixed(0)})` : 
+            `R${partCounts[part].cost.toFixed(0)} (${partCounts[part].count})`;
         g.appendChild(label);
         
         const partText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        partText.setAttribute('x', 0);
-        partText.setAttribute('y', y - 5);
-        partText.setAttribute('font-size', '12px');
+        partText.setAttribute('x', -5);
+        partText.setAttribute('y', y + barHeight / 2 + 4);
+        partText.setAttribute('font-size', '10px');
+        partText.setAttribute('text-anchor', 'end');
         partText.setAttribute('fill', '#333');
         
         // Truncate long text with ellipsis
-        const maxLength = 20;
+        const maxLength = 16;
         partText.textContent = part.length > maxLength ? part.substring(0, maxLength) + '...' : part;
         g.appendChild(partText);
     });
@@ -3581,7 +3555,7 @@ function createStationCostChart() {
         return;
     }
     
-    const margin = { top: 10, right: 20, bottom: 50, left: 140 };
+    const margin = { top: 5, right: 70, bottom: 5, left: 120 };
     const width = container.clientWidth - margin.left - margin.right;
     const height = container.clientHeight - margin.top - margin.bottom;
     
@@ -3596,14 +3570,14 @@ function createStationCostChart() {
     
     // Create horizontal bars for each top station
     topStations.forEach((station, index) => {
-        const barHeight = 25;
+        const barHeight = 20;
         const barValue = sortTop10By === 'qty' ? stationCounts[station].count : stationCounts[station].cost;
         const maxValue = Math.max(...topStations.map(s => 
             sortTop10By === 'qty' ? stationCounts[s].count : stationCounts[s].cost
         ));
         const barWidth = (barValue / maxValue) * (width - 20);
         
-        const y = index * (barHeight + 15) + 10;
+        const y = index * (barHeight + 15) + 15;
         
         const bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
         bar.setAttribute('class', 'horizontal-bar');
@@ -3628,7 +3602,7 @@ function createStationCostChart() {
                 <div><strong>Cost:</strong> R${stationCounts[station].cost.toFixed(2)}</div>
                 <div><strong>Product:</strong> ${products || 'N/A'}</div>
                 <div><strong>Variant:</strong> ${variants || 'N/A'}</div>
-                <div><strong>Reject Reason:</strong> ${reasons || 'N/A'}</div>
+                <div><strong>Reason:</strong> ${reasons || 'N/A'}</div>
             `;
             document.body.appendChild(tooltip);
             
@@ -3657,20 +3631,22 @@ function createStationCostChart() {
         const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         label.setAttribute('class', 'horizontal-bar-label');
         label.setAttribute('x', barWidth + 5);
-        label.setAttribute('y', y + barHeight / 2 + 5);
+        label.setAttribute('y', y + barHeight / 2 + 4);
+        label.setAttribute('font-size', '10px');
         label.textContent = sortTop10By === 'qty' ? 
-            `${stationCounts[station].count} (R${stationCounts[station].cost.toFixed(2)})` : 
-            `R${stationCounts[station].cost.toFixed(2)} (${stationCounts[station].count})`;
+            `${stationCounts[station].count} (R${stationCounts[station].cost.toFixed(0)})` : 
+            `R${stationCounts[station].cost.toFixed(0)} (${stationCounts[station].count})`;
         g.appendChild(label);
         
         const stationText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        stationText.setAttribute('x', 0);
-        stationText.setAttribute('y', y - 5);
-        stationText.setAttribute('font-size', '12px');
+        stationText.setAttribute('x', -5);
+        stationText.setAttribute('y', y + barHeight / 2 + 4);
+        stationText.setAttribute('font-size', '10px');
+        stationText.setAttribute('text-anchor', 'end');
         stationText.setAttribute('fill', '#333');
         
         // Truncate long text with ellipsis
-        const maxLength = 20;
+        const maxLength = 16;
         stationText.textContent = station.length > maxLength ? station.substring(0, maxLength) + '...' : station;
         g.appendChild(stationText);
     });
