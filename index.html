@@ -2244,54 +2244,61 @@ top10Elements.stationHeader.addEventListener('click', (e) => {
     }
 
     // Select only one option in a filter
-    function selectOnlyThisOption(filterName, value) {
-        if (isUpdatingFilters) return;
-        isUpdatingFilters = true;
-        try {
-            // Clear all filter values for this filter name and set only the selected value
-            filterValues[filterName] = [value];
-            const multiSelect = filterElements.multiSelects[filterName];
-            const checkboxes = multiSelect.querySelectorAll('input[type="checkbox"]');
-            checkboxes.forEach(checkbox => {
-                checkbox.checked = checkbox.value === value;
-            });
-            updateHeaderText(multiSelect, filterName);
-            
-            // Update other filters based on associations
-            const associations = filterAssociations[filterName][value];
-            if (associations) {
-                Object.keys(filterValues).forEach(otherFilter => {
-                    if (otherFilter !== filterName) {
-                        const associatedValues = Array.from(associations[otherFilter] || []);
-                        filterValues[otherFilter] = associatedValues;
-                        const otherMultiSelect = filterElements.multiSelects[otherFilter];
-                        const otherCheckboxes = otherMultiSelect.querySelectorAll('input[type="checkbox"]');
-                        otherCheckboxes.forEach(checkbox => {
-                            checkbox.checked = associatedValues.includes(checkbox.value);
-                        });
-                        updateHeaderText(otherMultiSelect, otherFilter);
-                    }
-                });
+function selectOnlyThisOption(filterName, value) {
+    if (isUpdatingFilters) return;
+    isUpdatingFilters = true;
+    try {
+        // Reset all filters first
+        selectedAction = 'All';
+        selectedRejectReason = null;
+        selectedStation = null;
+
+        // Update UI to reflect these changes
+        top10Elements.currentAction.textContent = 'All Types';
+        document.querySelectorAll('#action-dropdown-content .dropdown-item').forEach(item => {
+            item.classList.remove('active');
+            if (item.getAttribute('data-action') === 'All') {
+                item.classList.add('active');
             }
-                        // Reset other filter types (dropdown/menu selections)
-            selectedAction = 'All';
-            selectedRejectReason = null;
-            selectedStation = null;
-            
-            // Update UI to reflect these changes
-            top10Elements.currentAction.textContent = 'All Types';
-            document.querySelectorAll('#action-dropdown-content .dropdown-item').forEach(item => {
-                item.classList.remove('active');
-                if (item.getAttribute('data-action') === 'All') {
-                    item.classList.add('active');
+        });
+        
+        // Clear all filter values for this filter name and set only the selected value
+        filterValues[filterName] = [value];
+        const multiSelect = filterElements.multiSelects[filterName];
+        const checkboxes = multiSelect.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = checkbox.value === value;
+        });
+        updateHeaderText(multiSelect, filterName);
+        
+        // Update other filters based on associations
+        const associations = filterAssociations[filterName][value];
+        if (associations) {
+            Object.keys(filterValues).forEach(otherFilter => {
+                if (otherFilter !== filterName) {
+                    const associatedValues = Array.from(associations[otherFilter] || []);
+                    filterValues[otherFilter] = associatedValues;
+                    const otherMultiSelect = filterElements.multiSelects[otherFilter];
+                    const otherCheckboxes = otherMultiSelect.querySelectorAll('input[type="checkbox"]');
+                    otherCheckboxes.forEach(checkbox => {
+                        checkbox.checked = associatedValues.includes(checkbox.value);
+                    });
+                    updateHeaderText(otherMultiSelect, otherFilter);
                 }
             });
-            // Apply filters and update UI
-            applyDetailFilters(filterName, true);
-        } finally {
-            isUpdatingFilters = false;
         }
+        
+        // Apply filters
+        applyDetailFilters(filterName, true);
+        
+        // Force complete redraw of all charts after the filter updates
+        prepareTrendChartData();
+        updateDashboardWithActionFilter();
+        
+    } finally {
+        isUpdatingFilters = false;
     }
+
 
     // Populate multi-select options based on available options
     function populateMultiSelectOptions() {
