@@ -1289,28 +1289,35 @@ async function initDashboard() {
         });
 
         // Add an event listener to close popup menus when clicking elsewhere
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.popup-menu') && 
-                !e.target.closest('#reject-reason-header') && 
-                !e.target.closest('#station-header')) {
-                top10Elements.rejectReasonMenu.classList.remove('active');
-                top10Elements.stationMenu.classList.remove('active');
-            }
-            
-            if (!e.target.closest('.dropdown-content') && 
-                !e.target.closest('.dropdown-btn')) {
-                document.querySelectorAll('.dropdown-content').forEach(el => {
-                    el.classList.remove('show');
-                });
-            }
-            
-            if (!e.target.closest('.compact-select-dropdown') && 
-                !e.target.closest('.compact-select-header')) {
-                document.querySelectorAll('.compact-select-dropdown').forEach(el => {
-                    el.classList.remove('active');
-                });
-            }
+// Modify the document click event listener (outside of any function)
+document.addEventListener('click', (e) => {
+    // Only close dropdowns if click is outside dropdown and header
+    if (!e.target.closest('.compact-select-dropdown') && 
+        !e.target.closest('.compact-select-header')) {
+        
+        document.querySelectorAll('.compact-select-dropdown').forEach(el => {
+            // Force removal of active class
+            el.classList.remove('active');
+            el.style.display = 'none';
         });
+    }
+    
+    // Handle other click-away cases
+    if (!e.target.closest('.popup-menu') && 
+        !e.target.closest('#reject-reason-header') && 
+        !e.target.closest('#station-header')) {
+        document.querySelectorAll('.popup-menu').forEach(el => {
+            el.classList.remove('active');
+        });
+    }
+    
+    if (!e.target.closest('.dropdown-content') && 
+        !e.target.closest('.dropdown-btn')) {
+        document.querySelectorAll('.dropdown-content').forEach(el => {
+            el.classList.remove('show');
+        });
+    }
+});
 
         // Reset the loading flag to ensure we can load data
         dataLoadingInProgress = false;
@@ -2147,45 +2154,45 @@ top10Elements.stationHeader.addEventListener('click', (e) => {
 // Update the positioning function for dropdowns
 // Update the positioning function for dropdowns
 function positionFilterDropdown(dropdown) {
-  // Get the parent element that triggered the dropdown
-  const parent = dropdown.closest('.compact-select');
-  const parentRect = parent.getBoundingClientRect();
-  
-  // Force fixed positioning
-  dropdown.style.position = 'fixed';
-  dropdown.style.top = `${parentRect.bottom + 2}px`;
-  dropdown.style.left = `${parentRect.left}px`;
-  dropdown.style.width = '220px'; // Fixed width
-  dropdown.style.zIndex = '9999';
-  
-  // Calculate available space
-  const viewportHeight = window.innerHeight;
-  const viewportWidth = window.innerWidth;
-  
-  // Set display to calculate dimensions
-  dropdown.style.display = 'block';
-  const dropdownHeight = dropdown.offsetHeight;
-  
-  // Position above if not enough space below
-  if (parentRect.bottom + dropdownHeight > viewportHeight && parentRect.top > dropdownHeight) {
-    dropdown.style.top = `${parentRect.top - dropdownHeight - 2}px`;
-  }
-  
-  // Handle horizontal overflow
-  if (parentRect.left + dropdown.offsetWidth > viewportWidth) {
-    dropdown.style.left = `${viewportWidth - dropdown.offsetWidth - 10}px`;
-  }
-  
-  // Set max height based on available space
-  const maxHeightBelow = viewportHeight - parentRect.bottom - 10;
-  const maxHeightAbove = parentRect.top - 10;
-  const maxHeight = (dropdown.style.top === `${parentRect.top - dropdownHeight - 2}px`) 
-    ? maxHeightAbove 
-    : maxHeightBelow;
-  
-  dropdown.style.maxHeight = `${Math.min(maxHeight, 230)}px`;
+    // Force display to perform calculations
+    dropdown.style.display = 'block';
+    
+    const parent = dropdown.closest('.compact-select');
+    const parentRect = parent.getBoundingClientRect();
+    
+    // Ensure proper positioning
+    dropdown.style.position = 'fixed';
+    dropdown.style.top = `${parentRect.bottom + 2}px`;
+    dropdown.style.left = `${parentRect.left}px`;
+    dropdown.style.width = '220px';
+    dropdown.style.zIndex = '9999';
+    
+    // Calculate dimensions
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+    
+    // Get dropdown height after it's visible
+    const dropdownHeight = dropdown.offsetHeight;
+    
+    // Position above if not enough space below
+    if (parentRect.bottom + dropdownHeight > viewportHeight && parentRect.top > dropdownHeight) {
+        dropdown.style.top = `${parentRect.top - dropdownHeight - 2}px`;
+    }
+    
+    // Handle horizontal overflow
+    if (parentRect.left + 220 > viewportWidth) {
+        dropdown.style.left = `${viewportWidth - 230}px`;
+    }
+    
+    // Set max height based on available space
+    const maxHeightBelow = viewportHeight - parentRect.bottom - 10;
+    const maxHeightAbove = parentRect.top - 10;
+    const maxHeight = (dropdown.style.top === `${parentRect.top - dropdownHeight - 2}px`) 
+        ? maxHeightAbove 
+        : maxHeightBelow;
+    
+    dropdown.style.maxHeight = `${Math.min(maxHeight, 230)}px`;
 }
-
     
     // Initialize multi-select dropdowns
     function initMultiSelectDropdowns() {
@@ -2199,9 +2206,9 @@ function positionFilterDropdown(dropdown) {
             const optionsContainer = multiSelect.querySelector('.compact-select-options');
             const selectAllBtn = multiSelect.querySelector('.select-all');
             const clearAllBtn = multiSelect.querySelector('.clear-all');
+// Replace the header click event listener in the initMultiSelectDropdowns function
 header.addEventListener('click', (e) => {
     e.stopPropagation();
-    const isActive = dropdown.classList.contains('active');
     
     // Close all other dropdowns first
     document.querySelectorAll('.compact-select-dropdown.active, .dropdown-content.show').forEach(el => {
@@ -2211,13 +2218,16 @@ header.addEventListener('click', (e) => {
         }
     });
     
-    // Toggle this dropdown
+    // Toggle the active state
     dropdown.classList.toggle('active');
     
-    if (!isActive) {
-        search.focus();
-        // Position the dropdown properly
-        positionFilterDropdown(dropdown);
+    // If now active, position it properly
+    if (dropdown.classList.contains('active')) {
+        // Force immediate positioning
+        window.setTimeout(() => {
+            positionFilterDropdown(dropdown);
+            search.focus();
+        }, 0);
     }
 });
             document.addEventListener('click', () => {
