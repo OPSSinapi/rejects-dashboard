@@ -1230,7 +1230,7 @@ const top10Elements = {
     // Initialize the dashboard when the page loads
     document.addEventListener('DOMContentLoaded', initDashboard);
 
-    // Initialize the dashboard
+// Initialize the dashboard
 async function initDashboard() {
     // Show loading indicators
     updateLoadingState(true, "Initializing dashboard...");
@@ -1244,15 +1244,7 @@ async function initDashboard() {
         indexData = await indexResponse.json();
         console.log("Available periods:", indexData.availablePeriods);
 
-        // Set default dates based on the last 5 days with rejects
-        if (indexData.availablePeriods && indexData.availablePeriods.length > 0) {
-            await findLastFiveRejectsDateRange(indexData.availablePeriods);
-            console.log("Default dates set - From:", filterElements.dateFrom.value, "To:", filterElements.dateTo.value);
-        } else {
-            throw new Error("No available data periods found in RejectsIndex.json");
-        }
-
-        // Initialize filters and other components
+        // Initialize filters and other components first
         initMultiSelectDropdowns();
         initActionDropdown();
         initClickableHeaders();
@@ -1260,36 +1252,77 @@ async function initDashboard() {
         // Add event listeners
         filterElements.applyDateBtn.addEventListener('click', loadDataForDateRange);
         filterElements.resetAllBtn.addEventListener('click', resetAllFilters);
+        
+        // Add event listeners for sorting
+        top10Elements.sortByQty.addEventListener('click', () => {
+            sortTop10By = 'qty';
+            top10Elements.sortByQty.classList.add('active');
+            top10Elements.sortByCost.classList.remove('active');
+            // Update station chart title to show Quantity
+            if (top10Elements.stationChartTitle) {
+                top10Elements.stationChartTitle.textContent = 'Quantity';
+            }
+            prepareTrendChartData();
+            updateDashboard();
+        });
+
+        top10Elements.sortByCost.addEventListener('click', () => {
+            sortTop10By = 'cost';
+            top10Elements.sortByCost.classList.add('active');
+            top10Elements.sortByQty.classList.remove('active');
+            // Update station chart title to show Cost
+            if (top10Elements.stationChartTitle) {
+                top10Elements.stationChartTitle.textContent = 'Cost';
+            }
+            prepareTrendChartData();
+            updateDashboard();
+        });
+
+        // Add an event listener to close popup menus when clicking elsewhere
+        document.addEventListener('click', () => {
+            top10Elements.rejectReasonMenu.classList.remove('active');
+            top10Elements.stationMenu.classList.remove('active');
+            document.querySelectorAll('.dropdown-content').forEach(el => {
+                el.classList.remove('show');
+            });
+        });
+
+        // Set default dates based on the last 5 days with rejects
+        if (indexData.availablePeriods && indexData.availablePeriods.length > 0) {
+            console.log("Finding last five rejects date range...");
+            await findLastFiveRejectsDateRange(indexData.availablePeriods);
+            console.log("Default dates set - From:", filterElements.dateFrom.value, "To:", filterElements.dateTo.value);
+        } else {
+            throw new Error("No available data periods found in RejectsIndex.json");
+        }
 
         // Load initial data for the default date range
+        console.log("Loading initial data for date range...");
         await loadDataForDateRange();
-
-        // Top 10 sort toggle (rest of your existing code remains here)
-top10Elements.sortByQty.addEventListener('click', () => {
-    sortTop10By = 'qty';
-    top10Elements.sortByQty.classList.add('active');
-    top10Elements.sortByCost.classList.remove('active');
-    // Update station chart title to show Quantity
-    if (top10Elements.stationChartTitle) {
-        top10Elements.stationChartTitle.textContent = 'Quantity';
-    }
-    prepareTrendChartData();
-    updateDashboard();
-});
-
-top10Elements.sortByCost.addEventListener('click', () => {
-    sortTop10By = 'cost';
-    top10Elements.sortByCost.classList.add('active');
-    top10Elements.sortByQty.classList.remove('active');
-    // Update station chart title to show Cost
-    if (top10Elements.stationChartTitle) {
-        top10Elements.stationChartTitle.textContent = 'Cost';
-    }
-    prepareTrendChartData();
-    updateDashboard();
-});
-
-        // Remaining event listeners (close popup menus, resize, etc.) remain unchanged
+        
+        // Additional check to ensure data was loaded properly
+        if (filteredData.length === 0) {
+            console.warn("No data loaded after initial load. Checking for issues...");
+            
+            // Retry with broader date range if no data was found
+            if (filterElements.dateFrom.value && filterElements.dateTo.value) {
+                const fromDate = new Date(filterElements.dateFrom.value);
+                const toDate = new Date(filterElements.dateTo.value);
+                
+                // Expand date range by 30 days in both directions
+                fromDate.setDate(fromDate.getDate() - 30);
+                toDate.setDate(toDate.getDate() + 30);
+                
+                filterElements.dateFrom.value = formatDateForInput(fromDate);
+                filterElements.dateTo.value = formatDateForInput(toDate);
+                
+                console.log("Retrying with expanded date range:", filterElements.dateFrom.value, "to", filterElements.dateTo.value);
+                await loadDataForDateRange();
+            }
+        }
+        
+        console.log("Dashboard initialization complete");
+        console.log("Filtered data count:", filteredData.length);
 
     } catch (error) {
         console.error("Error initializing dashboard:", error);
@@ -1299,74 +1332,119 @@ top10Elements.sortByCost.addEventListener('click', () => {
     }
 }
 
-    // Find the last 5 dates with rejects and set the date range
-    async function findLastFiveRejectsDateRange(availablePeriods) {
-        if (!availablePeriods || availablePeriods.length === 0) {
-            console.warn("No data periods available");
-            return;
-        }
-        
-        // Sort periods chronologically
-        availablePeriods.sort();
-        
-        // Start from the most recent month and look for dates with rejects
-        const recentPeriods = [...availablePeriods].reverse();
-        let allDates = [];
-        let processedMonths = 0;
-        
-        // Process months until we find enough dates or run out of months
-        for (const period of recentPeriods) {
-            try {
-                const monthResponse = await fetch(`data/${period}.json`);
-                if (!monthResponse.ok) {
-                    console.warn(`Month data for ${period} not found: ${monthResponse.status}`);
-                    continue;
-                }
-                
-                const monthData = await monthResponse.json();
-                const rejectsData = monthData.rejectData || [];
-                
-                // Cache this month's data for later use
-                loadedMonths[period] = rejectsData;
-                
-                // Extract unique dates with rejects
-                const datesWithRejects = [...new Set(rejectsData
-                    .filter(item => item.ProductionDate)
-                    .map(item => new Date(item.ProductionDate))
-                    .sort((a, b) => b - a) // Sort newest to oldest
-                )];
-                
-                allDates = [...allDates, ...datesWithRejects];
-                processedMonths++;
-                
-                // Stop when we have enough dates or processed enough months
-                if (allDates.length >= 5 || processedMonths >= 3) {
-                    break;
-                }
-            } catch (error) {
-                console.warn(`Error loading data for ${period}:`, error);
-            }
-        }
-        
-        // Take the 5 most recent dates
-        allDates.sort((a, b) => b - a); // Newest to oldest
-        const recentDates = allDates.slice(0, 5);
-        
-        if (recentDates.length === 0) {
-            console.warn("No dates with rejects found");
-            return;
-        }
-        
-        // Find earliest and latest dates
-        const fromDate = recentDates[recentDates.length - 1]; // Earliest of the 5
-        const toDate = recentDates[0]; // Latest date
-        
-        // Format for input fields
-        filterElements.dateFrom.value = formatDateForInput(fromDate);
-        filterElements.dateTo.value = formatDateForInput(toDate);
-        
-        console.log(`Set date range: ${formatDateForInput(fromDate)} to ${formatDateForInput(toDate)}`);
+// Find the last 5 dates with rejects and set the date range
+async function findLastFiveRejectsDateRange(availablePeriods) {
+    if (!availablePeriods || availablePeriods.length === 0) {
+        console.warn("No data periods available");
+        setDefaultDateRange();
+        return;
     }
+    
+    // Sort periods chronologically
+    availablePeriods.sort();
+    
+    // Start from the most recent month and look for dates with rejects
+    const recentPeriods = [...availablePeriods].reverse();
+    let allDates = [];
+    let processedMonths = 0;
+    
+    console.log("Starting to process periods:", recentPeriods);
+    
+    // Process months until we find enough dates or run out of months
+    for (const period of recentPeriods) {
+        try {
+            console.log(`Fetching data for period: ${period}`);
+            
+            const monthResponse = await fetch(`data/${period}.json`);
+            if (!monthResponse.ok) {
+                console.warn(`Month data for ${period} not found: ${monthResponse.status}`);
+                continue;
+            }
+            
+            const monthData = await monthResponse.json();
+            const rejectsData = monthData.rejectData || [];
+            
+            console.log(`Period ${period} has ${rejectsData.length} reject records`);
+            
+            // Cache this month's data for later use
+            loadedMonths[period] = rejectsData;
+            
+            // Extract unique dates with rejects
+            const datesWithRejects = [];
+            const uniqueDatesSet = new Set();
+            
+            rejectsData.forEach(item => {
+                if (item.ProductionDate) {
+                    // Ensure this is a valid date string
+                    try {
+                        const date = new Date(item.ProductionDate);
+                        if (!isNaN(date.getTime())) {
+                            const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+                            if (!uniqueDatesSet.has(dateStr)) {
+                                uniqueDatesSet.add(dateStr);
+                                datesWithRejects.push(date);
+                            }
+                        }
+                    } catch (e) {
+                        console.warn(`Invalid date: ${item.ProductionDate}`, e);
+                    }
+                }
+            });
+            
+            // Sort newest to oldest
+            datesWithRejects.sort((a, b) => b - a);
+            
+            console.log(`Found ${datesWithRejects.length} unique dates with rejects in period ${period}`);
+            
+            allDates = [...allDates, ...datesWithRejects];
+            processedMonths++;
+            
+            // Stop when we have enough dates or processed enough months
+            if (allDates.length >= 5 || processedMonths >= 3) {
+                console.log(`Found enough dates (${allDates.length}) or processed enough months (${processedMonths})`);
+                break;
+            }
+        } catch (error) {
+            console.warn(`Error loading data for ${period}:`, error);
+        }
+    }
+    
+    console.log(`All dates found: ${allDates.length}`);
+    
+    // Take the 5 most recent dates
+    allDates.sort((a, b) => b - a); // Newest to oldest
+    const recentDates = allDates.slice(0, 5);
+    
+    if (recentDates.length === 0) {
+        console.warn("No dates with rejects found, using default date range");
+        setDefaultDateRange();
+        return;
+    }
+    
+    // Find earliest and latest dates
+    const fromDate = recentDates[recentDates.length - 1]; // Earliest of the 5
+    const toDate = recentDates[0]; // Latest date
+    
+    console.log(`Found date range from ${fromDate.toISOString()} to ${toDate.toISOString()}`);
+    
+    // Format for input fields
+    filterElements.dateFrom.value = formatDateForInput(fromDate);
+    filterElements.dateTo.value = formatDateForInput(toDate);
+    
+    console.log(`Set date range inputs: ${filterElements.dateFrom.value} to ${filterElements.dateTo.value}`);
+}
+
+// Helper function to set a default date range (last 30 days)
+function setDefaultDateRange() {
+    const today = new Date();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+    
+    filterElements.dateFrom.value = formatDateForInput(thirtyDaysAgo);
+    filterElements.dateTo.value = formatDateForInput(today);
+    
+    console.log(`Set default date range: ${filterElements.dateFrom.value} to ${filterElements.dateTo.value}`);
+}
 
     // Load initial data for the default date range
     async function loadInitialData() {
