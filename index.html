@@ -2039,7 +2039,6 @@
                 
                 // Add change event to checkbox
                 checkbox.addEventListener('change', () => {
-                    const selectElement = document.getElementById(selectId);
                     const filterType = selectId.replace('-select', '');
                     const allCheckboxes = optionsContainer.querySelectorAll('input[type="checkbox"]');
                     const selectedValues = Array.from(allCheckboxes)
@@ -2624,9 +2623,11 @@
                 await loadDataForDateRange();
             });
             
-            // Filter changed
+            // Load data for current date range
             document.addEventListener('filterChanged', (e) => {
                 const { type, values } = e.detail;
+                
+                console.log(`Filter changed: ${type}`, values);
                 
                 // Update data module with new filter values
                 DataModule.setFilter(type, values);
@@ -2637,11 +2638,9 @@
                 // Update UI with available options for other filters
                 Object.keys(filterOptions).forEach(filterType => {
                     if (filterType !== type) {
-                        const selectedValues = filterType === 'supervisor' ? DataModule.getCurrentFilters().supervisor :
-                                            filterType === 'product' ? DataModule.getCurrentFilters().product :
-                                            filterType === 'variant' ? DataModule.getCurrentFilters().variant :
-                                            filterType === 'station' ? DataModule.getCurrentFilters().station : [];
-                            
+                        const currentFilters = DataModule.getCurrentFilters();
+                        const selectedValues = currentFilters[filterType] || [];
+                        
                         UIModule.populateMultiSelect(`${filterType}-select`, filterOptions[filterType], selectedValues);
                     }
                 });
