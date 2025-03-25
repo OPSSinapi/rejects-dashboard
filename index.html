@@ -742,7 +742,7 @@
                 <!-- Filter Section -->
                 <div class="filter-section">
                     <div class="filter-group">
-                        <label for="supervisor-filter">Supervisor:</label>
+                        <label>Supervisor:</label>
                         <div class="multi-select" id="supervisor-select">
                             <div class="multi-select-header">
                                 <span class="multi-select-text">All Supervisors</span>
@@ -762,7 +762,7 @@
                     </div>
                     
                     <div class="filter-group">
-                        <label for="product-filter">Product:</label>
+                        <label>Product:</label>
                         <div class="multi-select" id="product-select">
                             <div class="multi-select-header">
                                 <span class="multi-select-text">All Products</span>
@@ -782,7 +782,7 @@
                     </div>
                     
                     <div class="filter-group">
-                        <label for="variant-filter">Variant:</label>
+                        <label>Variant:</label>
                         <div class="multi-select" id="variant-select">
                             <div class="multi-select-header">
                                 <span class="multi-select-text">All Variants</span>
@@ -802,7 +802,7 @@
                     </div>
                     
                     <div class="filter-group">
-                        <label for="station-filter">Station:</label>
+                        <label>Station:</label>
                         <div class="multi-select" id="station-select">
                             <div class="multi-select-header">
                                 <span class="multi-select-text">All Stations</span>
@@ -1829,6 +1829,12 @@
             return currentFilters;
         };
         
+        // Set test data (for demo purposes)
+        const setTestData = function(data) {
+            rejectData = data;
+            return true;
+        };
+        
         // Return public methods
         return {
             init,
@@ -1844,6 +1850,7 @@
             getMetricsSummary,
             getSpecialStationsData,
             getCurrentFilters,
+            setTestData,
             specialStations
         };
     })();
@@ -2726,16 +2733,31 @@
         // Load initial data
         const loadInitialData = async function() {
             try {
+                console.log("Loading initial data...");
+                
                 // Show loading state
                 document.getElementById('top-rejects-loading').style.display = 'flex';
                 document.getElementById('trend-chart-loading').style.display = 'flex';
                 document.getElementById('reasons-chart-loading').style.display = 'flex';
+                
+                // Load test data directly for initial view
+                const testResponse = await fetch('2023-05.json');
+                if (!testResponse.ok) {
+                    throw new Error("Failed to load sample data");
+                }
+                
+                const testData = await testResponse.json();
+                console.log(`Loaded ${testData.rejectData.length} initial test records`);
+                
+                // Use this sample data for initialization
+                DataModule.setTestData(testData.rejectData);
                 
                 // Load data for current date range
                 await DataModule.loadDataForDateRange();
                 
                 // Get filter options
                 const filterOptions = DataModule.getFilterOptions();
+                console.log("Available filter options:", filterOptions);
                 
                 // Populate filter dropdowns
                 Object.keys(filterOptions).forEach(filterType => {
