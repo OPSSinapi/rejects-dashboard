@@ -176,7 +176,7 @@
             gap: var(--space-md);
             overflow-x: auto;
             position: relative;
-            z-index: 50;
+            z-index: 10; /* Lower than dropdowns */
         }
         
         .filter-group {
@@ -230,7 +230,7 @@
         }
         
         .multi-select-dropdown {
-            position: absolute;
+            position: fixed; /* Change to fixed positioning */
             top: 100%;
             left: 0;
             width: 200px;
@@ -239,7 +239,7 @@
             border: 1px solid var(--border-color);
             border-radius: var(--border-radius-sm);
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            z-index: 100;
+            z-index: 1000; /* Increase z-index significantly */
             display: none;
             margin-top: 2px;
             overflow: hidden;
@@ -1338,6 +1338,8 @@
         
         // Apply filters to the data
         const applyFilters = function() {
+            console.log("Applying filters with current state:", currentFilters);
+            
             // First, filter by date range
             filteredData = rejectData.filter(item => {
                 if (!item.ProductionDate) return false;
@@ -1346,32 +1348,38 @@
                        itemDate <= currentFilters.dateTo;
             });
             
+            console.log(`After date filtering: ${filteredData.length} records`);
+            
             // Apply supervisor filter if any are selected
-            if (currentFilters.supervisor.length > 0) {
+            if (currentFilters.supervisor && currentFilters.supervisor.length > 0) {
                 filteredData = filteredData.filter(item => 
-                    currentFilters.supervisor.includes(item.LineSupervisor)
+                    item.LineSupervisor && currentFilters.supervisor.includes(item.LineSupervisor)
                 );
+                console.log(`After supervisor filtering: ${filteredData.length} records`);
             }
             
             // Apply product filter if any are selected
-            if (currentFilters.product.length > 0) {
+            if (currentFilters.product && currentFilters.product.length > 0) {
                 filteredData = filteredData.filter(item => 
-                    currentFilters.product.includes(item.Product)
+                    item.Product && currentFilters.product.includes(item.Product)
                 );
+                console.log(`After product filtering: ${filteredData.length} records`);
             }
             
             // Apply variant filter if any are selected
-            if (currentFilters.variant.length > 0) {
+            if (currentFilters.variant && currentFilters.variant.length > 0) {
                 filteredData = filteredData.filter(item => 
-                    currentFilters.variant.includes(item.Variant)
+                    item.Variant && currentFilters.variant.includes(item.Variant)
                 );
+                console.log(`After variant filtering: ${filteredData.length} records`);
             }
             
             // Apply station filter if any are selected
-            if (currentFilters.station.length > 0) {
+            if (currentFilters.station && currentFilters.station.length > 0) {
                 filteredData = filteredData.filter(item => 
-                    currentFilters.station.includes(item.Station)
+                    item.Station && currentFilters.station.includes(item.Station)
                 );
+                console.log(`After station filtering: ${filteredData.length} records`);
             }
             
             return filteredData;
@@ -1541,9 +1549,14 @@
         
         // Update filter values
         const setFilter = function(filterName, values) {
+            console.log(`Setting ${filterName} filter to:`, values);
+            
             if (filterName in currentFilters) {
                 currentFilters[filterName] = values;
+                
+                // Apply filters to get updated filtered data
                 applyFilters();
+                
                 return true;
             }
             return false;
@@ -1840,6 +1853,27 @@
      * Manages UI interactions and rendering
      */
     const UIModule = (function() {
+        // Cache DOM elements
+        const elements = {
+            dateFrom: document.getElementById('date-from'),
+            dateTo: document.getElementById('date-to'),
+            applyDateBtn: document.getElementById('apply-date'),
+            resetFiltersBtn: document.getElementById('reset-filters'),
+            sortByQty: document.getElementById('sort-by-qty'),
+            sortByCost: document.getElementById('sort-by-cost'),
+            totalCost: document.getElementById('total-cost'),
+            totalQty: document.getElementById('total-qty'),
+            scrapPercent: document.getElementById('scrap-percent'),
+            rtsPercent: document.getElementById('rts-percent'),
+            localPercent: document.getElementById('local-percent'),
+            scrapMetric: document.getElementById('scrap-metric'),
+            rtsMetric: document.getElementById('rts-metric'),
+            localMetric: document.getElementById('local-metric'),
+            topRejectsBody: document.getElementById('top-rejects-body'),
+            topRejectsEmpty: document.getElementById('top-rejects-empty'),
+            topRejectsLoading: document.getElementById('top-rejects-loading')
+        };
+        
         // Current state
         let currentSortBy = 'qty'; // 'qty' or 'cost'
         
@@ -1852,22 +1886,28 @@
             headers.forEach(header => {
                 header.addEventListener('click', (e) => {
                     e.stopPropagation();
+                    
                     const multiSelect = header.closest('.multi-select');
                     const dropdown = multiSelect.querySelector('.multi-select-dropdown');
                     
                     // Close all other dropdowns first
-                    document.querySelectorAll('.multi-select-dropdown').forEach(el => {
+                    document.querySelectorAll('.multi-select-dropdown.active').forEach(el => {
                         if (el !== dropdown) {
                             el.classList.remove('active');
+                            el.style.display = 'none';
                         }
                     });
                     
                     // Toggle this dropdown
                     dropdown.classList.toggle('active');
                     
-                    // Position dropdown
+                    // Position dropdown if it's active
                     if (dropdown.classList.contains('active')) {
+                        // Force display "block" for positioning calculations
+                        dropdown.style.display = 'block';
                         positionDropdown(dropdown, header);
+                    } else {
+                        dropdown.style.display = 'none';
                     }
                 });
             });
@@ -1876,6 +1916,7 @@
             document.addEventListener('click', () => {
                 document.querySelectorAll('.multi-select-dropdown').forEach(dropdown => {
                     dropdown.classList.remove('active');
+                    dropdown.style.display = 'none';
                 });
             });
             
@@ -1943,17 +1984,25 @@
         
         // Position dropdown relative to its header
         const positionDropdown = function(dropdown, header) {
+            // Force display to enable calculations
+            dropdown.style.display = 'block';
+            
             const headerRect = header.getBoundingClientRect();
             const dropdownWidth = dropdown.offsetWidth;
             
-            // Position directly below header
-            dropdown.style.top = `${headerRect.bottom + window.scrollY}px`;
+            // Position directly below header, using fixed positioning
+            dropdown.style.top = `${headerRect.bottom}px`;
+            dropdown.style.left = `${headerRect.left}px`;
             
-            // Avoid going off-screen on the right
+            // Ensure the dropdown doesn't go off-screen
             if (headerRect.left + dropdownWidth > window.innerWidth) {
                 dropdown.style.left = `${window.innerWidth - dropdownWidth - 10}px`;
-            } else {
-                dropdown.style.left = `${headerRect.left + window.scrollX}px`;
+            }
+            
+            // Ensure the dropdown doesn't go off the bottom of the screen
+            const dropdownHeight = dropdown.offsetHeight;
+            if (headerRect.bottom + dropdownHeight > window.innerHeight) {
+                dropdown.style.top = `${headerRect.top - dropdownHeight}px`;
             }
         };
         
