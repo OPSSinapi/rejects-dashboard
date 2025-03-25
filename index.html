@@ -50,10 +50,9 @@
             --card-shadow-hover: 0 4px 8px rgba(0, 0, 0, 0.1);
             
             /* Layout */
-            --header-height: 60px;
+            --header-height: 50px;
             --filter-height: 60px;
-            --metrics-height: 80px;
-            --footer-height: 40px;
+            --metrics-height: 60px;
         }
 
         /* ========== RESET & BASE STYLES ========== */
@@ -70,7 +69,7 @@
             background-color: var(--background-color);
             color: var(--text-color);
             font-size: var(--base-font-size);
-            line-height: 1.5;
+            line-height: 1.4;
         }
         
         button, input, select {
@@ -88,29 +87,16 @@
         }
         
         .main-content {
-            display: flex;
             flex: 1;
             overflow: hidden;
-        }
-        
-        .sidebar {
-            width: 280px;
-            background-color: var(--primary-color);
-            color: white;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
-            transition: width 0.3s ease;
-        }
-        
-        .sidebar.collapsed {
-            width: 60px;
         }
         
         .content-area {
-            flex: 1;
             display: flex;
             flex-direction: column;
+            flex: 1;
             overflow: hidden;
         }
         
@@ -122,11 +108,11 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            z-index: 10;
+            z-index: 100;
         }
         
         .header-title {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: 600;
             color: var(--primary-color);
             display: flex;
@@ -141,7 +127,7 @@
         .header-controls {
             display: flex;
             align-items: center;
-            gap: var(--space-md);
+            gap: var(--space-sm);
         }
         
         .date-control {
@@ -153,13 +139,15 @@
         .date-control label {
             font-weight: 500;
             color: var(--primary-color);
+            font-size: var(--small-font-size);
         }
         
         .date-control input[type="date"] {
             border: 1px solid var(--border-color);
             border-radius: var(--border-radius-sm);
-            padding: 6px 8px;
+            padding: 4px 6px;
             color: var(--text-color);
+            font-size: var(--small-font-size);
         }
         
         .apply-date-btn {
@@ -167,10 +155,11 @@
             color: white;
             border: none;
             border-radius: var(--border-radius-sm);
-            padding: 6px 12px;
+            padding: 4px 10px;
             cursor: pointer;
             font-weight: 500;
             transition: background-color 0.2s;
+            font-size: var(--small-font-size);
         }
         
         .apply-date-btn:hover {
@@ -180,19 +169,22 @@
         /* Filter Section */
         .filter-section {
             background-color: var(--card-bg-color);
-            padding: var(--space-md) var(--space-lg);
+            padding: var(--space-sm) var(--space-lg);
             border-bottom: 1px solid var(--border-color);
-            overflow-x: auto;
             display: flex;
             align-items: center;
-            gap: var(--space-lg);
+            gap: var(--space-md);
+            overflow-x: auto;
+            position: relative;
+            z-index: 50;
         }
         
         .filter-group {
             display: flex;
             align-items: center;
-            gap: var(--space-sm);
+            gap: var(--space-xs);
             white-space: nowrap;
+            min-width: 160px;
         }
         
         .filter-group label {
@@ -201,23 +193,116 @@
             font-size: var(--small-font-size);
         }
         
-        .select-container {
+        /* Multi-select dropdown */
+        .multi-select {
             position: relative;
-            min-width: 140px;
+            width: 100%;
+            min-width: 120px;
         }
         
-        .select-container select {
-            width: 100%;
+        .multi-select-header {
             border: 1px solid var(--border-color);
             border-radius: var(--border-radius-sm);
-            padding: 6px 10px;
-            appearance: none;
+            padding: 3px 8px;
+            font-size: var(--small-font-size);
             background-color: white;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23333' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right var(--space-sm) center;
-            padding-right: 28px;
             cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .multi-select-header:hover {
+            border-color: var(--secondary-color);
+        }
+        
+        .multi-select-text {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+        }
+        
+        .multi-select-icon {
+            margin-left: var(--space-xs);
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+        
+        .multi-select-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 200px;
+            max-height: 250px;
+            background-color: white;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-sm);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            z-index: 100;
+            display: none;
+            margin-top: 2px;
+            overflow: hidden;
+        }
+        
+        .multi-select-dropdown.active {
+            display: block;
+        }
+        
+        .multi-select-search {
+            width: 100%;
+            padding: 6px 8px;
+            border: none;
+            border-bottom: 1px solid var(--border-color);
+            font-size: var(--small-font-size);
+        }
+        
+        .multi-select-options {
+            max-height: 160px;
+            overflow-y: auto;
+        }
+        
+        .multi-select-option {
+            padding: 6px 8px;
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-color);
+            font-size: var(--small-font-size);
+        }
+        
+        .multi-select-option:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .multi-select-option.disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        
+        .multi-select-checkbox {
+            margin-right: var(--space-xs);
+        }
+        
+        .multi-select-actions {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 8px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .multi-select-btn {
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 2px 6px;
+            font-size: var(--small-font-size);
+            color: var(--secondary-color);
+        }
+        
+        .multi-select-btn:hover {
+            text-decoration: underline;
         }
         
         .filter-buttons {
@@ -231,13 +316,14 @@
             color: white;
             border: none;
             border-radius: var(--border-radius-sm);
-            padding: 6px 12px;
+            padding: 4px 10px;
             cursor: pointer;
             font-weight: 500;
             display: flex;
             align-items: center;
             gap: var(--space-xs);
             transition: background-color 0.2s;
+            font-size: var(--small-font-size);
         }
         
         .reset-btn:hover {
@@ -259,7 +345,7 @@
         .metrics-group {
             display: flex;
             align-items: center;
-            gap: var(--space-xl);
+            gap: var(--space-lg);
         }
         
         .metric-item {
@@ -268,7 +354,7 @@
         }
         
         .metric-value {
-            font-size: 1.3rem;
+            font-size: 1.1rem;
             font-weight: 600;
             line-height: 1.2;
         }
@@ -303,71 +389,75 @@
             color: var(--primary-color);
         }
         
-        .special-stations-trigger {
-            background-color: var(--info-color);
-            color: white;
-            border: none;
+        .toggle-buttons {
+            display: flex;
+            gap: 1px;
+            overflow: hidden;
             border-radius: var(--border-radius-sm);
-            padding: 6px 12px;
+            background-color: var(--border-color);
+        }
+        
+        .toggle-btn {
+            background-color: white;
+            border: none;
+            padding: 4px 8px;
             cursor: pointer;
+            font-size: var(--small-font-size);
             font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .toggle-btn.active {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        /* Dashboard Content */
+        .dashboard-content {
             display: flex;
-            align-items: center;
-            gap: var(--space-xs);
-            transition: background-color 0.2s;
+            flex-direction: column;
+            flex: 1;
+            overflow: hidden;
+            padding: var(--space-sm);
         }
         
-        .special-stations-trigger:hover {
-            background-color: #8e44ad;
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: auto 1fr;
+            gap: var(--space-sm);
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
         }
         
-        .special-stations-trigger i {
-            transition: transform 0.3s;
+        .dashboard-grid > * {
+            min-height: 0;
         }
         
-        .special-stations-trigger.active i {
-            transform: rotate(180deg);
-        }
-        
-        /* Special Stations Section */
-        .special-stations-section {
-            background-color: #f8f4fc;
-            border-bottom: 1px solid #e1d5e7;
-            padding: var(--space-md) var(--space-lg);
-            display: none;
-        }
-        
-        .special-stations-section.visible {
-            display: block;
-        }
-        
-        .special-stations-title {
-            font-size: var(--subheading-font-size);
-            font-weight: 600;
-            color: var(--info-color);
-            margin-bottom: var(--space-sm);
+        .special-stations-row {
+            grid-column: span 3;
             display: flex;
-            align-items: center;
-            gap: var(--space-xs);
-        }
-        
-        .station-cards {
-            display: flex;
-            gap: var(--space-lg);
-            overflow-x: auto;
-            padding-bottom: var(--space-sm);
+            gap: var(--space-sm);
+            overflow: hidden;
+            height: 160px;
         }
         
         .station-card {
-            background-color: white;
-            border-radius: var(--border-radius-md);
+            background-color: var(--card-bg-color);
+            border-radius: var(--border-radius-sm);
+            padding: var(--space-sm);
             box-shadow: var(--card-shadow);
-            padding: var(--space-md);
-            min-width: 280px;
+            flex: 1;
+            height: 100%;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
             border-top: 3px solid var(--info-color);
         }
         
         .station-card-title {
+            font-size: var(--small-font-size);
             font-weight: 600;
             color: var(--primary-color);
             margin-bottom: var(--space-xs);
@@ -378,8 +468,8 @@
         
         .station-card-metrics {
             display: flex;
-            gap: var(--space-lg);
-            margin-bottom: var(--space-sm);
+            gap: var(--space-md);
+            margin-bottom: var(--space-xs);
         }
         
         .station-card-metric {
@@ -388,7 +478,7 @@
         }
         
         .station-card-value {
-            font-size: 1.1rem;
+            font-size: 0.9rem;
             font-weight: 600;
         }
         
@@ -398,7 +488,9 @@
         }
         
         .station-card-reasons {
-            margin-top: var(--space-sm);
+            flex: 1;
+            min-height: 0;
+            overflow: auto;
         }
         
         .station-card-reasons-title {
@@ -412,7 +504,7 @@
             display: flex;
             justify-content: space-between;
             font-size: var(--small-font-size);
-            padding: 4px 0;
+            padding: 2px 0;
         }
         
         .reason-item:not(:last-child) {
@@ -421,27 +513,21 @@
         
         .reason-name {
             color: var(--text-color);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 180px;
         }
         
         .reason-value {
             font-weight: 500;
             color: var(--primary-color);
-        }
-        
-        /* Dashboard Content */
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: 1fr 1fr;
-            gap: var(--space-md);
-            padding: var(--space-md);
-            flex: 1;
-            overflow: auto;
+            white-space: nowrap;
         }
         
         .dashboard-card {
             background-color: var(--card-bg-color);
-            border-radius: var(--border-radius-md);
+            border-radius: var(--border-radius-sm);
             box-shadow: var(--card-shadow);
             display: flex;
             flex-direction: column;
@@ -449,12 +535,12 @@
         }
         
         .top-rejects-card {
-            grid-column: 1;
-            grid-row: 1 / span 2;
+            grid-column: span 2;
+            grid-row: span 1;
         }
         
         .card-header {
-            padding: var(--space-md);
+            padding: var(--space-xs) var(--space-sm);
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -462,7 +548,7 @@
         }
         
         .card-title {
-            font-size: var(--subheading-font-size);
+            font-size: var(--small-font-size);
             font-weight: 600;
             color: var(--primary-color);
             display: flex;
@@ -470,16 +556,12 @@
             gap: var(--space-xs);
         }
         
-        .card-controls {
-            display: flex;
-            gap: var(--space-sm);
-        }
-        
         .card-content {
             flex: 1;
             overflow: auto;
             padding: 0;
             position: relative;
+            min-height: 0;
         }
         
         /* Table Styles */
@@ -490,9 +572,10 @@
         
         .data-table th, 
         .data-table td {
-            padding: var(--space-sm);
+            padding: var(--space-xs) var(--space-sm);
             text-align: left;
             border-bottom: 1px solid var(--border-color);
+            font-size: var(--small-font-size);
         }
         
         .data-table th {
@@ -534,84 +617,11 @@
         
         /* Chart containers */
         .chart-container {
-            flex: 1;
             position: relative;
-            padding: var(--space-md);
-        }
-        
-        /* Toggle Buttons */
-        .toggle-buttons {
-            display: flex;
-            gap: 1px;
+            width: 100%;
+            height: 100%;
+            padding: var(--space-xs);
             overflow: hidden;
-            border-radius: var(--border-radius-sm);
-            background-color: var(--border-color);
-        }
-        
-        .toggle-btn {
-            background-color: white;
-            border: none;
-            padding: 6px 12px;
-            cursor: pointer;
-            font-size: var(--small-font-size);
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-        
-        .toggle-btn.active {
-            background-color: var(--secondary-color);
-            color: white;
-        }
-        
-        /* Toggle Switch */
-        .toggle-switch {
-            position: relative;
-            display: inline-block;
-            width: 48px;
-            height: 24px;
-        }
-        
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-        
-        .toggle-slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .3s;
-            border-radius: 34px;
-        }
-        
-        .toggle-slider:before {
-            position: absolute;
-            content: "";
-            height: 18px;
-            width: 18px;
-            left: 3px;
-            bottom: 3px;
-            background-color: white;
-            transition: .3s;
-            border-radius: 50%;
-        }
-        
-        input:checked + .toggle-slider {
-            background-color: var(--secondary-color);
-        }
-        
-        input:checked + .toggle-slider:before {
-            transform: translateX(24px);
-        }
-        
-        .toggle-label {
-            font-size: var(--small-font-size);
-            margin-left: 8px;
         }
         
         /* Loading and empty states */
@@ -633,10 +643,10 @@
             border: 3px solid #f3f3f3;
             border-top: 3px solid var(--secondary-color);
             border-radius: 50%;
-            width: 30px;
-            height: 30px;
+            width: 24px;
+            height: 24px;
             animation: spin 1s linear infinite;
-            margin-bottom: var(--space-sm);
+            margin-bottom: var(--space-xs);
         }
         
         .loading-text {
@@ -650,14 +660,14 @@
             justify-content: center;
             align-items: center;
             height: 100%;
-            padding: var(--space-lg);
+            padding: var(--space-md);
             text-align: center;
         }
         
         .empty-icon {
-            font-size: 2rem;
+            font-size: 1.5rem;
             color: var(--border-color);
-            margin-bottom: var(--space-sm);
+            margin-bottom: var(--space-xs);
         }
         
         .empty-text {
@@ -670,57 +680,37 @@
             100% { transform: rotate(360deg); }
         }
         
-        /* Responsive adjustments */
-        @media (max-width: 1200px) {
-            .dashboard-grid {
-                grid-template-columns: 1fr;
-                grid-template-rows: auto auto auto;
-            }
-            
-            .top-rejects-card {
-                grid-column: 1;
-                grid-row: 1;
-            }
+        /* Tooltips */
+        .tooltip {
+            position: fixed;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            z-index: 1000;
+            pointer-events: none;
+            font-size: 12px;
+            max-width: 250px;
         }
         
-        @media (max-width: 768px) {
-            .metrics-group {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: var(--space-sm);
-            }
-            
-            .station-cards {
-                flex-direction: column;
-            }
-            
-            .station-card {
-                min-width: unset;
-            }
-            
-            .dashboard-header {
-                flex-direction: column;
-                height: auto;
-                padding: var(--space-sm);
-            }
-            
-            .header-controls {
-                width: 100%;
-                margin-top: var(--space-sm);
-            }
-            
-            .date-control {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            
-            .date-control input[type="date"] {
-                width: 100%;
-            }
-            
-            .apply-date-btn {
-                width: 100%;
-            }
+        /* Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 3px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a0aec0;
         }
     </style>
 </head>
@@ -753,48 +743,87 @@
                 <div class="filter-section">
                     <div class="filter-group">
                         <label for="supervisor-filter">Supervisor:</label>
-                        <div class="select-container">
-                            <select id="supervisor-filter">
-                                <option value="all">All Supervisors</option>
-                            </select>
+                        <div class="multi-select" id="supervisor-select">
+                            <div class="multi-select-header">
+                                <span class="multi-select-text">All Supervisors</span>
+                                <i class="multi-select-icon fas fa-chevron-down"></i>
+                            </div>
+                            <div class="multi-select-dropdown">
+                                <input type="text" class="multi-select-search" placeholder="Search...">
+                                <div class="multi-select-options" id="supervisor-options">
+                                    <!-- Options populated dynamically -->
+                                </div>
+                                <div class="multi-select-actions">
+                                    <button class="multi-select-btn select-all-btn">Select All</button>
+                                    <button class="multi-select-btn clear-btn">Clear All</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
+                    
                     <div class="filter-group">
                         <label for="product-filter">Product:</label>
-                        <div class="select-container">
-                            <select id="product-filter">
-                                <option value="all">All Products</option>
-                            </select>
+                        <div class="multi-select" id="product-select">
+                            <div class="multi-select-header">
+                                <span class="multi-select-text">All Products</span>
+                                <i class="multi-select-icon fas fa-chevron-down"></i>
+                            </div>
+                            <div class="multi-select-dropdown">
+                                <input type="text" class="multi-select-search" placeholder="Search...">
+                                <div class="multi-select-options" id="product-options">
+                                    <!-- Options populated dynamically -->
+                                </div>
+                                <div class="multi-select-actions">
+                                    <button class="multi-select-btn select-all-btn">Select All</button>
+                                    <button class="multi-select-btn clear-btn">Clear All</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
+                    
                     <div class="filter-group">
                         <label for="variant-filter">Variant:</label>
-                        <div class="select-container">
-                            <select id="variant-filter">
-                                <option value="all">All Variants</option>
-                            </select>
+                        <div class="multi-select" id="variant-select">
+                            <div class="multi-select-header">
+                                <span class="multi-select-text">All Variants</span>
+                                <i class="multi-select-icon fas fa-chevron-down"></i>
+                            </div>
+                            <div class="multi-select-dropdown">
+                                <input type="text" class="multi-select-search" placeholder="Search...">
+                                <div class="multi-select-options" id="variant-options">
+                                    <!-- Options populated dynamically -->
+                                </div>
+                                <div class="multi-select-actions">
+                                    <button class="multi-select-btn select-all-btn">Select All</button>
+                                    <button class="multi-select-btn clear-btn">Clear All</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
+                    
                     <div class="filter-group">
                         <label for="station-filter">Station:</label>
-                        <div class="select-container">
-                            <select id="station-filter">
-                                <option value="all">All Stations</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="filter-group">
-                        <label for="reason-filter">Reason:</label>
-                        <div class="select-container">
-                            <select id="reason-filter">
-                                <option value="all">All Reasons</option>
-                            </select>
+                        <div class="multi-select" id="station-select">
+                            <div class="multi-select-header">
+                                <span class="multi-select-text">All Stations</span>
+                                <i class="multi-select-icon fas fa-chevron-down"></i>
+                            </div>
+                            <div class="multi-select-dropdown">
+                                <input type="text" class="multi-select-search" placeholder="Search...">
+                                <div class="multi-select-options" id="station-options">
+                                    <!-- Options populated dynamically -->
+                                </div>
+                                <div class="multi-select-actions">
+                                    <button class="multi-select-btn select-all-btn">Select All</button>
+                                    <button class="multi-select-btn clear-btn">Clear All</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
                     <div class="filter-buttons">
                         <button id="reset-filters" class="reset-btn">
-                            <i class="fas fa-undo"></i> Reset Filters
+                            <i class="fas fa-undo"></i> Reset
                         </button>
                     </div>
                 </div>
@@ -828,120 +857,112 @@
                         </div>
                     </div>
                     
-                    <button id="special-stations-toggle" class="special-stations-trigger">
-                        <i class="fas fa-chevron-down"></i> Special Stations Analysis
-                    </button>
-                </div>
-
-                <!-- Special Stations Section (Initially Hidden) -->
-                <div id="special-stations-section" class="special-stations-section">
-                    <div class="special-stations-title">
-                        <i class="fas fa-microscope"></i> Key Station Analysis
-                    </div>
-                    <div class="station-cards" id="special-station-cards">
-                        <!-- Cards will be added dynamically -->
+                    <div class="toggle-buttons">
+                        <button id="sort-by-qty" class="toggle-btn active">Qty</button>
+                        <button id="sort-by-cost" class="toggle-btn">Cost</button>
                     </div>
                 </div>
 
-                <!-- Dashboard Content Grid -->
-                <div class="dashboard-grid">
-                    <!-- Top Rejects Table Card -->
-                    <div class="dashboard-card top-rejects-card">
-                        <div class="card-header">
-                            <div class="card-title">
-                                <i class="fas fa-exclamation-triangle"></i> Top Rejects
+                <!-- Dashboard Content -->
+                <div class="dashboard-content">
+                    <div class="dashboard-grid">
+                        <!-- Special Stations Row -->
+                        <div class="special-stations-row">
+                            <!-- Station cards will be added dynamically -->
+                        </div>
+                        
+                        <!-- Top Rejects Table Card -->
+                        <div class="dashboard-card top-rejects-card">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <i class="fas fa-exclamation-triangle"></i> Top Rejects
+                                </div>
                             </div>
-                            <div class="card-controls">
-                                <div class="toggle-buttons">
-                                    <button id="sort-by-qty" class="toggle-btn active">Qty</button>
-                                    <button id="sort-by-cost" class="toggle-btn">Cost</button>
+                            <div class="card-content">
+                                <table class="data-table" id="top-rejects-table">
+                                    <thead>
+                                        <tr>
+                                            <th class="sortable" data-sort="station">Station</th>
+                                            <th data-sort="parts">Parts</th>
+                                            <th class="sortable" data-sort="reason">Reject Reason</th>
+                                            <th data-sort="qty">QTY</th>
+                                            <th data-sort="cost">Cost (R)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="top-rejects-body">
+                                        <!-- Data will be loaded here -->
+                                    </tbody>
+                                </table>
+                                
+                                <!-- Empty state (hidden by default) -->
+                                <div class="empty-state" id="top-rejects-empty" style="display: none;">
+                                    <div class="empty-icon">
+                                        <i class="fas fa-database"></i>
+                                    </div>
+                                    <div class="empty-text">No reject data found for the selected filters.</div>
+                                </div>
+                                
+                                <!-- Loading overlay (hidden by default) -->
+                                <div class="loading-overlay" id="top-rejects-loading" style="display: none;">
+                                    <div class="spinner"></div>
+                                    <div class="loading-text">Loading data...</div>
                                 </div>
                             </div>
                         </div>
-                        <div class="card-content">
-                            <table class="data-table" id="top-rejects-table">
-                                <thead>
-                                    <tr>
-                                        <th class="sortable" data-sort="station">Station</th>
-                                        <th data-sort="parts">Parts</th>
-                                        <th class="sortable" data-sort="reason">Reject Reason</th>
-                                        <th data-sort="qty">QTY</th>
-                                        <th data-sort="cost">Cost (R)</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="top-rejects-body">
-                                    <!-- Data will be loaded here -->
-                                </tbody>
-                            </table>
-                            
-                            <!-- Empty state (hidden by default) -->
-                            <div class="empty-state" id="top-rejects-empty" style="display: none;">
-                                <div class="empty-icon">
-                                    <i class="fas fa-database"></i>
+                        
+                        <!-- Trend Chart Card -->
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <i class="fas fa-chart-line"></i> Daily Rejects Trend
                                 </div>
-                                <div class="empty-text">No reject data found for the selected filters.</div>
                             </div>
-                            
-                            <!-- Loading overlay (hidden by default) -->
-                            <div class="loading-overlay" id="top-rejects-loading" style="display: none;">
-                                <div class="spinner"></div>
-                                <div class="loading-text">Loading data...</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Daily Trend Chart Card -->
-                    <div class="dashboard-card">
-                        <div class="card-header">
-                            <div class="card-title">
-                                <i class="fas fa-chart-line"></i> Daily Rejects Trend
-                            </div>
-                        </div>
-                        <div class="card-content">
-                            <div class="chart-container" id="trend-chart-container">
-                                <!-- Chart will be rendered here -->
-                            </div>
-                            
-                            <!-- Empty state (hidden by default) -->
-                            <div class="empty-state" id="trend-chart-empty" style="display: none;">
-                                <div class="empty-icon">
-                                    <i class="fas fa-chart-line"></i>
+                            <div class="card-content">
+                                <div class="chart-container" id="trend-chart-container">
+                                    <!-- Chart will be rendered here -->
                                 </div>
-                                <div class="empty-text">No trend data available for the selected period.</div>
-                            </div>
-                            
-                            <!-- Loading overlay (hidden by default) -->
-                            <div class="loading-overlay" id="trend-chart-loading" style="display: none;">
-                                <div class="spinner"></div>
-                                <div class="loading-text">Generating chart...</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Top Reasons Chart Card -->
-                    <div class="dashboard-card">
-                        <div class="card-header">
-                            <div class="card-title">
-                                <i class="fas fa-exclamation-circle"></i> Top Reject Reasons
-                            </div>
-                        </div>
-                        <div class="card-content">
-                            <div class="chart-container" id="reasons-chart-container">
-                                <!-- Chart will be rendered here -->
-                            </div>
-                            
-                            <!-- Empty state (hidden by default) -->
-                            <div class="empty-state" id="reasons-chart-empty" style="display: none;">
-                                <div class="empty-icon">
-                                    <i class="fas fa-chart-pie"></i>
+                                
+                                <!-- Empty state (hidden by default) -->
+                                <div class="empty-state" id="trend-chart-empty" style="display: none;">
+                                    <div class="empty-icon">
+                                        <i class="fas fa-chart-line"></i>
+                                    </div>
+                                    <div class="empty-text">No trend data available for the selected period.</div>
                                 </div>
-                                <div class="empty-text">No reason data available for the selected filters.</div>
+                                
+                                <!-- Loading overlay (hidden by default) -->
+                                <div class="loading-overlay" id="trend-chart-loading" style="display: none;">
+                                    <div class="spinner"></div>
+                                    <div class="loading-text">Generating chart...</div>
+                                </div>
                             </div>
-                            
-                            <!-- Loading overlay (hidden by default) -->
-                            <div class="loading-overlay" id="reasons-chart-loading" style="display: none;">
-                                <div class="spinner"></div>
-                                <div class="loading-text">Generating chart...</div>
+                        </div>
+                        
+                        <!-- Top Reasons Chart Card -->
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <i class="fas fa-exclamation-circle"></i> Top Reject Reasons
+                                </div>
+                            </div>
+                            <div class="card-content">
+                                <div class="chart-container" id="reasons-chart-container">
+                                    <!-- Chart will be rendered here -->
+                                </div>
+                                
+                                <!-- Empty state (hidden by default) -->
+                                <div class="empty-state" id="reasons-chart-empty" style="display: none;">
+                                    <div class="empty-icon">
+                                        <i class="fas fa-chart-pie"></i>
+                                    </div>
+                                    <div class="empty-text">No reason data available for the selected filters.</div>
+                                </div>
+                                
+                                <!-- Loading overlay (hidden by default) -->
+                                <div class="loading-overlay" id="reasons-chart-loading" style="display: none;">
+                                    <div class="spinner"></div>
+                                    <div class="loading-text">Generating chart...</div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -949,19 +970,6 @@
             </div>
         </div>
     </div>
-
-    <!-- SVG Definitions for Icons and Patterns -->
-    <svg width="0" height="0" style="position: absolute;">
-        <defs>
-            <!-- Patterns for charts -->
-            <pattern id="pattern-stripe" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-                <rect width="2" height="4" transform="translate(0,0)" fill="white"></rect>
-            </pattern>
-            <mask id="mask-stripe">
-                <rect x="0" y="0" width="100%" height="100%" fill="url(#pattern-stripe)"></rect>
-            </mask>
-        </defs>
-    </svg>
 
     <!-- Load libraries from CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
@@ -1082,6 +1090,12 @@
             return { start, end };
         };
         
+        // Truncate text with ellipsis
+        const truncateText = (text, maxLength) => {
+            if (!text || text.length <= maxLength) return text;
+            return text.substring(0, maxLength) + '...';
+        };
+        
         return {
             formatCurrency,
             formatDateForAPI,
@@ -1094,7 +1108,8 @@
             showEmpty,
             hideEmpty,
             generateId,
-            getLastNDaysRange
+            getLastNDaysRange,
+            truncateText
         };
     })();
 
@@ -1111,12 +1126,18 @@
         let currentFilters = {
             dateFrom: null,
             dateTo: null,
-            supervisor: 'all',
-            product: 'all',
-            variant: 'all',
-            station: 'all',
-            reason: 'all',
-            action: 'all'
+            supervisor: [],
+            product: [],
+            variant: [],
+            station: []
+        };
+        
+        // Filter associations for interdependent filtering
+        let filterAssociations = {
+            supervisor: {},  // supervisor: { value: { product: [values], variant: [values], station: [values] } }
+            product: {},     // product: { value: { supervisor: [values], variant: [values], station: [values] } }
+            variant: {},     // variant: { value: { supervisor: [values], product: [values], station: [values] } }
+            station: {}      // station: { value: { supervisor: [values], product: [values], variant: [values] } }
         };
         
         // Special stations to track
@@ -1187,14 +1208,110 @@
                     rejectData = rejectData.concat(loadedMonths[month]);
                 }
                 
+                // Reset filters and build filter associations
+                resetFilters();
+                buildFilterAssociations();
+                
                 // Apply date filtering
-                applyAllFilters();
+                applyFilters();
                 
                 return true;
             } catch (error) {
                 console.error('Error loading data for date range:', error);
                 return false;
             }
+        };
+        
+        // Build filter associations for interdependent filtering
+        const buildFilterAssociations = function() {
+            // Reset associations
+            filterAssociations = {
+                supervisor: {},
+                product: {},
+                variant: {},
+                station: {}
+            };
+            
+            // Process each reject item
+            rejectData.forEach(item => {
+                if (!item.ProductionDate) return;
+                
+                const itemDate = new Date(item.ProductionDate);
+                // Check if this item is within date range
+                if (!(itemDate >= currentFilters.dateFrom && itemDate <= currentFilters.dateTo)) {
+                    return;
+                }
+                
+                // Process supervisor associations
+                if (item.LineSupervisor) {
+                    if (!filterAssociations.supervisor[item.LineSupervisor]) {
+                        filterAssociations.supervisor[item.LineSupervisor] = {
+                            product: new Set(),
+                            variant: new Set(),
+                            station: new Set()
+                        };
+                    }
+                    
+                    if (item.Product) filterAssociations.supervisor[item.LineSupervisor].product.add(item.Product);
+                    if (item.Variant) filterAssociations.supervisor[item.LineSupervisor].variant.add(item.Variant);
+                    if (item.Station) filterAssociations.supervisor[item.LineSupervisor].station.add(item.Station);
+                }
+                
+                // Process product associations
+                if (item.Product) {
+                    if (!filterAssociations.product[item.Product]) {
+                        filterAssociations.product[item.Product] = {
+                            supervisor: new Set(),
+                            variant: new Set(),
+                            station: new Set()
+                        };
+                    }
+                    
+                    if (item.LineSupervisor) filterAssociations.product[item.Product].supervisor.add(item.LineSupervisor);
+                    if (item.Variant) filterAssociations.product[item.Product].variant.add(item.Variant);
+                    if (item.Station) filterAssociations.product[item.Product].station.add(item.Station);
+                }
+                
+                // Process variant associations
+                if (item.Variant) {
+                    if (!filterAssociations.variant[item.Variant]) {
+                        filterAssociations.variant[item.Variant] = {
+                            supervisor: new Set(),
+                            product: new Set(),
+                            station: new Set()
+                        };
+                    }
+                    
+                    if (item.LineSupervisor) filterAssociations.variant[item.Variant].supervisor.add(item.LineSupervisor);
+                    if (item.Product) filterAssociations.variant[item.Variant].product.add(item.Product);
+                    if (item.Station) filterAssociations.variant[item.Variant].station.add(item.Station);
+                }
+                
+                // Process station associations
+                if (item.Station) {
+                    if (!filterAssociations.station[item.Station]) {
+                        filterAssociations.station[item.Station] = {
+                            supervisor: new Set(),
+                            product: new Set(),
+                            variant: new Set()
+                        };
+                    }
+                    
+                    if (item.LineSupervisor) filterAssociations.station[item.Station].supervisor.add(item.LineSupervisor);
+                    if (item.Product) filterAssociations.station[item.Station].product.add(item.Product);
+                    if (item.Variant) filterAssociations.station[item.Station].variant.add(item.Variant);
+                }
+            });
+            
+            // Convert Sets to Arrays for easier use
+            Object.keys(filterAssociations).forEach(filterType => {
+                Object.keys(filterAssociations[filterType]).forEach(value => {
+                    Object.keys(filterAssociations[filterType][value]).forEach(associatedType => {
+                        filterAssociations[filterType][value][associatedType] = 
+                            Array.from(filterAssociations[filterType][value][associatedType]);
+                    });
+                });
+            });
         };
         
         // Get months between two dates (YYYY-MM format)
@@ -1219,88 +1336,214 @@
             return months;
         };
         
-        // Apply all filters to the data
-        const applyAllFilters = function() {
+        // Apply filters to the data
+        const applyFilters = function() {
             // First, filter by date range
-            let result = rejectData.filter(item => {
+            filteredData = rejectData.filter(item => {
                 if (!item.ProductionDate) return false;
                 const itemDate = new Date(item.ProductionDate);
                 return itemDate >= currentFilters.dateFrom && 
                        itemDate <= currentFilters.dateTo;
             });
             
-            // Apply other filters
-            if (currentFilters.supervisor !== 'all') {
-                result = result.filter(item => 
-                    item.LineSupervisor === currentFilters.supervisor);
+            // Apply supervisor filter if any are selected
+            if (currentFilters.supervisor.length > 0) {
+                filteredData = filteredData.filter(item => 
+                    currentFilters.supervisor.includes(item.LineSupervisor)
+                );
             }
             
-            if (currentFilters.product !== 'all') {
-                result = result.filter(item => 
-                    item.Product === currentFilters.product);
+            // Apply product filter if any are selected
+            if (currentFilters.product.length > 0) {
+                filteredData = filteredData.filter(item => 
+                    currentFilters.product.includes(item.Product)
+                );
             }
             
-            if (currentFilters.variant !== 'all') {
-                result = result.filter(item => 
-                    item.Variant === currentFilters.variant);
+            // Apply variant filter if any are selected
+            if (currentFilters.variant.length > 0) {
+                filteredData = filteredData.filter(item => 
+                    currentFilters.variant.includes(item.Variant)
+                );
             }
             
-            if (currentFilters.station !== 'all') {
-                result = result.filter(item => 
-                    item.Station === currentFilters.station);
+            // Apply station filter if any are selected
+            if (currentFilters.station.length > 0) {
+                filteredData = filteredData.filter(item => 
+                    currentFilters.station.includes(item.Station)
+                );
             }
             
-            if (currentFilters.reason !== 'all') {
-                result = result.filter(item => 
-                    item.RejectReason === currentFilters.reason);
-            }
-            
-            if (currentFilters.action !== 'all') {
-                result = result.filter(item => 
-                    item.ActionSelection === currentFilters.action);
-            }
-            
-            filteredData = result;
             return filteredData;
         };
         
-        // Get available filter options
+        // Get available filter options based on current filter selections
         const getFilterOptions = function() {
-            const options = {
+            // Get all possible options first
+            const allOptions = {
                 supervisor: new Set(),
                 product: new Set(),
                 variant: new Set(),
-                station: new Set(),
-                reason: new Set(),
-                action: new Set()
+                station: new Set()
             };
             
-            // Use raw data to get all possible values
-            rejectData.forEach(item => {
-                if (item.LineSupervisor) options.supervisor.add(item.LineSupervisor);
-                if (item.Product) options.product.add(item.Product);
-                if (item.Variant) options.variant.add(item.Variant);
-                if (item.Station) options.station.add(item.Station);
-                if (item.RejectReason) options.reason.add(item.RejectReason);
-                if (item.ActionSelection) options.action.add(item.ActionSelection);
+            // Filter by date range first
+            const dateFilteredData = rejectData.filter(item => {
+                if (!item.ProductionDate) return false;
+                const itemDate = new Date(item.ProductionDate);
+                return itemDate >= currentFilters.dateFrom && 
+                       itemDate <= currentFilters.dateTo;
             });
+            
+            // Collect all possible values from date-filtered data
+            dateFilteredData.forEach(item => {
+                if (item.LineSupervisor) allOptions.supervisor.add(item.LineSupervisor);
+                if (item.Product) allOptions.product.add(item.Product);
+                if (item.Variant) allOptions.variant.add(item.Variant);
+                if (item.Station) allOptions.station.add(item.Station);
+            });
+            
+            // Now filter options based on current selections
+            const filteredOptions = {
+                supervisor: new Set(allOptions.supervisor),
+                product: new Set(allOptions.product),
+                variant: new Set(allOptions.variant),
+                station: new Set(allOptions.station)
+            };
+            
+            // Apply interdependent filtering
+            
+            // If supervisors are selected, filter other options accordingly
+            if (currentFilters.supervisor.length > 0) {
+                const availableProducts = new Set();
+                const availableVariants = new Set();
+                const availableStations = new Set();
+                
+                currentFilters.supervisor.forEach(supervisor => {
+                    if (filterAssociations.supervisor[supervisor]) {
+                        filterAssociations.supervisor[supervisor].product.forEach(product => 
+                            availableProducts.add(product));
+                        filterAssociations.supervisor[supervisor].variant.forEach(variant => 
+                            availableVariants.add(variant));
+                        filterAssociations.supervisor[supervisor].station.forEach(station => 
+                            availableStations.add(station));
+                    }
+                });
+                
+                filteredOptions.product = new Set([...filteredOptions.product].filter(p => 
+                    availableProducts.has(p)));
+                filteredOptions.variant = new Set([...filteredOptions.variant].filter(v => 
+                    availableVariants.has(v)));
+                filteredOptions.station = new Set([...filteredOptions.station].filter(s => 
+                    availableStations.has(s)));
+            }
+            
+            // If products are selected, filter other options accordingly
+            if (currentFilters.product.length > 0) {
+                const availableSupervisors = new Set();
+                const availableVariants = new Set();
+                const availableStations = new Set();
+                
+                currentFilters.product.forEach(product => {
+                    if (filterAssociations.product[product]) {
+                        filterAssociations.product[product].supervisor.forEach(supervisor => 
+                            availableSupervisors.add(supervisor));
+                        filterAssociations.product[product].variant.forEach(variant => 
+                            availableVariants.add(variant));
+                        filterAssociations.product[product].station.forEach(station => 
+                            availableStations.add(station));
+                    }
+                });
+                
+                // Only filter if we're not already filtering by this dimension
+                if (currentFilters.supervisor.length === 0) {
+                    filteredOptions.supervisor = new Set([...filteredOptions.supervisor].filter(s => 
+                        availableSupervisors.has(s)));
+                }
+                
+                filteredOptions.variant = new Set([...filteredOptions.variant].filter(v => 
+                    availableVariants.has(v)));
+                filteredOptions.station = new Set([...filteredOptions.station].filter(s => 
+                    availableStations.has(s)));
+            }
+            
+            // If variants are selected, filter other options accordingly
+            if (currentFilters.variant.length > 0) {
+                const availableSupervisors = new Set();
+                const availableProducts = new Set();
+                const availableStations = new Set();
+                
+                currentFilters.variant.forEach(variant => {
+                    if (filterAssociations.variant[variant]) {
+                        filterAssociations.variant[variant].supervisor.forEach(supervisor => 
+                            availableSupervisors.add(supervisor));
+                        filterAssociations.variant[variant].product.forEach(product => 
+                            availableProducts.add(product));
+                        filterAssociations.variant[variant].station.forEach(station => 
+                            availableStations.add(station));
+                    }
+                });
+                
+                // Only filter if we're not already filtering by this dimension
+                if (currentFilters.supervisor.length === 0) {
+                    filteredOptions.supervisor = new Set([...filteredOptions.supervisor].filter(s => 
+                        availableSupervisors.has(s)));
+                }
+                if (currentFilters.product.length === 0) {
+                    filteredOptions.product = new Set([...filteredOptions.product].filter(p => 
+                        availableProducts.has(p)));
+                }
+                
+                filteredOptions.station = new Set([...filteredOptions.station].filter(s => 
+                    availableStations.has(s)));
+            }
+            
+            // If stations are selected, filter other options accordingly
+            if (currentFilters.station.length > 0) {
+                const availableSupervisors = new Set();
+                const availableProducts = new Set();
+                const availableVariants = new Set();
+                
+                currentFilters.station.forEach(station => {
+                    if (filterAssociations.station[station]) {
+                        filterAssociations.station[station].supervisor.forEach(supervisor => 
+                            availableSupervisors.add(supervisor));
+                        filterAssociations.station[station].product.forEach(product => 
+                            availableProducts.add(product));
+                        filterAssociations.station[station].variant.forEach(variant => 
+                            availableVariants.add(variant));
+                    }
+                });
+                
+                // Only filter if we're not already filtering by this dimension
+                if (currentFilters.supervisor.length === 0) {
+                    filteredOptions.supervisor = new Set([...filteredOptions.supervisor].filter(s => 
+                        availableSupervisors.has(s)));
+                }
+                if (currentFilters.product.length === 0) {
+                    filteredOptions.product = new Set([...filteredOptions.product].filter(p => 
+                        availableProducts.has(p)));
+                }
+                if (currentFilters.variant.length === 0) {
+                    filteredOptions.variant = new Set([...filteredOptions.variant].filter(v => 
+                        availableVariants.has(v)));
+                }
+            }
             
             // Convert Sets to sorted arrays
             return {
-                supervisor: [...options.supervisor].sort(),
-                product: [...options.product].sort(),
-                variant: [...options.variant].sort(),
-                station: [...options.station].sort(),
-                reason: [...options.reason].sort(),
-                action: [...options.action].sort()
+                supervisor: [...filteredOptions.supervisor].sort(),
+                product: [...filteredOptions.product].sort(),
+                variant: [...filteredOptions.variant].sort(),
+                station: [...filteredOptions.station].sort()
             };
         };
         
-        // Update a filter value
-        const setFilter = function(filterName, value) {
+        // Update filter values
+        const setFilter = function(filterName, values) {
             if (filterName in currentFilters) {
-                currentFilters[filterName] = value;
-                applyAllFilters();
+                currentFilters[filterName] = values;
+                applyFilters();
                 return true;
             }
             return false;
@@ -1308,14 +1551,12 @@
         
         // Reset all filters except date range
         const resetFilters = function() {
-            currentFilters.supervisor = 'all';
-            currentFilters.product = 'all';
-            currentFilters.variant = 'all';
-            currentFilters.station = 'all';
-            currentFilters.reason = 'all';
-            currentFilters.action = 'all';
+            currentFilters.supervisor = [];
+            currentFilters.product = [];
+            currentFilters.variant = [];
+            currentFilters.station = [];
             
-            applyAllFilters();
+            applyFilters();
             return true;
         };
         
@@ -1324,6 +1565,11 @@
             currentFilters.dateFrom = fromDate;
             currentFilters.dateTo = toDate;
             return true;
+        };
+        
+        // Get currently filtered data
+        const getFilteredData = function() {
+            return filteredData;
         };
         
         // Get top rejects sorted by metric
@@ -1573,6 +1819,7 @@
             resetFilters,
             setDateRange,
             getFilterOptions,
+            getFilteredData,
             getTopRejects,
             getTrendChartData,
             getTopReasons,
@@ -1583,693 +1830,376 @@
     })();
 
     /**
-     * Chart Module
-     * Creates and updates data visualizations
-     */
-    const ChartModule = (function() {
-        // Trend chart
-        const createTrendChart = function(containerId, data, sortBy = 'qty') {
-            const container = document.getElementById(containerId);
-            if (!container || !data || data.length === 0) return;
-            
-            // Clear previous chart
-            container.innerHTML = '';
-            
-            // Set up dimensions
-            const margin = { top: 20, right: 20, bottom: 40, left: 50 };
-            const width = container.clientWidth - margin.left - margin.right;
-            const height = container.clientHeight - margin.top - margin.bottom;
-            
-            // Create SVG
-            const svg = d3.select(container)
-                .append('svg')
-                .attr('width', container.clientWidth)
-                .attr('height', container.clientHeight)
-                .append('g')
-                .attr('transform', `translate(${margin.left},${margin.top})`);
-            
-            // Create scales
-            const xScale = d3.scaleBand()
-                .domain(data.map(d => d.date))
-                .range([0, width])
-                .padding(0.2);
-            
-            const metric = sortBy === 'qty' ? 'qty' : 'cost';
-            const yMax = d3.max(data, d => d[metric]) * 1.1; // Add 10% padding
-            
-            const yScale = d3.scaleLinear()
-                .domain([0, yMax])
-                .range([height, 0]);
-            
-            // Create axes
-            const xAxis = svg.append('g')
-                .attr('transform', `translate(0,${height})`)
-                .call(d3.axisBottom(xScale)
-                    .tickFormat(d => {
-                        const date = new Date(d);
-                        return date.toLocaleDateString('en-US', { 
-                            month: 'short', 
-                            day: 'numeric' 
-                        });
-                    })
-                    .tickValues(xScale.domain().filter((d, i) => {
-                        // Show fewer ticks on the x-axis for readability
-                        const numTicks = width > 600 ? 10 : 5;
-                        return i % Math.ceil(data.length / numTicks) === 0;
-                    }))
-                );
-            
-            // Rotate x-axis labels if needed
-            if (data.length > 10) {
-                xAxis.selectAll('text')
-                    .attr('transform', 'rotate(-45)')
-                    .attr('text-anchor', 'end')
-                    .attr('dx', '-.8em')
-                    .attr('dy', '.15em');
-            }
-            
-            const yAxis = svg.append('g')
-                .call(d3.axisLeft(yScale)
-                    .ticks(5)
-                    .tickFormat(d => sortBy === 'cost' ? `R${d}` : d)
-                );
-            
-            // Add grid lines
-            svg.append('g')
-                .attr('class', 'grid')
-                .selectAll('line')
-                .data(yScale.ticks(5))
-                .enter()
-                .append('line')
-                .attr('x1', 0)
-                .attr('x2', width)
-                .attr('y1', d => yScale(d))
-                .attr('y2', d => yScale(d))
-                .attr('stroke', '#e0e0e0')
-                .attr('stroke-width', 1);
-                
-            // Create bars
-            svg.selectAll('.bar')
-                .data(data)
-                .enter()
-                .append('rect')
-                .attr('class', 'bar')
-                .attr('x', d => xScale(d.date))
-                .attr('y', d => yScale(d[metric]))
-                .attr('width', xScale.bandwidth())
-                .attr('height', d => height - yScale(d[metric]))
-                .attr('fill', '#3498db')
-                .on('mouseover', function(event, d) {
-                    d3.select(this)
-                        .attr('fill', '#e67e22');
-                    
-                    // Add tooltip
-                    const tooltip = d3.select('body')
-                        .append('div')
-                        .attr('class', 'chart-tooltip')
-                        .style('position', 'absolute')
-                        .style('background', 'rgba(0, 0, 0, 0.8)')
-                        .style('color', 'white')
-                        .style('padding', '5px 10px')
-                        .style('border-radius', '4px')
-                        .style('font-size', '12px')
-                        .style('pointer-events', 'none')
-                        .style('z-index', 1000);
-                    
-                    tooltip.html(`
-                        <div>Date: ${Utils.formatDateForDisplay(d.date)}</div>
-                        <div>Quantity: ${d.qty}</div>
-                        <div>Cost: ${Utils.formatCurrency(d.cost)}</div>
-                    `);
-                    
-                    tooltip
-                        .style('left', (event.pageX + 10) + 'px')
-                        .style('top', (event.pageY - 30) + 'px');
-                })
-                .on('mousemove', function(event) {
-                    d3.select('.chart-tooltip')
-                        .style('left', (event.pageX + 10) + 'px')
-                        .style('top', (event.pageY - 30) + 'px');
-                })
-                .on('mouseout', function() {
-                    d3.select(this)
-                        .attr('fill', '#3498db');
-                    
-                    d3.select('.chart-tooltip').remove();
-                });
-            
-            // Add labels
-            svg.append('text')
-                .attr('text-anchor', 'middle')
-                .attr('transform', `translate(${width/2},${height + margin.bottom - 5})`)
-                .style('font-size', '12px')
-                .text('Date');
-            
-            svg.append('text')
-                .attr('text-anchor', 'middle')
-                .attr('transform', `rotate(-90) translate(${-height/2},${-margin.left + 15})`)
-                .style('font-size', '12px')
-                .text(sortBy === 'cost' ? 'Cost (R)' : 'Quantity');
-                
-            // Add a trendline
-            if (data.length > 2) {
-                const linePlotter = d3.line()
-                    .x(d => xScale(d.date) + xScale.bandwidth() / 2)
-                    .y(d => yScale(d[metric]))
-                    .curve(d3.curveMonotoneX);
-                
-                svg.append('path')
-                    .datum(data)
-                    .attr('fill', 'none')
-                    .attr('stroke', '#e74c3c')
-                    .attr('stroke-width', 2)
-                    .attr('d', linePlotter);
-            }
-            
-            return svg.node();
-        };
-        
-        // Reasons chart
-        const createReasonsChart = function(containerId, data, sortBy = 'qty') {
-            const container = document.getElementById(containerId);
-            if (!container || !data || data.length === 0) return;
-            
-            // Clear previous chart
-            container.innerHTML = '';
-            
-            // Set up dimensions
-            const margin = { top: 20, right: 20, bottom: 40, left: 180 };
-            const width = container.clientWidth - margin.left - margin.right;
-            const height = container.clientHeight - margin.top - margin.bottom;
-            
-            // If multiple reasons share the same count/cost, sort alphabetically as a tie-breaker
-            data.sort((a, b) => {
-                const metricA = sortBy === 'qty' ? a.qty : a.cost;
-                const metricB = sortBy === 'qty' ? b.qty : b.cost;
-                
-                if (metricB !== metricA) {
-                    return metricB - metricA;
-                }
-                
-                return a.reason.localeCompare(b.reason);
-            });
-            
-            // Create SVG
-            const svg = d3.select(container)
-                .append('svg')
-                .attr('width', container.clientWidth)
-                .attr('height', container.clientHeight)
-                .append('g')
-                .attr('transform', `translate(${margin.left},${margin.top})`);
-            
-            // Create scales
-            const yScale = d3.scaleBand()
-                .domain(data.map(d => d.reason))
-                .range([0, height])
-                .padding(0.2);
-            
-            const metric = sortBy === 'qty' ? 'qty' : 'cost';
-            const xMax = d3.max(data, d => d[metric]) * 1.1; // Add 10% padding
-            
-            const xScale = d3.scaleLinear()
-                .domain([0, xMax])
-                .range([0, width]);
-            
-            // Create axes
-            const yAxis = svg.append('g')
-                .call(d3.axisLeft(yScale)
-                    .tickFormat(d => {
-                        // Truncate long reason names
-                        return d.length > 25 ? d.substring(0, 22) + '...' : d;
-                    })
-                );
-            
-            const xAxis = svg.append('g')
-                .attr('transform', `translate(0,${height})`)
-                .call(d3.axisBottom(xScale)
-                    .ticks(5)
-                    .tickFormat(d => sortBy === 'cost' ? `R${d}` : d)
-                );
-            
-            // Add grid lines
-            svg.append('g')
-                .attr('class', 'grid')
-                .selectAll('line')
-                .data(xScale.ticks(5))
-                .enter()
-                .append('line')
-                .attr('x1', d => xScale(d))
-                .attr('x2', d => xScale(d))
-                .attr('y1', 0)
-                .attr('y2', height)
-                .attr('stroke', '#e0e0e0')
-                .attr('stroke-width', 1);
-                
-            // Create horizontal bars
-            const bars = svg.selectAll('.bar')
-                .data(data)
-                .enter()
-                .append('rect')
-                .attr('class', 'bar')
-                .attr('y', d => yScale(d.reason))
-                .attr('x', 0)
-                .attr('height', yScale.bandwidth())
-                .attr('width', d => xScale(d[metric]))
-                .attr('fill', (d, i) => {
-                    // Use colors array for visualization
-                    const colors = [
-                        '#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', 
-                        '#1abc9c', '#e67e22', '#34495e'
-                    ];
-                    return colors[i % colors.length];
-                })
-                .on('mouseover', function(event, d) {
-                    d3.select(this)
-                        .attr('opacity', 0.8);
-                    
-                    // Add tooltip
-                    const tooltip = d3.select('body')
-                        .append('div')
-                        .attr('class', 'chart-tooltip')
-                        .style('position', 'absolute')
-                        .style('background', 'rgba(0, 0, 0, 0.8)')
-                        .style('color', 'white')
-                        .style('padding', '8px 12px')
-                        .style('border-radius', '4px')
-                        .style('font-size', '12px')
-                        .style('pointer-events', 'none')
-                        .style('z-index', 1000);
-                    
-                    const stationsStr = Array.from(d.stations || []).slice(0, 3).join(', ');
-                    const stationsMore = (d.stations || []).size > 3 ? `... and ${(d.stations || []).size - 3} more` : '';
-                    
-                    const productsStr = Array.from(d.products || []).slice(0, 3).join(', ');
-                    const productsMore = (d.products || []).size > 3 ? `... and ${(d.products || []).size - 3} more` : '';
-                    
-                    tooltip.html(`
-                        <div style="font-weight: bold; margin-bottom: 5px;">${d.reason}</div>
-                        <div>Quantity: ${d.qty}</div>
-                        <div>Cost: ${Utils.formatCurrency(d.cost)}</div>
-                        ${stationsStr ? `<div style="margin-top: 5px;">Stations: ${stationsStr} ${stationsMore}</div>` : ''}
-                        ${productsStr ? `<div>Products: ${productsStr} ${productsMore}</div>` : ''}
-                    `);
-                    
-                    tooltip
-                        .style('left', (event.pageX + 10) + 'px')
-                        .style('top', (event.pageY - 10) + 'px');
-                })
-                .on('mousemove', function(event) {
-                    d3.select('.chart-tooltip')
-                        .style('left', (event.pageX + 10) + 'px')
-                        .style('top', (event.pageY - 10) + 'px');
-                })
-                .on('mouseout', function() {
-                    d3.select(this)
-                        .attr('opacity', 1);
-                    
-                    d3.select('.chart-tooltip').remove();
-                });
-            
-            // Add value labels to the bars
-            svg.selectAll('.label')
-                .data(data)
-                .enter()
-                .append('text')
-                .attr('class', 'label')
-                .attr('y', d => yScale(d.reason) + yScale.bandwidth() / 2 + 4)
-                .attr('x', d => xScale(d[metric]) + 5)
-                .attr('text-anchor', 'start')
-                .attr('font-size', '11px')
-                .attr('fill', '#333')
-                .text(d => sortBy === 'cost' ? 
-                    `R${d.cost.toFixed(0)} (${d.qty})` : 
-                    `${d.qty} (R${d.cost.toFixed(0)})`
-                );
-            
-            // Add labels
-            svg.append('text')
-                .attr('text-anchor', 'middle')
-                .attr('transform', `translate(${width/2},${height + margin.bottom - 5})`)
-                .style('font-size', '12px')
-                .text(sortBy === 'cost' ? 'Cost (R)' : 'Quantity');
-            
-            return svg.node();
-        };
-        
-        // Return public methods
-        return {
-            createTrendChart,
-            createReasonsChart
-        };
-    })();
-
-    /**
      * UI Module
      * Manages UI interactions and rendering
      */
     const UIModule = (function() {
-        // DOM elements
-        const elements = {
-            // Date controls
-            dateFrom: document.getElementById('date-from'),
-            dateTo: document.getElementById('date-to'),
-            applyDateBtn: document.getElementById('apply-date'),
-            
-            // Filters
-            supervisorFilter: document.getElementById('supervisor-filter'),
-            productFilter: document.getElementById('product-filter'),
-            variantFilter: document.getElementById('variant-filter'),
-            stationFilter: document.getElementById('station-filter'),
-            reasonFilter: document.getElementById('reason-filter'),
-            resetFiltersBtn: document.getElementById('reset-filters'),
-            
-            // Metrics
-            totalCost: document.getElementById('total-cost'),
-            totalQty: document.getElementById('total-qty'),
-            scrapMetric: document.getElementById('scrap-metric'),
-            rtsMetric: document.getElementById('rts-metric'),
-            localMetric: document.getElementById('local-metric'),
-            scrapPercent: document.getElementById('scrap-percent'),
-            rtsPercent: document.getElementById('rts-percent'),
-            localPercent: document.getElementById('local-percent'),
-            
-            // Special stations section
-            specialStationsToggle: document.getElementById('special-stations-toggle'),
-            specialStationsSection: document.getElementById('special-stations-section'),
-            specialStationCards: document.getElementById('special-station-cards'),
-            
-            // Tables and charts
-            topRejectsTable: document.getElementById('top-rejects-table'),
-            topRejectsBody: document.getElementById('top-rejects-body'),
-            sortByQty: document.getElementById('sort-by-qty'),
-            sortByCost: document.getElementById('sort-by-cost'),
-            topRejectsEmpty: document.getElementById('top-rejects-empty'),
-            topRejectsLoading: document.getElementById('top-rejects-loading'),
-            
-            trendChartContainer: document.getElementById('trend-chart-container'),
-            trendChartEmpty: document.getElementById('trend-chart-empty'),
-            trendChartLoading: document.getElementById('trend-chart-loading'),
-            
-            reasonsChartContainer: document.getElementById('reasons-chart-container'),
-            reasonsChartEmpty: document.getElementById('reasons-chart-empty'),
-            reasonsChartLoading: document.getElementById('reasons-chart-loading')
-        };
-        
         // Current state
         let currentSortBy = 'qty'; // 'qty' or 'cost'
         
-        // Initialize the UI module
-        const init = function() {
-            // Set up event listeners
-            setupEventListeners();
-            return true;
-        };
-        
-        // Set up event listeners
-        const setupEventListeners = function() {
-            // Date controls
-            elements.applyDateBtn.addEventListener('click', () => {
-                const fromDate = elements.dateFrom.value ? new Date(elements.dateFrom.value) : null;
-                const toDate = elements.dateTo.value ? new Date(elements.dateTo.value) : null;
-                
-                if (fromDate && toDate) {
-                    // Set end of day for toDate to include the full day
-                    toDate.setHours(23, 59, 59, 999);
+        // Initialize multiselect dropdowns
+        const initMultiselect = function() {
+            // Get all multiselect headers
+            const headers = document.querySelectorAll('.multi-select-header');
+            
+            // Add click event to toggle dropdown
+            headers.forEach(header => {
+                header.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const multiSelect = header.closest('.multi-select');
+                    const dropdown = multiSelect.querySelector('.multi-select-dropdown');
                     
-                    // Trigger date change event
-                    triggerEvent('dateRangeChanged', { fromDate, toDate });
-                }
-            });
-            
-            // Filter dropdowns
-            elements.supervisorFilter.addEventListener('change', () => {
-                triggerEvent('filterChanged', { 
-                    name: 'supervisor', 
-                    value: elements.supervisorFilter.value 
+                    // Close all other dropdowns first
+                    document.querySelectorAll('.multi-select-dropdown').forEach(el => {
+                        if (el !== dropdown) {
+                            el.classList.remove('active');
+                        }
+                    });
+                    
+                    // Toggle this dropdown
+                    dropdown.classList.toggle('active');
+                    
+                    // Position dropdown
+                    if (dropdown.classList.contains('active')) {
+                        positionDropdown(dropdown, header);
+                    }
                 });
             });
             
-            elements.productFilter.addEventListener('change', () => {
-                triggerEvent('filterChanged', { 
-                    name: 'product', 
-                    value: elements.productFilter.value 
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', () => {
+                document.querySelectorAll('.multi-select-dropdown').forEach(dropdown => {
+                    dropdown.classList.remove('active');
                 });
             });
             
-            elements.variantFilter.addEventListener('change', () => {
-                triggerEvent('filterChanged', { 
-                    name: 'variant', 
-                    value: elements.variantFilter.value 
+            // Prevent dropdown from closing when clicking inside it
+            document.querySelectorAll('.multi-select-dropdown').forEach(dropdown => {
+                dropdown.addEventListener('click', (e) => {
+                    e.stopPropagation();
                 });
             });
             
-            elements.stationFilter.addEventListener('change', () => {
-                triggerEvent('filterChanged', { 
-                    name: 'station', 
-                    value: elements.stationFilter.value 
+            // Search functionality for each dropdown
+            document.querySelectorAll('.multi-select-search').forEach(search => {
+                search.addEventListener('input', () => {
+                    const searchTerm = search.value.toLowerCase();
+                    const options = search.closest('.multi-select-dropdown')
+                        .querySelectorAll('.multi-select-option');
+                    
+                    options.forEach(option => {
+                        const text = option.textContent.toLowerCase();
+                        if (text.includes(searchTerm)) {
+                            option.style.display = '';
+                        } else {
+                            option.style.display = 'none';
+                        }
+                    });
                 });
             });
             
-            elements.reasonFilter.addEventListener('change', () => {
-                triggerEvent('filterChanged', { 
-                    name: 'reason', 
-                    value: elements.reasonFilter.value 
+            // Select All button
+            document.querySelectorAll('.select-all-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const options = btn.closest('.multi-select-dropdown')
+                        .querySelectorAll('.multi-select-option:not(.disabled) input[type="checkbox"]');
+                    
+                    options.forEach(checkbox => {
+                        checkbox.checked = true;
+                    });
+                    
+                    // Trigger change event on the first checkbox to update filter
+                    if (options.length > 0) {
+                        const event = new Event('change');
+                        options[0].dispatchEvent(event);
+                    }
                 });
             });
             
-            // Reset filters button
-            elements.resetFiltersBtn.addEventListener('click', () => {
-                triggerEvent('resetFilters');
-            });
-            
-            // Sort toggle buttons
-            elements.sortByQty.addEventListener('click', () => {
-                if (currentSortBy !== 'qty') {
-                    currentSortBy = 'qty';
-                    elements.sortByQty.classList.add('active');
-                    elements.sortByCost.classList.remove('active');
-                    triggerEvent('sortChanged', { sortBy: 'qty' });
-                }
-            });
-            
-            elements.sortByCost.addEventListener('click', () => {
-                if (currentSortBy !== 'cost') {
-                    currentSortBy = 'cost';
-                    elements.sortByCost.classList.add('active');
-                    elements.sortByQty.classList.remove('active');
-                    triggerEvent('sortChanged', { sortBy: 'cost' });
-                }
-            });
-            
-            // Special stations toggle
-            elements.specialStationsToggle.addEventListener('click', () => {
-                elements.specialStationsSection.classList.toggle('visible');
-                elements.specialStationsToggle.classList.toggle('active');
-                
-                // Update special stations data if section becomes visible
-                if (elements.specialStationsSection.classList.contains('visible')) {
-                    triggerEvent('specialStationsToggled', { visible: true });
-                }
-            });
-            
-            // Table header sorting
-            elements.topRejectsTable.querySelectorAll('th.sortable').forEach(th => {
-                th.addEventListener('click', () => {
-                    const sortField = th.getAttribute('data-sort');
-                    if (sortField) {
-                        triggerEvent('tableHeaderSorted', { field: sortField });
+            // Clear All button
+            document.querySelectorAll('.clear-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const options = btn.closest('.multi-select-dropdown')
+                        .querySelectorAll('.multi-select-option input[type="checkbox"]');
+                    
+                    options.forEach(checkbox => {
+                        checkbox.checked = false;
+                    });
+                    
+                    // Trigger change event on the first checkbox to update filter
+                    if (options.length > 0) {
+                        const event = new Event('change');
+                        options[0].dispatchEvent(event);
                     }
                 });
             });
         };
         
-        // Populate filter dropdowns
-        const populateFilterDropdowns = function(filterOptions) {
-            if (!filterOptions) return;
+        // Position dropdown relative to its header
+        const positionDropdown = function(dropdown, header) {
+            const headerRect = header.getBoundingClientRect();
+            const dropdownWidth = dropdown.offsetWidth;
             
-            // Clear and populate supervisor filter
-            populateDropdown(elements.supervisorFilter, filterOptions.supervisor, 'All Supervisors');
+            // Position directly below header
+            dropdown.style.top = `${headerRect.bottom + window.scrollY}px`;
             
-            // Clear and populate product filter
-            populateDropdown(elements.productFilter, filterOptions.product, 'All Products');
-            
-            // Clear and populate variant filter
-            populateDropdown(elements.variantFilter, filterOptions.variant, 'All Variants');
-            
-            // Clear and populate station filter
-            populateDropdown(elements.stationFilter, filterOptions.station, 'All Stations');
-            
-            // Clear and populate reason filter
-            populateDropdown(elements.reasonFilter, filterOptions.reason, 'All Reasons');
+            // Avoid going off-screen on the right
+            if (headerRect.left + dropdownWidth > window.innerWidth) {
+                dropdown.style.left = `${window.innerWidth - dropdownWidth - 10}px`;
+            } else {
+                dropdown.style.left = `${headerRect.left + window.scrollX}px`;
+            }
         };
         
-        // Helper to populate a dropdown
-        const populateDropdown = function(selectElement, options, allLabel = 'All') {
-            if (!selectElement) return;
+        // Initialize the UI module
+        const init = function() {
+            // Initialize multiselect dropdowns
+            initMultiselect();
             
-            // Clear existing options
-            selectElement.innerHTML = '';
-            
-            // Add "All" option
-            const allOption = document.createElement('option');
-            allOption.value = 'all';
-            allOption.textContent = allLabel;
-            selectElement.appendChild(allOption);
-            
-            // Add options from the filtered data
-            options.forEach(optionValue => {
-                if (!optionValue) return; // Skip empty values
-                
-                const option = document.createElement('option');
-                option.value = optionValue;
-                option.textContent = optionValue;
-                selectElement.appendChild(option);
+            // Set up other event listeners
+            document.getElementById('sort-by-qty').addEventListener('click', () => {
+                setSortBy('qty');
             });
+            
+            document.getElementById('sort-by-cost').addEventListener('click', () => {
+                setSortBy('cost');
+            });
+            
+            document.getElementById('reset-filters').addEventListener('click', () => {
+                triggerEvent('resetFilters');
+            });
+            
+            document.getElementById('apply-date').addEventListener('click', () => {
+                const fromDate = document.getElementById('date-from').value;
+                const toDate = document.getElementById('date-to').value;
+                
+                if (fromDate && toDate) {
+                    const fromDateObj = new Date(fromDate);
+                    const toDateObj = new Date(toDate);
+                    toDateObj.setHours(23, 59, 59, 999); // End of day
+                    
+                    triggerEvent('dateRangeChanged', { fromDate: fromDateObj, toDate: toDateObj });
+                }
+            });
+            
+            return true;
+        };
+        
+        // Set sort by method (qty or cost)
+        const setSortBy = function(sortBy) {
+            if (sortBy === currentSortBy) return;
+            
+            currentSortBy = sortBy;
+            
+            // Update UI buttons
+            document.getElementById('sort-by-qty').classList.toggle('active', sortBy === 'qty');
+            document.getElementById('sort-by-cost').classList.toggle('active', sortBy === 'cost');
+            
+            // Trigger event to update charts and data
+            triggerEvent('sortChanged', { sortBy });
+        };
+        
+        // Create and populate multi-select options
+        const populateMultiSelect = function(selectId, options, selectedValues = []) {
+            const optionsContainer = document.getElementById(`${selectId}-options`);
+            if (!optionsContainer) return;
+            
+            optionsContainer.innerHTML = '';
+            
+            if (!options || options.length === 0) {
+                const emptyOption = document.createElement('div');
+                emptyOption.className = 'multi-select-option disabled';
+                emptyOption.textContent = 'No options available';
+                optionsContainer.appendChild(emptyOption);
+                return;
+            }
+            
+            options.forEach(option => {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'multi-select-option';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = option;
+                checkbox.checked = selectedValues.includes(option);
+                checkbox.className = 'multi-select-checkbox';
+                
+                const label = document.createElement('label');
+                label.textContent = option;
+                
+                optionDiv.appendChild(checkbox);
+                optionDiv.appendChild(label);
+                optionsContainer.appendChild(optionDiv);
+                
+                // Add change event to checkbox
+                checkbox.addEventListener('change', () => {
+                    const selectElement = document.getElementById(selectId);
+                    const filterType = selectId.replace('-select', '');
+                    const allCheckboxes = optionsContainer.querySelectorAll('input[type="checkbox"]');
+                    const selectedValues = Array.from(allCheckboxes)
+                        .filter(cb => cb.checked)
+                        .map(cb => cb.value);
+                    
+                    // Update header text
+                    updateMultiSelectHeader(selectId, selectedValues);
+                    
+                    // Trigger filter change event
+                    triggerEvent('filterChanged', {
+                        type: filterType,
+                        values: selectedValues
+                    });
+                });
+                
+                // Make entire div clickable
+                optionDiv.addEventListener('click', (e) => {
+                    if (e.target !== checkbox) {
+                        checkbox.checked = !checkbox.checked;
+                        checkbox.dispatchEvent(new Event('change'));
+                    }
+                });
+            });
+            
+            // Update header text
+            updateMultiSelectHeader(selectId, selectedValues);
+        };
+        
+        // Update multi-select header text
+        const updateMultiSelectHeader = function(selectId, selectedValues) {
+            const header = document.querySelector(`#${selectId} .multi-select-text`);
+            if (!header) return;
+            
+            const filterType = selectId.replace('-select', '');
+            const displayName = filterType.charAt(0).toUpperCase() + filterType.slice(1);
+            
+            if (selectedValues.length === 0) {
+                header.textContent = `All ${displayName}s`;
+            } else if (selectedValues.length === 1) {
+                header.textContent = selectedValues[0];
+            } else {
+                header.textContent = `${selectedValues.length} ${displayName}s`;
+            }
         };
         
         // Set date range inputs
         const setDateRange = function(fromDate, toDate) {
             if (fromDate) {
-                elements.dateFrom.value = fromDate.toISOString().split('T')[0];
+                document.getElementById('date-from').value = formatDateForInput(fromDate);
             }
             
             if (toDate) {
-                elements.dateTo.value = toDate.toISOString().split('T')[0];
+                document.getElementById('date-to').value = formatDateForInput(toDate);
             }
+        };
+        
+        // Format date for input field
+        const formatDateForInput = function(date) {
+            if (!date) return '';
+            
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            
+            return `${year}-${month}-${day}`;
         };
         
         // Update metrics display
         const updateMetrics = function(metrics) {
             if (!metrics) return;
             
-            elements.totalCost.textContent = Utils.formatCurrency(metrics.totalCost);
-            elements.totalQty.textContent = metrics.totalQty.toLocaleString();
+            document.getElementById('total-cost').textContent = Utils.formatCurrency(metrics.totalCost);
+            document.getElementById('total-qty').textContent = metrics.totalQty.toLocaleString();
             
-            elements.scrapPercent.textContent = `${metrics.scrapPercent}%`;
-            elements.rtsPercent.textContent = `${metrics.rtsPercent}%`;
-            elements.localPercent.textContent = `${metrics.localPercent}%`;
+            document.getElementById('scrap-percent').textContent = `${metrics.scrapPercent}%`;
+            document.getElementById('rts-percent').textContent = `${metrics.rtsPercent}%`;
+            document.getElementById('local-percent').textContent = `${metrics.localPercent}%`;
             
             // Show/hide metrics based on data
-            elements.scrapMetric.style.display = metrics.scrapCount > 0 ? '' : 'none';
-            elements.rtsMetric.style.display = metrics.rtsCount > 0 ? '' : 'none';
-            elements.localMetric.style.display = metrics.localCount > 0 ? '' : 'none';
+            document.getElementById('scrap-metric').style.display = metrics.scrapCount > 0 ? '' : 'none';
+            document.getElementById('rts-metric').style.display = metrics.rtsCount > 0 ? '' : 'none';
+            document.getElementById('local-metric').style.display = metrics.localCount > 0 ? '' : 'none';
         };
         
         // Update top rejects table
-        const updateTopRejectsTable = function(topRejects) {
-            // Show loading while updating
-            Utils.showLoading('top-rejects-loading');
+        const updateTopRejectsTable = function(rejects) {
+            const tableBody = document.getElementById('top-rejects-body');
+            if (!tableBody) return;
             
-            // Clear table body
-            elements.topRejectsBody.innerHTML = '';
+            tableBody.innerHTML = '';
             
-            // Check if there's data to display
-            if (!topRejects || topRejects.length === 0) {
-                Utils.hideLoading('top-rejects-loading');
-                Utils.showEmpty('top-rejects-empty');
+            if (!rejects || rejects.length === 0) {
+                document.getElementById('top-rejects-empty').style.display = 'flex';
                 return;
             }
             
-            // Hide empty state
-            Utils.hideEmpty('top-rejects-empty');
+            document.getElementById('top-rejects-empty').style.display = 'none';
             
-            // Create rows for each reject
-            topRejects.forEach(reject => {
+            rejects.forEach(reject => {
                 const row = document.createElement('tr');
                 
-                row.innerHTML = `
-                    <td title="${reject.station}">${reject.station}</td>
-                    <td title="${reject.parts}">${reject.parts}</td>
-                    <td title="${reject.rejectReason}">${reject.rejectReason}</td>
-                    <td>${reject.qty}</td>
-                    <td>${Utils.formatCurrency(reject.cost)}</td>
-                `;
+                // Create cells with truncated text where needed
+                const stationCell = document.createElement('td');
+                stationCell.title = reject.station;
+                stationCell.textContent = Utils.truncateText(reject.station, 30);
                 
-                elements.topRejectsBody.appendChild(row);
+                const partsCell = document.createElement('td');
+                partsCell.title = reject.parts;
+                partsCell.textContent = Utils.truncateText(reject.parts, 40);
+                
+                const reasonCell = document.createElement('td');
+                reasonCell.title = reject.rejectReason;
+                reasonCell.textContent = Utils.truncateText(reject.rejectReason, 30);
+                
+                const qtyCell = document.createElement('td');
+                qtyCell.textContent = reject.qty;
+                
+                const costCell = document.createElement('td');
+                costCell.textContent = Utils.formatCurrency(reject.cost);
+                
+                // Add cells to row
+                row.appendChild(stationCell);
+                row.appendChild(partsCell);
+                row.appendChild(reasonCell);
+                row.appendChild(qtyCell);
+                row.appendChild(costCell);
+                
+                // Add row to table
+                tableBody.appendChild(row);
             });
-            
-            // Hide loading
-            Utils.hideLoading('top-rejects-loading');
-        };
-        
-        // Update trend chart
-        const updateTrendChart = function(trendData, sortBy) {
-            // Show loading while updating
-            Utils.showLoading('trend-chart-loading');
-            
-            // Check if there's data to display
-            if (!trendData || trendData.length === 0) {
-                Utils.hideLoading('trend-chart-loading');
-                Utils.showEmpty('trend-chart-empty');
-                return;
-            }
-            
-            // Hide empty state
-            Utils.hideEmpty('trend-chart-empty');
-            
-            // Create the chart
-            ChartModule.createTrendChart('trend-chart-container', trendData, sortBy);
-            
-            // Hide loading
-            Utils.hideLoading('trend-chart-loading');
-        };
-        
-        // Update reasons chart
-        const updateReasonsChart = function(reasonsData, sortBy) {
-            // Show loading while updating
-            Utils.showLoading('reasons-chart-loading');
-            
-            // Check if there's data to display
-            if (!reasonsData || reasonsData.length === 0) {
-                Utils.hideLoading('reasons-chart-loading');
-                Utils.showEmpty('reasons-chart-empty');
-                return;
-            }
-            
-            // Hide empty state
-            Utils.hideEmpty('reasons-chart-empty');
-            
-            // Create the chart
-            ChartModule.createReasonsChart('reasons-chart-container', reasonsData, sortBy);
-            
-            // Hide loading
-            Utils.hideLoading('reasons-chart-loading');
         };
         
         // Update special stations section
         const updateSpecialStations = function(stationsData) {
-            // Clear container
-            elements.specialStationCards.innerHTML = '';
+            const container = document.querySelector('.special-stations-row');
+            if (!container) return;
             
-            // Check if there's data to display
+            container.innerHTML = '';
+            
             if (!stationsData || stationsData.length === 0) {
-                const emptyMsg = document.createElement('div');
-                emptyMsg.className = 'empty-state';
-                emptyMsg.innerHTML = `
-                    <div class="empty-icon">
-                        <i class="fas fa-microscope"></i>
-                    </div>
-                    <div class="empty-text">No data available for special stations.</div>
+                const emptyState = document.createElement('div');
+                emptyState.className = 'empty-state';
+                emptyState.innerHTML = `
+                    <div class="empty-icon"><i class="fas fa-filter"></i></div>
+                    <div class="empty-text">No data available for special stations</div>
                 `;
-                elements.specialStationCards.appendChild(emptyMsg);
+                container.appendChild(emptyState);
                 return;
             }
             
-            // Create card for each special station
+            // Create a card for each special station
             stationsData.forEach(station => {
                 const card = document.createElement('div');
                 card.className = 'station-card';
                 
-                const cardTitle = document.createElement('div');
-                cardTitle.className = 'station-card-title';
-                cardTitle.innerHTML = `
+                const titleEl = document.createElement('div');
+                titleEl.className = 'station-card-title';
+                titleEl.innerHTML = `
                     <span>${station.name}</span>
-                    <i class="fas fa-info-circle" title="Click for more details"></i>
+                    <i class="fas fa-info-circle"></i>
                 `;
                 
-                const cardMetrics = document.createElement('div');
-                cardMetrics.className = 'station-card-metrics';
-                cardMetrics.innerHTML = `
+                const metricsEl = document.createElement('div');
+                metricsEl.className = 'station-card-metrics';
+                metricsEl.innerHTML = `
                     <div class="station-card-metric">
                         <div class="station-card-value">${station.qty}</div>
                         <div class="station-card-label">Quantity</div>
@@ -2280,60 +2210,366 @@
                     </div>
                 `;
                 
-                const cardReasons = document.createElement('div');
-                cardReasons.className = 'station-card-reasons';
+                const reasonsContainer = document.createElement('div');
+                reasonsContainer.className = 'station-card-reasons';
                 
                 const reasonsTitle = document.createElement('div');
                 reasonsTitle.className = 'station-card-reasons-title';
-                reasonsTitle.textContent = 'Top Reject Reasons';
+                reasonsTitle.textContent = 'Top Reasons';
                 
-                const reasonsList = document.createElement('div');
-                reasonsList.className = 'station-card-reasons-list';
+                reasonsContainer.appendChild(reasonsTitle);
                 
-                // Add top reasons
                 if (station.topReasons && station.topReasons.length > 0) {
                     station.topReasons.forEach(reason => {
                         const reasonItem = document.createElement('div');
                         reasonItem.className = 'reason-item';
-                        reasonItem.innerHTML = `
-                            <span class="reason-name">${reason.name}</span>
-                            <span class="reason-value">${reason.qty} (${Utils.formatCurrency(reason.cost)})</span>
-                        `;
-                        reasonsList.appendChild(reasonItem);
+                        
+                        const reasonName = document.createElement('div');
+                        reasonName.className = 'reason-name';
+                        reasonName.title = reason.name;
+                        reasonName.textContent = Utils.truncateText(reason.name, 20);
+                        
+                        const reasonValue = document.createElement('div');
+                        reasonValue.className = 'reason-value';
+                        reasonValue.textContent = `${reason.qty} (${Utils.formatCurrency(reason.cost)})`;
+                        
+                        reasonItem.appendChild(reasonName);
+                        reasonItem.appendChild(reasonValue);
+                        reasonsContainer.appendChild(reasonItem);
                     });
                 } else {
-                    reasonsList.innerHTML = '<div class="empty-text">No reject reasons available</div>';
+                    const emptyReasons = document.createElement('div');
+                    emptyReasons.className = 'empty-text';
+                    emptyReasons.textContent = 'No reasons data';
+                    reasonsContainer.appendChild(emptyReasons);
                 }
                 
-                // Assemble card
-                cardReasons.appendChild(reasonsTitle);
-                cardReasons.appendChild(reasonsList);
+                card.appendChild(titleEl);
+                card.appendChild(metricsEl);
+                card.appendChild(reasonsContainer);
                 
-                card.appendChild(cardTitle);
-                card.appendChild(cardMetrics);
-                card.appendChild(cardReasons);
-                
-                elements.specialStationCards.appendChild(card);
+                container.appendChild(card);
             });
         };
         
+        // Get current sort method
+        const getCurrentSortBy = function() {
+            return currentSortBy;
+        };
+        
         // Trigger a custom event
-        const triggerEvent = function(eventName, detail = {}) {
-            const event = new CustomEvent(eventName, { detail });
+        const triggerEvent = function(name, detail = {}) {
+            const event = new CustomEvent(name, { detail });
             document.dispatchEvent(event);
         };
         
         // Return public methods
         return {
             init,
-            populateFilterDropdowns,
+            setSortBy,
+            populateMultiSelect,
             setDateRange,
             updateMetrics,
             updateTopRejectsTable,
-            updateTrendChart,
-            updateReasonsChart,
             updateSpecialStations,
-            getCurrentSortBy: () => currentSortBy
+            getCurrentSortBy
+        };
+    })();
+
+    /**
+     * Chart Module
+     * Creates and updates data visualizations
+     */
+    const ChartModule = (function() {
+        // Create trend chart
+        const createTrendChart = function(data, sortBy = 'qty') {
+            const container = document.getElementById('trend-chart-container');
+            if (!container || !data || data.length === 0) return;
+            
+            // Clear previous chart
+            container.innerHTML = '';
+            
+            // Set dimensions
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            const margin = { top: 20, right: 20, bottom: 40, left: 60 };
+            const chartWidth = width - margin.left - margin.right;
+            const chartHeight = height - margin.top - margin.bottom;
+            
+            // Create SVG container
+            const svg = d3.select(container)
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height)
+                .append('g')
+                .attr('transform', `translate(${margin.left},${margin.top})`);
+            
+            // Create scales
+            const xScale = d3.scaleBand()
+                .domain(data.map(d => d.date))
+                .range([0, chartWidth])
+                .padding(0.3);
+            
+            const yValue = d => sortBy === 'qty' ? d.qty : d.cost;
+            const yMax = d3.max(data, yValue);
+            
+            const yScale = d3.scaleLinear()
+                .domain([0, yMax * 1.1]) // Add 10% padding
+                .range([chartHeight, 0]);
+            
+            // Add X axis
+            const xAxis = svg.append('g')
+                .attr('transform', `translate(0,${chartHeight})`)
+                .call(d3.axisBottom(xScale)
+                    .tickFormat(d => {
+                        const date = new Date(d);
+                        return date.getDate().toString();
+                    })
+                    .tickValues(xScale.domain().filter((d, i) => {
+                        // Show fewer ticks if there are many dates
+                        return data.length > 14 ? i % 3 === 0 : true;
+                    }))
+                );
+            
+            // Add X axis label
+            svg.append('text')
+                .attr('transform', `translate(${chartWidth/2},${chartHeight + margin.bottom - 5})`)
+                .style('text-anchor', 'middle')
+                .style('font-size', '11px')
+                .text('Day of Month');
+            
+            // Add Y axis
+            svg.append('g')
+                .call(d3.axisLeft(yScale)
+                    .ticks(5)
+                    .tickFormat(d => sortBy === 'cost' ? `R${d}` : d));
+            
+            // Add Y axis label
+            svg.append('text')
+                .attr('transform', 'rotate(-90)')
+                .attr('y', -margin.left + 15)
+                .attr('x', -chartHeight / 2)
+                .attr('dy', '1em')
+                .style('text-anchor', 'middle')
+                .style('font-size', '11px')
+                .text(sortBy === 'qty' ? 'Quantity' : 'Cost (R)');
+            
+            // Add grid lines
+            svg.append('g')
+                .attr('class', 'grid')
+                .selectAll('line')
+                .data(yScale.ticks(5))
+                .enter()
+                .append('line')
+                .attr('x1', 0)
+                .attr('x2', chartWidth)
+                .attr('y1', d => yScale(d))
+                .attr('y2', d => yScale(d))
+                .attr('stroke', '#e0e0e0')
+                .attr('stroke-width', 1);
+            
+            // Add bars
+            svg.selectAll('.bar')
+                .data(data)
+                .enter()
+                .append('rect')
+                .attr('class', 'bar')
+                .attr('x', d => xScale(d.date))
+                .attr('width', xScale.bandwidth())
+                .attr('y', d => yScale(yValue(d)))
+                .attr('height', d => chartHeight - yScale(yValue(d)))
+                .attr('fill', sortBy === 'qty' ? '#3498db' : '#e67e22')
+                .on('mouseover', function(event, d) {
+                    // Highlight on hover
+                    d3.select(this).attr('fill', '#9b59b6');
+                    
+                    // Create tooltip
+                    const tooltip = d3.select('body')
+                        .append('div')
+                        .attr('class', 'tooltip')
+                        .style('opacity', 0);
+                    
+                    tooltip.transition()
+                        .duration(200)
+                        .style('opacity', 0.9);
+                    
+                    tooltip.html(`
+                        <b>${Utils.formatDateForDisplay(d.date)}</b><br>
+                        Quantity: ${d.qty}<br>
+                        Cost: ${Utils.formatCurrency(d.cost)}
+                    `)
+                    .style('left', (event.pageX + 10) + 'px')
+                    .style('top', (event.pageY - 28) + 'px');
+                })
+                .on('mouseout', function() {
+                    // Restore original color
+                    d3.select(this).attr('fill', sortBy === 'qty' ? '#3498db' : '#e67e22');
+                    
+                    // Remove tooltip
+                    d3.selectAll('.tooltip').remove();
+                });
+            
+            // Add a line for trend
+            if (data.length > 1) {
+                const line = d3.line()
+                    .x(d => xScale(d.date) + xScale.bandwidth() / 2)
+                    .y(d => yScale(yValue(d)))
+                    .curve(d3.curveMonotoneX);
+                
+                svg.append('path')
+                    .datum(data)
+                    .attr('fill', 'none')
+                    .attr('stroke', '#e74c3c')
+                    .attr('stroke-width', 2)
+                    .attr('d', line);
+                
+                // Add data points on the line
+                svg.selectAll('.data-point')
+                    .data(data)
+                    .enter()
+                    .append('circle')
+                    .attr('class', 'data-point')
+                    .attr('cx', d => xScale(d.date) + xScale.bandwidth() / 2)
+                    .attr('cy', d => yScale(yValue(d)))
+                    .attr('r', 3)
+                    .attr('fill', 'white')
+                    .attr('stroke', '#e74c3c')
+                    .attr('stroke-width', 2);
+            }
+        };
+        
+        // Create reasons chart
+        const createReasonsChart = function(data, sortBy = 'qty') {
+            const container = document.getElementById('reasons-chart-container');
+            if (!container || !data || data.length === 0) return;
+            
+            // Clear previous chart
+            container.innerHTML = '';
+            
+            // Set dimensions
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            const margin = { top: 10, right: 20, bottom: 30, left: 100 };
+            const chartWidth = width - margin.left - margin.right;
+            const chartHeight = height - margin.top - margin.bottom;
+            
+            // Sort data
+            data.sort((a, b) => {
+                if (sortBy === 'qty') {
+                    return b.qty - a.qty;
+                } else {
+                    return b.cost - a.cost;
+                }
+            });
+            
+            // Limit to 5 items
+            data = data.slice(0, 5);
+            
+            // Create SVG container
+            const svg = d3.select(container)
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height)
+                .append('g')
+                .attr('transform', `translate(${margin.left},${margin.top})`);
+            
+            // Create scales
+            const yScale = d3.scaleBand()
+                .domain(data.map(d => d.reason))
+                .range([0, chartHeight])
+                .padding(0.2);
+            
+            const xValue = d => sortBy === 'qty' ? d.qty : d.cost;
+            const xMax = d3.max(data, xValue);
+            
+            const xScale = d3.scaleLinear()
+                .domain([0, xMax * 1.1]) // Add 10% padding
+                .range([0, chartWidth]);
+            
+            // Add Y axis
+            svg.append('g')
+                .call(d3.axisLeft(yScale)
+                    .tickFormat(d => Utils.truncateText(d, 15)));
+            
+            // Add X axis
+            svg.append('g')
+                .attr('transform', `translate(0,${chartHeight})`)
+                .call(d3.axisBottom(xScale)
+                    .ticks(5)
+                    .tickFormat(d => sortBy === 'cost' ? `R${d}` : d));
+            
+            // Add bars
+            svg.selectAll('.bar')
+                .data(data)
+                .enter()
+                .append('rect')
+                .attr('class', 'bar')
+                .attr('y', d => yScale(d.reason))
+                .attr('height', yScale.bandwidth())
+                .attr('x', 0)
+                .attr('width', d => xScale(xValue(d)))
+                .attr('fill', (d, i) => {
+                    const colors = ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6'];
+                    return colors[i % colors.length];
+                })
+                .on('mouseover', function(event, d) {
+                    // Highlight on hover
+                    d3.select(this).attr('opacity', 0.8);
+                    
+                    // Create tooltip
+                    const tooltip = d3.select('body')
+                        .append('div')
+                        .attr('class', 'tooltip')
+                        .style('opacity', 0);
+                    
+                    tooltip.transition()
+                        .duration(200)
+                        .style('opacity', 0.9);
+                    
+                    // Format stations list
+                    const stations = Array.from(d.stations || [])
+                        .slice(0, 3)
+                        .join(', ');
+                    const stationsText = d.stations && d.stations.size > 3 
+                        ? `${stations}... (${d.stations.size - 3} more)`
+                        : stations;
+                    
+                    tooltip.html(`
+                        <b>${d.reason}</b><br>
+                        Quantity: ${d.qty}<br>
+                        Cost: ${Utils.formatCurrency(d.cost)}<br>
+                        Stations: ${stationsText}
+                    `)
+                    .style('left', (event.pageX + 10) + 'px')
+                    .style('top', (event.pageY - 28) + 'px');
+                })
+                .on('mouseout', function() {
+                    // Restore original opacity
+                    d3.select(this).attr('opacity', 1);
+                    
+                    // Remove tooltip
+                    d3.selectAll('.tooltip').remove();
+                });
+            
+            // Add value labels
+            svg.selectAll('.bar-label')
+                .data(data)
+                .enter()
+                .append('text')
+                .attr('class', 'bar-label')
+                .attr('y', d => yScale(d.reason) + yScale.bandwidth() / 2 + 4)
+                .attr('x', d => xScale(xValue(d)) + 5)
+                .text(d => sortBy === 'qty' 
+                    ? `${d.qty} (${Utils.formatCurrency(d.cost)})` 
+                    : `${Utils.formatCurrency(d.cost)} (${d.qty})`)
+                .attr('font-size', '10px')
+                .attr('fill', '#333');
+        };
+        
+        // Return public methods
+        return {
+            createTrendChart,
+            createReasonsChart
         };
     })();
 
@@ -2345,26 +2581,23 @@
         // Initialize the dashboard
         const init = async function() {
             try {
-                // Initialize UI module
+                // Initialize UI
                 UIModule.init();
                 
                 // Initialize data module
-                const dataInitialized = await DataModule.init();
-                if (!dataInitialized) {
-                    throw new Error('Failed to initialize data module');
-                }
+                await DataModule.init();
                 
                 // Set up event listeners
                 setupEventListeners();
                 
-                // Set default date range
+                // Set default date range (last 30 days)
                 const defaultDateRange = Utils.getLastNDaysRange(30);
                 UIModule.setDateRange(defaultDateRange.start, defaultDateRange.end);
+                DataModule.setDateRange(defaultDateRange.start, defaultDateRange.end);
                 
                 // Load initial data
-                await loadDataForDateRange();
+                await loadInitialData();
                 
-                console.log('Dashboard initialized successfully');
                 return true;
             } catch (error) {
                 console.error('Error initializing dashboard:', error);
@@ -2372,128 +2605,168 @@
             }
         };
         
-        // Set up event listeners for custom events
+        // Set up event listeners
         const setupEventListeners = function() {
             // Date range changed
-            document.addEventListener('dateRangeChanged', async (event) => {
-                const { fromDate, toDate } = event.detail;
+            document.addEventListener('dateRangeChanged', async (e) => {
+                const { fromDate, toDate } = e.detail;
                 
-                if (fromDate && toDate) {
-                    DataModule.setDateRange(fromDate, toDate);
-                    await loadDataForDateRange();
-                }
+                // Update data module with new date range
+                DataModule.setDateRange(fromDate, toDate);
+                
+                // Reload data for new date range
+                await loadDataForDateRange();
             });
             
             // Filter changed
-            document.addEventListener('filterChanged', async (event) => {
-                const { name, value } = event.detail;
+            document.addEventListener('filterChanged', (e) => {
+                const { type, values } = e.detail;
                 
-                if (name) {
-                    DataModule.setFilter(name, value);
-                    updateDashboard();
-                }
-            });
-            
-            // Reset filters
-            document.addEventListener('resetFilters', async () => {
-                DataModule.resetFilters();
+                // Update data module with new filter values
+                DataModule.setFilter(type, values);
+                
+                // Get updated filter options based on current selections
+                const filterOptions = DataModule.getFilterOptions();
+                
+                // Update UI with available options for other filters
+                Object.keys(filterOptions).forEach(filterType => {
+                    if (filterType !== type) {
+                        const selectedValues = filterType === 'supervisor' ? DataModule.getCurrentFilters().supervisor :
+                                            filterType === 'product' ? DataModule.getCurrentFilters().product :
+                                            filterType === 'variant' ? DataModule.getCurrentFilters().variant :
+                                            filterType === 'station' ? DataModule.getCurrentFilters().station : [];
+                            
+                        UIModule.populateMultiSelect(`${filterType}-select`, filterOptions[filterType], selectedValues);
+                    }
+                });
+                
+                // Update dashboard with filtered data
                 updateDashboard();
             });
             
-            // Sort changed
-            document.addEventListener('sortChanged', async (event) => {
-                const { sortBy } = event.detail;
+            // Reset filters
+            document.addEventListener('resetFilters', () => {
+                // Reset filters in data module
+                DataModule.resetFilters();
                 
-                if (sortBy) {
-                    updateDashboard(sortBy);
-                }
+                // Update UI with all options
+                const filterOptions = DataModule.getFilterOptions();
+                
+                Object.keys(filterOptions).forEach(filterType => {
+                    UIModule.populateMultiSelect(`${filterType}-select`, filterOptions[filterType], []);
+                });
+                
+                // Update dashboard with filtered data
+                updateDashboard();
             });
             
-            // Special stations toggled
-            document.addEventListener('specialStationsToggled', async (event) => {
-                const { visible } = event.detail;
+            // Sort method changed
+            document.addEventListener('sortChanged', (e) => {
+                const { sortBy } = e.detail;
                 
-                if (visible) {
-                    const specialStationsData = DataModule.getSpecialStationsData();
-                    UIModule.updateSpecialStations(specialStationsData);
-                }
-            });
-            
-            // Table header sorted
-            document.addEventListener('tableHeaderSorted', async (event) => {
-                const { field } = event.detail;
-                
-                if (field) {
-                    // Handle table sorting logic
-                    console.log('Sort table by:', field);
-                    // This would typically involve sorting the data and re-rendering
-                    // the table, but we're keeping the simple version for now
-                }
+                // Update dashboard with new sort method
+                updateDashboard(sortBy);
             });
         };
         
-        // Load data for the current date range
-        const loadDataForDateRange = async function() {
+        // Load initial data
+        const loadInitialData = async function() {
             try {
-                // Update UI to show loading state
-                Utils.showLoading('top-rejects-loading');
-                Utils.showLoading('trend-chart-loading');
-                Utils.showLoading('reasons-chart-loading');
+                // Show loading state
+                document.getElementById('top-rejects-loading').style.display = 'flex';
+                document.getElementById('trend-chart-loading').style.display = 'flex';
+                document.getElementById('reasons-chart-loading').style.display = 'flex';
                 
-                // Load data
-                const dataLoaded = await DataModule.loadDataForDateRange();
+                // Load data for current date range
+                await DataModule.loadDataForDateRange();
                 
-                if (!dataLoaded) {
-                    throw new Error('Failed to load data for selected date range');
-                }
+                // Get filter options
+                const filterOptions = DataModule.getFilterOptions();
                 
                 // Populate filter dropdowns
-                const filterOptions = DataModule.getFilterOptions();
-                UIModule.populateFilterDropdowns(filterOptions);
+                Object.keys(filterOptions).forEach(filterType => {
+                    UIModule.populateMultiSelect(`${filterType}-select`, filterOptions[filterType], []);
+                });
                 
-                // Update the rest of the dashboard
-                updateDashboard(UIModule.getCurrentSortBy());
+                // Update dashboard with loaded data
+                updateDashboard();
                 
                 return true;
             } catch (error) {
-                console.error('Error loading data:', error);
-                
-                // Hide loading indicators
-                Utils.hideLoading('top-rejects-loading');
-                Utils.hideLoading('trend-chart-loading');
-                Utils.hideLoading('reasons-chart-loading');
-                
-                // Show empty states
-                Utils.showEmpty('top-rejects-empty');
-                Utils.showEmpty('trend-chart-empty');
-                Utils.showEmpty('reasons-chart-empty');
-                
+                console.error('Error loading initial data:', error);
                 return false;
+            } finally {
+                // Hide loading state
+                document.getElementById('top-rejects-loading').style.display = 'none';
+                document.getElementById('trend-chart-loading').style.display = 'none';
+                document.getElementById('reasons-chart-loading').style.display = 'none';
             }
         };
         
-        // Update all dashboard components
+        // Load data for changed date range
+        const loadDataForDateRange = async function() {
+            try {
+                // Show loading state
+                document.getElementById('top-rejects-loading').style.display = 'flex';
+                document.getElementById('trend-chart-loading').style.display = 'flex';
+                document.getElementById('reasons-chart-loading').style.display = 'flex';
+                
+                // Load data for current date range
+                await DataModule.loadDataForDateRange();
+                
+                // Get filter options
+                const filterOptions = DataModule.getFilterOptions();
+                
+                // Populate filter dropdowns with updated options
+                Object.keys(filterOptions).forEach(filterType => {
+                    const currentFilters = DataModule.getCurrentFilters();
+                    const selectedValues = currentFilters[filterType] || [];
+                    
+                    UIModule.populateMultiSelect(`${filterType}-select`, filterOptions[filterType], selectedValues);
+                });
+                
+                // Update dashboard with loaded data
+                updateDashboard();
+                
+                return true;
+            } catch (error) {
+                console.error('Error loading data for date range:', error);
+                return false;
+            } finally {
+                // Hide loading state
+                document.getElementById('top-rejects-loading').style.display = 'none';
+                document.getElementById('trend-chart-loading').style.display = 'none';
+                document.getElementById('reasons-chart-loading').style.display = 'none';
+            }
+        };
+        
+        // Update dashboard with current data
         const updateDashboard = function(sortBy = UIModule.getCurrentSortBy()) {
-            // Get metrics summary
-            const metrics = DataModule.getMetricsSummary();
-            UIModule.updateMetrics(metrics);
-            
-            // Get top rejects
-            const topRejects = DataModule.getTopRejects(10, sortBy);
-            UIModule.updateTopRejectsTable(topRejects);
-            
-            // Get trend chart data
-            const trendData = DataModule.getTrendChartData(sortBy);
-            UIModule.updateTrendChart(trendData, sortBy);
-            
-            // Get top reasons
-            const topReasons = DataModule.getTopReasons(5, sortBy);
-            UIModule.updateReasonsChart(topReasons, sortBy);
-            
-            // Update special stations section if visible
-            if (document.getElementById('special-stations-section').classList.contains('visible')) {
+            try {
+                // Get metrics
+                const metrics = DataModule.getMetricsSummary();
+                UIModule.updateMetrics(metrics);
+                
+                // Get special stations data
                 const specialStationsData = DataModule.getSpecialStationsData();
                 UIModule.updateSpecialStations(specialStationsData);
+                
+                // Get top rejects data
+                const topRejects = DataModule.getTopRejects(10, sortBy);
+                UIModule.updateTopRejectsTable(topRejects);
+                
+                // Create trend chart
+                const trendData = DataModule.getTrendChartData(sortBy);
+                ChartModule.createTrendChart(trendData, sortBy);
+                
+                // Create reasons chart
+                const reasonsData = DataModule.getTopReasons(5, sortBy);
+                ChartModule.createReasonsChart(reasonsData, sortBy);
+                
+                return true;
+            } catch (error) {
+                console.error('Error updating dashboard:', error);
+                return false;
             }
         };
         
@@ -2503,7 +2776,7 @@
         };
     })();
 
-    // Initialize dashboard when the DOM is fully loaded
+    // Initialize dashboard when the document is ready
     document.addEventListener('DOMContentLoaded', () => {
         DashboardModule.init();
     });
