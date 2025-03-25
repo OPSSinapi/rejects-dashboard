@@ -1187,10 +1187,7 @@
                 console.log("Months to load:", monthsToLoad);
                 
                 if (monthsToLoad.length === 0) {
-                    console.warn("No data available for selected date range");
-                    
-                    // As a fallback, let's load 2023-05 data for demo
-                    monthsToLoad.push("2023-05");
+                    throw new Error('No data available for selected date range');
                 }
                 
                 // Reset data arrays
@@ -2660,6 +2657,8 @@
         // Initialize the dashboard
         const init = async function() {
             try {
+                console.log("Initializing dashboard...");
+                
                 // Initialize UI
                 UIModule.init();
                 
@@ -2674,9 +2673,12 @@
                 UIModule.setDateRange(defaultDateRange.start, defaultDateRange.end);
                 DataModule.setDateRange(defaultDateRange.start, defaultDateRange.end);
                 
+                console.log("Set default date range for initial data");
+                
                 // Load initial data
                 await loadInitialData();
                 
+                console.log("Dashboard initialization complete");
                 return true;
             } catch (error) {
                 console.error('Error initializing dashboard:', error);
@@ -2858,9 +2860,18 @@
         };
     })();
 
-    // Initialize dashboard when the document is ready
+    // Initialize the dashboard when the document is ready
     document.addEventListener('DOMContentLoaded', () => {
-        DashboardModule.init();
+        // Use the try-catch block to handle any errors during initialization
+        try {
+            DashboardModule.init().then(success => {
+                if (!success) {
+                    console.error("Dashboard initialization failed");
+                }
+            });
+        } catch (error) {
+            console.error("Fatal error during dashboard initialization:", error);
+        }
     });
     </script>
 </body>
