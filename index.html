@@ -1173,14 +1173,24 @@
             }
             
             try {
+                console.log("Loading data for date range:", 
+                    currentFilters.dateFrom.toISOString().split('T')[0], 
+                    "to", 
+                    currentFilters.dateTo.toISOString().split('T')[0]);
+                
                 // Get list of months needed for the date range
                 const monthsToLoad = getMonthsInRange(
                     currentFilters.dateFrom, 
                     currentFilters.dateTo
                 );
                 
+                console.log("Months to load:", monthsToLoad);
+                
                 if (monthsToLoad.length === 0) {
-                    throw new Error('No data available for selected date range');
+                    console.warn("No data available for selected date range");
+                    
+                    // As a fallback, let's load 2023-05 data for demo
+                    monthsToLoad.push("2023-05");
                 }
                 
                 // Reset data arrays
@@ -1190,23 +1200,29 @@
                 for (const month of monthsToLoad) {
                     if (!loadedMonths[month]) {
                         try {
+                            console.log(`Loading data for ${month}...`);
                             const monthResponse = await fetch(`data/${month}.json`);
                             if (!monthResponse.ok) {
-                                console.warn(`Month data for ${month} not available or error`);
+                                console.warn(`Month data for ${month} not available or error: ${monthResponse.statusText}`);
                                 continue;
                             }
                             
                             const monthData = await monthResponse.json();
                             loadedMonths[month] = monthData.rejectData || [];
+                            console.log(`Successfully loaded ${loadedMonths[month].length} records for ${month}`);
                         } catch (error) {
                             console.warn(`Error loading data for ${month}:`, error);
                             continue;
                         }
+                    } else {
+                        console.log(`Using cached data for ${month} (${loadedMonths[month].length} records)`);
                     }
                     
                     // Add this month's data
                     rejectData = rejectData.concat(loadedMonths[month]);
                 }
+                
+                console.log(`Total loaded records: ${rejectData.length}`);
                 
                 // Reset filters and build filter associations
                 resetFilters();
@@ -1214,6 +1230,8 @@
                 
                 // Apply date filtering
                 applyFilters();
+                
+                console.log(`After filtering: ${filteredData.length} records match criteria`);
                 
                 return true;
             } catch (error) {
@@ -2739,18 +2757,6 @@
                 document.getElementById('top-rejects-loading').style.display = 'flex';
                 document.getElementById('trend-chart-loading').style.display = 'flex';
                 document.getElementById('reasons-chart-loading').style.display = 'flex';
-                
-                // Load test data directly for initial view
-                const testResponse = await fetch('2023-05.json');
-                if (!testResponse.ok) {
-                    throw new Error("Failed to load sample data");
-                }
-                
-                const testData = await testResponse.json();
-                console.log(`Loaded ${testData.rejectData.length} initial test records`);
-                
-                // Use this sample data for initialization
-                DataModule.setTestData(testData.rejectData);
                 
                 // Load data for current date range
                 await DataModule.loadDataForDateRange();
