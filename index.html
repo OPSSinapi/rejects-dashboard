@@ -1811,6 +1811,11 @@
             return result;
         };
         
+        // Get current filter values
+        const getCurrentFilters = function() {
+            return currentFilters;
+        };
+        
         // Return public methods
         return {
             init,
@@ -1825,6 +1830,7 @@
             getTopReasons,
             getMetricsSummary,
             getSpecialStationsData,
+            getCurrentFilters,
             specialStations
         };
     })();
