@@ -1402,163 +1402,38 @@
         
         // Get available filter options based on current filter selections
         const getFilterOptions = function() {
-            // Get all possible options first
-            const allOptions = {
+            console.log("Getting filter options from", filteredData.length, "filtered records");
+            
+            // Initialize all options
+            const options = {
                 supervisor: new Set(),
                 product: new Set(),
                 variant: new Set(),
                 station: new Set()
             };
             
-            // Filter by date range first
-            const dateFilteredData = rejectData.filter(item => {
-                if (!item.ProductionDate) return false;
-                const itemDate = new Date(item.ProductionDate);
-                return itemDate >= currentFilters.dateFrom && 
-                       itemDate <= currentFilters.dateTo;
+            // Process each record in the filtered data to extract unique values
+            filteredData.forEach(item => {
+                // Only add non-empty values
+                if (item.LineSupervisor) options.supervisor.add(item.LineSupervisor);
+                if (item.Product) options.product.add(item.Product);
+                if (item.Variant) options.variant.add(item.Variant);
+                if (item.Station) options.station.add(item.Station);
             });
             
-            // Collect all possible values from date-filtered data
-            dateFilteredData.forEach(item => {
-                if (item.LineSupervisor) allOptions.supervisor.add(item.LineSupervisor);
-                if (item.Product) allOptions.product.add(item.Product);
-                if (item.Variant) allOptions.variant.add(item.Variant);
-                if (item.Station) allOptions.station.add(item.Station);
-            });
-            
-            // Now filter options based on current selections
-            const filteredOptions = {
-                supervisor: new Set(allOptions.supervisor),
-                product: new Set(allOptions.product),
-                variant: new Set(allOptions.variant),
-                station: new Set(allOptions.station)
-            };
-            
-            // Apply interdependent filtering
-            
-            // If supervisors are selected, filter other options accordingly
-            if (currentFilters.supervisor.length > 0) {
-                const availableProducts = new Set();
-                const availableVariants = new Set();
-                const availableStations = new Set();
-                
-                currentFilters.supervisor.forEach(supervisor => {
-                    if (filterAssociations.supervisor[supervisor]) {
-                        filterAssociations.supervisor[supervisor].product.forEach(product => 
-                            availableProducts.add(product));
-                        filterAssociations.supervisor[supervisor].variant.forEach(variant => 
-                            availableVariants.add(variant));
-                        filterAssociations.supervisor[supervisor].station.forEach(station => 
-                            availableStations.add(station));
-                    }
-                });
-                
-                filteredOptions.product = new Set([...filteredOptions.product].filter(p => 
-                    availableProducts.has(p)));
-                filteredOptions.variant = new Set([...filteredOptions.variant].filter(v => 
-                    availableVariants.has(v)));
-                filteredOptions.station = new Set([...filteredOptions.station].filter(s => 
-                    availableStations.has(s)));
-            }
-            
-            // If products are selected, filter other options accordingly
-            if (currentFilters.product.length > 0) {
-                const availableSupervisors = new Set();
-                const availableVariants = new Set();
-                const availableStations = new Set();
-                
-                currentFilters.product.forEach(product => {
-                    if (filterAssociations.product[product]) {
-                        filterAssociations.product[product].supervisor.forEach(supervisor => 
-                            availableSupervisors.add(supervisor));
-                        filterAssociations.product[product].variant.forEach(variant => 
-                            availableVariants.add(variant));
-                        filterAssociations.product[product].station.forEach(station => 
-                            availableStations.add(station));
-                    }
-                });
-                
-                // Only filter if we're not already filtering by this dimension
-                if (currentFilters.supervisor.length === 0) {
-                    filteredOptions.supervisor = new Set([...filteredOptions.supervisor].filter(s => 
-                        availableSupervisors.has(s)));
-                }
-                
-                filteredOptions.variant = new Set([...filteredOptions.variant].filter(v => 
-                    availableVariants.has(v)));
-                filteredOptions.station = new Set([...filteredOptions.station].filter(s => 
-                    availableStations.has(s)));
-            }
-            
-            // If variants are selected, filter other options accordingly
-            if (currentFilters.variant.length > 0) {
-                const availableSupervisors = new Set();
-                const availableProducts = new Set();
-                const availableStations = new Set();
-                
-                currentFilters.variant.forEach(variant => {
-                    if (filterAssociations.variant[variant]) {
-                        filterAssociations.variant[variant].supervisor.forEach(supervisor => 
-                            availableSupervisors.add(supervisor));
-                        filterAssociations.variant[variant].product.forEach(product => 
-                            availableProducts.add(product));
-                        filterAssociations.variant[variant].station.forEach(station => 
-                            availableStations.add(station));
-                    }
-                });
-                
-                // Only filter if we're not already filtering by this dimension
-                if (currentFilters.supervisor.length === 0) {
-                    filteredOptions.supervisor = new Set([...filteredOptions.supervisor].filter(s => 
-                        availableSupervisors.has(s)));
-                }
-                if (currentFilters.product.length === 0) {
-                    filteredOptions.product = new Set([...filteredOptions.product].filter(p => 
-                        availableProducts.has(p)));
-                }
-                
-                filteredOptions.station = new Set([...filteredOptions.station].filter(s => 
-                    availableStations.has(s)));
-            }
-            
-            // If stations are selected, filter other options accordingly
-            if (currentFilters.station.length > 0) {
-                const availableSupervisors = new Set();
-                const availableProducts = new Set();
-                const availableVariants = new Set();
-                
-                currentFilters.station.forEach(station => {
-                    if (filterAssociations.station[station]) {
-                        filterAssociations.station[station].supervisor.forEach(supervisor => 
-                            availableSupervisors.add(supervisor));
-                        filterAssociations.station[station].product.forEach(product => 
-                            availableProducts.add(product));
-                        filterAssociations.station[station].variant.forEach(variant => 
-                            availableVariants.add(variant));
-                    }
-                });
-                
-                // Only filter if we're not already filtering by this dimension
-                if (currentFilters.supervisor.length === 0) {
-                    filteredOptions.supervisor = new Set([...filteredOptions.supervisor].filter(s => 
-                        availableSupervisors.has(s)));
-                }
-                if (currentFilters.product.length === 0) {
-                    filteredOptions.product = new Set([...filteredOptions.product].filter(p => 
-                        availableProducts.has(p)));
-                }
-                if (currentFilters.variant.length === 0) {
-                    filteredOptions.variant = new Set([...filteredOptions.variant].filter(v => 
-                        availableVariants.has(v)));
-                }
-            }
+            console.log("Extracted filter options:", 
+                "Supervisors:", options.supervisor.size,
+                "Products:", options.product.size,
+                "Variants:", options.variant.size,
+                "Stations:", options.station.size
+            );
             
             // Convert Sets to sorted arrays
             return {
-                supervisor: [...filteredOptions.supervisor].sort(),
-                product: [...filteredOptions.product].sort(),
-                variant: [...filteredOptions.variant].sort(),
-                station: [...filteredOptions.station].sort()
+                supervisor: Array.from(options.supervisor).sort(),
+                product: Array.from(options.product).sort(),
+                variant: Array.from(options.variant).sort(),
+                station: Array.from(options.station).sort()
             };
         };
         
@@ -2078,9 +1953,15 @@
         
         // Create and populate multi-select options
         const populateMultiSelect = function(selectId, options, selectedValues = []) {
-            const optionsContainer = document.getElementById(`${selectId}-options`);
-            if (!optionsContainer) return;
+            console.log(`Populating ${selectId} with ${options.length} options`);
             
+            const optionsContainer = document.getElementById(`${selectId.replace('-select', '')}-options`);
+            if (!optionsContainer) {
+                console.error(`Options container not found for ${selectId}`);
+                return;
+            }
+            
+            // Clear existing options
             optionsContainer.innerHTML = '';
             
             if (!options || options.length === 0) {
@@ -2091,6 +1972,7 @@
                 return;
             }
             
+            // Add each option as a checkbox item
             options.forEach(option => {
                 const optionDiv = document.createElement('div');
                 optionDiv.className = 'multi-select-option';
@@ -2100,9 +1982,11 @@
                 checkbox.value = option;
                 checkbox.checked = selectedValues.includes(option);
                 checkbox.className = 'multi-select-checkbox';
+                checkbox.id = `${selectId}-${option.toString().replace(/[^a-zA-Z0-9]/g, '-')}`;
                 
                 const label = document.createElement('label');
                 label.textContent = option;
+                label.htmlFor = checkbox.id;
                 
                 optionDiv.appendChild(checkbox);
                 optionDiv.appendChild(label);
@@ -2115,6 +1999,8 @@
                     const selectedValues = Array.from(allCheckboxes)
                         .filter(cb => cb.checked)
                         .map(cb => cb.value);
+                    
+                    console.log(`${filterType} selection changed:`, selectedValues);
                     
                     // Update header text
                     updateMultiSelectHeader(selectId, selectedValues);
@@ -2750,42 +2636,51 @@
             });
         };
         
-        // Load initial data
-        const loadInitialData = async function() {
-            try {
-                console.log("Loading initial data...");
-                
-                // Show loading state
-                document.getElementById('top-rejects-loading').style.display = 'flex';
-                document.getElementById('trend-chart-loading').style.display = 'flex';
-                document.getElementById('reasons-chart-loading').style.display = 'flex';
-                
-                // Load data for current date range
-                await DataModule.loadDataForDateRange();
-                
-                // Get filter options
-                const filterOptions = DataModule.getFilterOptions();
-                console.log("Available filter options:", filterOptions);
-                
-                // Populate filter dropdowns
-                Object.keys(filterOptions).forEach(filterType => {
-                    UIModule.populateMultiSelect(`${filterType}-select`, filterOptions[filterType], []);
-                });
-                
-                // Update dashboard with loaded data
-                updateDashboard();
-                
-                return true;
-            } catch (error) {
-                console.error('Error loading initial data:', error);
-                return false;
-            } finally {
-                // Hide loading state
-                document.getElementById('top-rejects-loading').style.display = 'none';
-                document.getElementById('trend-chart-loading').style.display = 'none';
-                document.getElementById('reasons-chart-loading').style.display = 'none';
-            }
-        };
+                // Load initial data
+                const loadInitialData = async function() {
+                    try {
+                        console.log("Loading initial data...");
+                        
+                        // Show loading state
+                        document.getElementById('top-rejects-loading').style.display = 'flex';
+                        document.getElementById('trend-chart-loading').style.display = 'flex';
+                        document.getElementById('reasons-chart-loading').style.display = 'flex';
+                        
+                        // Set date range to 2023-05 for testing purposes
+                        const startDate = new Date(2023, 4, 1); // May 1, 2023 (months are 0-indexed)
+                        const endDate = new Date(2023, 4, 31);  // May 31, 2023
+                        
+                        UIModule.setDateRange(startDate, endDate);
+                        DataModule.setDateRange(startDate, endDate);
+                        
+                        console.log("Set date range to May 2023 for initial data");
+                        
+                        // Load data for the date range
+                        await DataModule.loadDataForDateRange();
+                        
+                        // Get filter options
+                        const filterOptions = DataModule.getFilterOptions();
+                        console.log("Available filter options:", filterOptions);
+                        
+                        // Populate filter dropdowns
+                        Object.keys(filterOptions).forEach(filterType => {
+                            UIModule.populateMultiSelect(`${filterType}-select`, filterOptions[filterType], []);
+                        });
+                        
+                        // Update dashboard with loaded data
+                        updateDashboard();
+                        
+                        return true;
+                    } catch (error) {
+                        console.error('Error loading initial data:', error);
+                        return false;
+                    } finally {
+                        // Hide loading state
+                        document.getElementById('top-rejects-loading').style.display = 'none';
+                        document.getElementById('trend-chart-loading').style.display = 'none';
+                        document.getElementById('reasons-chart-loading').style.display = 'none';
+                    }
+                };
         
         // Load data for changed date range
         const loadDataForDateRange = async function() {
