@@ -3668,20 +3668,373 @@
             createReasonsChart
         };
     })();
+
+    /**
+ * Dashboard Module
+ * Orchestrates the overall application and coordinates between modules
+ */
+const DashboardModule = (function() {
+    // Private state
+    let initialized = false;
+    let currentStations = [];
+    
+    // Initialize the dashboard
+    const init = async function() {
+        try {
+            console.log("Initializing Dashboard Module");
+            
+            // Initialize UI module
+            if (!UIModule.init()) {
+                console.error("Failed to initialize UI Module");
+                return false;
+            }
+            
+            // Initialize Data module
+            if (!await DataModule.init()) {
+                console.error("Failed to initialize Data Module");
+                return false;
+            }
+            
+            // Set up event listeners for module communication
+            setupEventListeners();
+            
+            // Set initial dates (last 30 days)
+            const { start, end } = Utils.getLastNDaysRange(30);
+            DataModule.setDateRange(start, end);
+            UIModule.setDateRange(start, end);
+            
+            // Load initial data
+            if (!await loadData()) {
+                console.error("Failed to load initial data");
+                return false;
+            }
+            
+            initialized = true;
+            return true;
+        } catch (error) {
+            console.error("Error initializing Dashboard Module:", error);
+            return false;
+        }
+    };
+    
+    // Set up event listeners for module communication
+    const setupEventListeners = function() {
+        // Date range change event
+        document.addEventListener('dateRangeChanged', async function(e) {
+            const { fromDate, toDate } = e.detail;
+            console.log("Date range changed:", fromDate, toDate);
+            
+            DataModule.setDateRange(fromDate, toDate);
+            await loadData();
+        });
+        
+        // Filter change event
+        document.addEventListener('filterChanged', function(e) {
+            const { type, values } = e.detail;
+            console.log("Filter changed:", type, values);
+            
+            DataModule.setFilter(type, values);
+            updateDashboard();
+        });
+        
+        // Reset filters event
+        document.addEventListener('resetFilters', function() {
+            console.log("Resetting filters");
+            
+            DataModule.resetFilters();
+            
+            // Reset UI state
+            UIModule.resetPagination();
+            
+            // Set default sort
+            const defaultSort = 'qty';
+            UIModule.setSortBy(defaultSort);
+            
+            updateDashboard();
+        });
+        
+        // Sort change event
+        document.addEventListener('sortChanged', function(e) {
+            const { sortBy } = e.detail;
+            console.log("Sort changed:", sortBy);
+            
+            updateDashboard();
+        });
+        
+        // Table sort changed event
+        document.addEventListener('tableSortChanged', function(e) {
+            const { sortBy, sortDirection } = e.detail;
+            console.log("Table sort changed:", sortBy, sortDirection);
+            
+            DataModule.setTableSort(sortBy, sortDirection);
+            updateTopRejectsTable();
+        });
+        
+        // Pagination event
+        document.addEventListener('pageChanged', function(e) {
+            const { type, page } = e.detail;
+            console.log("Page changed:", type, page);
+            
+            if (type === 'topRejects') {
+                updateTopRejectsTable();
+            } else if (type === 'stationReasons') {
+                updateFinalInspectionCard();
+            }
+        });
+        
+        // Station changed event
+        document.addEventListener('stationChanged', function(e) {
+            const { index } = e.detail;
+            console.log("Station changed to index:", index);
+            
+            UIModule.setCurrentStationIndex(index);
+            updateFinalInspectionCard();
+        });
+        
+        // View changed event (trend chart, reasons chart)
+        document.addEventListener('viewChanged', function(e) {
+            const { type, view } = e.detail;
+            console.log("View changed:", type, view);
+            
+            if (type === 'trend') {
+                updateTrendChart();
+            } else if (type === 'reasons') {
+                updateReasonsChart();
+            }
+        });
+        
+        // Comparison period changed event
+        document.addEventListener('comparisonChanged', async function(e) {
+            const { period } = e.detail;
+            console.log("Comparison period changed:", period);
+            
+            if (period === 'none') {
+                // No need to load comparison data
+                updateTrendChart();
+            } else {
+                // Load and display comparison data
+                await loadComparisonData(period);
+            }
+        });
+    };
+    
+    // Load data from API
+    const loadData = async function() {
+        try {
+            // Show loading states
+            Utils.showLoading('top-rejects-loading');
+            Utils.showLoading('trend-chart-loading');
+            Utils.showLoading('reasons-chart-loading');
+            
+            // Load data for current date range
+            const success = await DataModule.loadDataForDateRange();
+            if (!success) {
+                console.error("Failed to load data for date range");
+                return false;
+            }
+            
+            // Get filter options
+            const filterOptions = DataModule.getFilterOptions();
+            
+            // Populate filter dropdowns
+            UIModule.populateMultiSelect('supervisor-select', filterOptions.supervisor, DataModule.getCurrentFilters().supervisor);
+            UIModule.populateMultiSelect('product-select', filterOptions.product, DataModule.getCurrentFilters().product);
+            UIModule.populateMultiSelect('variant-select', filterOptions.variant, DataModule.getCurrentFilters().variant);
+            UIModule.populateMultiSelect('station-select', filterOptions.station, DataModule.getCurrentFilters().station);
+            
+            // Update ActionSelection buttons
+            const availableActions = DataModule.getAvailableActionSelections();
+            UIModule.updateActionSelectionButtons(availableActions);
+            
+            // Update UI
+            updateDashboard();
+            
+            return true;
+        } catch (error) {
+            console.error("Error loading data:", error);
+            return false;
+        } finally {
+            // Hide loading states
+            Utils.hideLoading('top-rejects-loading');
+            Utils.hideLoading('trend-chart-loading');
+            Utils.hideLoading('reasons-chart-loading');
+        }
+    };
+    
+    // Load comparison data
+    const loadComparisonData = async function(period) {
+        try {
+            Utils.showLoading('trend-chart-loading');
+            
+            const success = await DataModule.loadComparisonData(period);
+            if (!success) {
+                console.warn("Failed to load comparison data");
+            }
+            
+            updateTrendChart();
+            
+            return success;
+        } catch (error) {
+            console.error("Error loading comparison data:", error);
+            return false;
+        } finally {
+            Utils.hideLoading('trend-chart-loading');
+        }
+    };
+    
+    // Update all dashboard components
+    const updateDashboard = function() {
+        // Update metrics
+        updateMetrics();
+        
+        // Update top rejects table
+        updateTopRejectsTable();
+        
+        // Update final inspection card
+        updateFinalInspectionCard();
+        
+        // Update trend chart
+        updateTrendChart();
+        
+        // Update reasons chart
+        updateReasonsChart();
+    };
+    
+    // Update metrics summary
+    const updateMetrics = function() {
+        const metrics = DataModule.getMetricsSummary();
+        UIModule.updateMetrics(metrics);
+    };
+    
+    // Update top rejects table
+    const updateTopRejectsTable = function() {
+        const sortBy = UIModule.getCurrentSortBy();
+        const page = UIModule.getCurrentTopRejectsPage();
+        const rejectsData = DataModule.getTopRejects(5, sortBy, page, 5);
+        
+        // Check if RTS is selected
+        const isRtsSelected = DataModule.getCurrentFilters().actionSelection.includes('RTS');
+        
+        UIModule.updateTopRejectsTable(rejectsData, isRtsSelected);
+    };
+    
+    // Update final inspection card
+    const updateFinalInspectionCard = function() {
+        try {
+            // Get available stations
+            currentStations = DataModule.getAvailableStations();
+            
+            // Check if we have any stations
+            if (currentStations.length === 0) {
+                console.warn("No stations available for current filters");
+                return;
+            }
+            
+            // Get current station index
+            const stationIndex = UIModule.getCurrentStationIndex();
+            
+            // Make sure the index is valid
+            const validIndex = Math.min(stationIndex, currentStations.length - 1);
+            if (validIndex !== stationIndex) {
+                UIModule.setCurrentStationIndex(validIndex);
+            }
+            
+            // Get current station
+            const currentStation = currentStations[validIndex];
+            
+            // Get station data
+            let stationData = {
+                qty: 0,
+                cost: 0
+            };
+            
+            if (currentStation === 'Final Inspection') {
+                // For Final Inspection, get aggregated data from all aliases
+                const finalInspectionData = DataModule.getFinalInspectionData();
+                
+                // Calculate totals
+                stationData.qty = finalInspectionData.reduce((sum, item) => sum + (item.QTY || 0), 0);
+                stationData.cost = finalInspectionData.reduce((sum, item) => sum + (item.Cost || 0), 0);
+            } else {
+                // For regular stations, filter by station name
+                const filteredData = DataModule.getFilteredData().filter(item => 
+                    item.Station === currentStation
+                );
+                
+                // Calculate totals
+                stationData.qty = filteredData.reduce((sum, item) => sum + (item.QTY || 0), 0);
+                stationData.cost = filteredData.reduce((sum, item) => sum + (item.Cost || 0), 0);
+            }
+            
+            // Get top reasons for this station
+            const sortBy = UIModule.getCurrentSortBy();
+            const reasonsPage = UIModule.getCurrentStationReasonsPage();
+            const reasonsData = DataModule.getFinalInspectionReasons(sortBy, reasonsPage, 3);
+            
+            // Update UI
+            UIModule.updateFinalInspectionCard(reasonsData, stationData, currentStations);
+        } catch (error) {
+            console.error("Error updating final inspection card:", error);
+        }
+    };
+    
+    // Update trend chart
+    const updateTrendChart = function() {
+        try {
+            const trendView = UIModule.getCurrentTrendView();
+            const trendData = DataModule.getTrendChartData(trendView);
+            
+            // Check if we need comparison data
+            const comparisonPeriod = UIModule.getSelectedComparisonPeriod();
+            let comparisonData = null;
+            
+            if (comparisonPeriod !== 'none') {
+                comparisonData = DataModule.getComparisonTrendData(trendView);
+            }
+            
+            ChartModule.createTrendChart(trendData, comparisonData, trendView);
+        } catch (error) {
+            console.error("Error updating trend chart:", error);
+        }
+    };
+    
+    // Update reasons chart
+    const updateReasonsChart = function() {
+        try {
+            const reasonsView = UIModule.getCurrentReasonsView();
+            const reasonsData = DataModule.getTopReasons(5, reasonsView);
+            
+            ChartModule.createReasonsChart(reasonsData, reasonsView);
+        } catch (error) {
+            console.error("Error updating reasons chart:", error);
+        }
+    };
+    
+    // Return public methods
+    return {
+        init,
+        updateDashboard,
+        updateMetrics,
+        updateTopRejectsTable,
+        updateFinalInspectionCard,
+        updateTrendChart,
+        updateReasonsChart
+    };
+})();
         
     // Now initialize the dashboard AFTER all modules are defined
         document.addEventListener('DOMContentLoaded', () => {
-            try {
-                console.log("Initializing dashboard...");
-                DashboardModule.init().then(success => {
-                    if (!success) {
-                        console.error("Dashboard initialization failed");
-                    }
-                });
-            } catch (error) {
-                console.error("Fatal error during dashboard initialization:", error);
+    try {
+        console.log("Initializing dashboard...");
+        DashboardModule.init().then(success => {
+            if (!success) {
+                console.error("Dashboard initialization failed");
             }
         });
+    } catch (error) {
+        console.error("Fatal error during dashboard initialization:", error);
+    }
+});
     </script>
 </body>
 </html>
