@@ -3669,19 +3669,19 @@
         };
     })();
         
-    // Initialize the dashboard when the document is ready
-    document.addEventListener('DOMContentLoaded', () => {
-        // Use the try-catch block to handle any errors during initialization
-        try {
-            DashboardModule.init().then(success => {
-                if (!success) {
-                    console.error("Dashboard initialization failed");
-                }
-            });
-        } catch (error) {
-            console.error("Fatal error during dashboard initialization:", error);
-        }
-    });
+    // Now initialize the dashboard AFTER all modules are defined
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                console.log("Initializing dashboard...");
+                DashboardModule.init().then(success => {
+                    if (!success) {
+                        console.error("Dashboard initialization failed");
+                    }
+                });
+            } catch (error) {
+                console.error("Fatal error during dashboard initialization:", error);
+            }
+        });
     </script>
 </body>
 </html>
