@@ -1072,6 +1072,53 @@
                 }
             }
         }
+
+.station-aliases {
+    font-size: 0.7rem;
+    font-weight: normal;
+    color: var(--text-muted);
+    margin-left: var(--space-xs);
+}
+
+.compact-reasons .reason-item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: var(--space-xs);
+    padding: 2px 0;
+    font-size: var(--small-font-size);
+}
+
+.compact-reasons .reason-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.compact-reasons .reason-main {
+    display: flex;
+    justify-content: space-between;
+}
+
+.compact-reasons .reason-name {
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.compact-reasons .reason-parts {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.compact-reasons .reason-value {
+    text-align: right;
+    white-space: nowrap;
+}
+        
     </style>
 </head>
 <body>
@@ -1239,49 +1286,50 @@
                     <div class="dashboard-grid">
                         <!-- Special Stations Row - Final Inspection Station -->
                         <div class="special-stations-row">
-                            <div class="station-card" id="final-inspection-card">
-                                <div class="station-card-title">
-                                    <span>Final Inspection Station</span>
-                                    <i class="fas fa-info-circle"></i>
-                                </div>
-                                <div class="station-card-metrics">
-                                    <div class="station-card-metric">
-                                        <div class="station-card-value" id="final-inspection-qty">0</div>
-                                        <div class="station-card-label">Quantity</div>
-                                    </div>
-                                    <div class="station-card-metric">
-                                        <div class="station-card-value" id="final-inspection-cost">R0</div>
-                                        <div class="station-card-label">Cost</div>
-                                    </div>
-                                </div>
-                                
-                                <div class="station-card-reasons">
-                                    <div class="station-card-reasons-title">
-                                        <span>Top Reasons</span>
-                                        <div class="station-pagination" id="station-reasons-pagination">
-                                            <button class="station-page-btn" data-page="1">1</button>
-                                            <button class="station-page-btn" data-page="2">2</button>
-                                            <button class="station-page-btn" data-page="3">3</button>
-                                        </div>
-                                    </div>
-                                    <div id="station-reasons-container">
-                                        <!-- Reasons will be populated dynamically -->
-                                    </div>
-                                </div>
-                                
-                                <div class="station-nav">
-                                    <button class="station-nav-btn" id="prev-station">
-                                        <i class="fas fa-chevron-left"></i> Prev
-                                    </button>
-                                    <div class="station-nav-indicator">
-                                        <span id="station-current">1</span>/<span id="station-total">3</span>
-                                    </div>
-                                    <button class="station-nav-btn" id="next-station">
-                                        Next <i class="fas fa-chevron-right"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                            // Modified Final Inspection Station Card HTML
+<div class="station-card" id="final-inspection-card">
+    <div class="station-card-title">
+        <span id="station-title">Final Inspection Stations</span>
+        <span id="station-aliases" class="station-aliases"></span>
+        <i class="fas fa-info-circle"></i>
+    </div>
+    <div class="station-card-metrics">
+        <div class="station-card-metric">
+            <div class="station-card-value" id="final-inspection-qty">0</div>
+            <div class="station-card-label">Quantity</div>
+        </div>
+        <div class="station-card-metric">
+            <div class="station-card-value" id="final-inspection-cost">R0</div>
+            <div class="station-card-label">Cost</div>
+        </div>
+    </div>
+    
+    <div class="station-card-reasons">
+        <div class="station-card-reasons-title">
+            <span>Top Reasons</span>
+            <div class="station-pagination" id="station-reasons-pagination">
+                <button class="station-page-btn" data-page="1">1</button>
+                <button class="station-page-btn" data-page="2">2</button>
+                <button class="station-page-btn" data-page="3">3</button>
+            </div>
+        </div>
+        <div id="station-reasons-container" class="compact-reasons">
+            <!-- Reasons will be populated dynamically -->
+        </div>
+    </div>
+    
+    <div class="station-nav">
+        <button class="station-nav-btn" id="prev-station">
+            <i class="fas fa-chevron-left"></i> Prev
+        </button>
+        <div class="station-nav-indicator">
+            <span id="station-current">1</span>/<span id="station-total">3</span>
+        </div>
+        <button class="station-nav-btn" id="next-station">
+            Next <i class="fas fa-chevron-right"></i>
+        </button>
+    </div>
+</div>
                         
                         <!-- Top Rejects Table Card - first column -->
                         <div class="dashboard-card top-rejects-card">
@@ -4188,90 +4236,152 @@
         };
         
         // Load initial data - modified to auto-load last 5 dates with reject data
-        const loadInitialData = async function() {
-            try {
-                console.log("Loading initial data...");
+        // Modified loadInitialData function to find latest 5 dates with rejects
+const loadInitialData = async function() {
+    try {
+        console.log("Loading initial data...");
+        
+        // Show loading state
+        document.getElementById('top-rejects-loading').style.display = 'flex';
+        document.getElementById('trend-chart-loading').style.display = 'flex';
+        document.getElementById('reasons-chart-loading').style.display = 'flex';
+        
+        // Get the available periods from the index data
+        const indexResponse = await fetch('RejectsIndex.json');
+        if (!indexResponse.ok) {
+            throw new Error('Failed to load index data');
+        }
+        
+        const indexData = await indexResponse.json();
+        const availablePeriods = indexData.availablePeriods || [];
+        
+        if (availablePeriods.length === 0) {
+            throw new Error('No available periods found');
+        }
+        
+        // Sort periods in descending order to get most recent first
+        availablePeriods.sort((a, b) => b.localeCompare(a));
+        
+        // Find latest 5 dates with rejects across period files
+        const latestDates = await findLatestDatesWithRejects(availablePeriods, 5);
+        
+        if (latestDates.length === 0) {
+            throw new Error('No dates with rejects found');
+        }
+        
+        console.log("Found latest dates with rejects:", latestDates);
+        
+        // Sort dates in ascending order
+        latestDates.sort((a, b) => new Date(a) - new Date(b));
+        
+        // Set date range from earliest to latest found date
+        const startDate = new Date(latestDates[0]);
+        const endDate = new Date(latestDates[latestDates.length - 1]);
+        endDate.setHours(23, 59, 59, 999); // End of day
+        
+        console.log(`Auto-setting date range: ${startDate.toISOString()} to ${endDate.toISOString()}`);
+        
+        // Update UI with selected date range
+        UIModule.setDateRange(startDate, endDate);
+        
+        // Set date range in data module
+        DataModule.setDateRange(startDate, endDate);
+        
+        // Load data for the date range
+        await DataModule.loadDataForDateRange();
+        
+        // Get filter options
+        const filterOptions = DataModule.getFilterOptions();
+        console.log("Available filter options:", filterOptions);
+        
+        // Populate filter dropdowns
+        Object.keys(filterOptions).forEach(filterType => {
+            if (filterType !== 'actionSelection') {
+                UIModule.populateMultiSelect(`${filterType}-select`, filterOptions[filterType], []);
+            }
+        });
+        
+        // Check available action selections and update UI
+        const availableActions = DataModule.getAvailableActionSelections();
+        UIModule.updateActionSelectionButtons(availableActions);
+        
+        // Ensure Final Inspection is set as the default station
+        setDefaultStationToFinalInspection();
+        
+        // Update dashboard with loaded data
+        updateDashboard();
+        
+        return true;
+    } catch (error) {
+        console.error('Error loading initial data:', error);
+        return false;
+    } finally {
+        // Hide loading state
+        document.getElementById('top-rejects-loading').style.display = 'none';
+        document.getElementById('trend-chart-loading').style.display = 'none';
+        document.getElementById('reasons-chart-loading').style.display = 'none';
+    }
+};
+
+// Helper function to find the latest N dates with rejects across period files
+const findLatestDatesWithRejects = async function(periods, count) {
+    let uniqueDates = new Set();
+    let loadedPeriods = [];
+    
+    // Process each period until we find enough dates or run out of periods
+    for (const period of periods) {
+        try {
+            // Skip if we already have enough dates
+            if (uniqueDates.size >= count) break;
+            
+            console.log(`Checking period ${period} for reject dates...`);
+            
+            // Check if we've already loaded this period
+            if (!loadedPeriods.includes(period)) {
+                console.log(`Loading data for period ${period}...`);
+                const response = await fetch(`data/${period}.json`);
                 
-                // Show loading state
-                document.getElementById('top-rejects-loading').style.display = 'flex';
-                document.getElementById('trend-chart-loading').style.display = 'flex';
-                document.getElementById('reasons-chart-loading').style.display = 'flex';
-                
-                // Get the available periods from the index data
-                const indexResponse = await fetch('RejectsIndex.json');
-                if (!indexResponse.ok) {
-                    throw new Error('Failed to load index data');
+                if (!response.ok) {
+                    console.warn(`Month data for ${period} not available or error: ${response.statusText}`);
+                    continue;
                 }
                 
-                const indexData = await indexResponse.json();
-                const availablePeriods = indexData.availablePeriods || [];
+                const periodData = await response.json();
+                const rejectData = periodData.rejectData || [];
                 
-                if (availablePeriods.length === 0) {
-                    throw new Error('No available periods found');
-                }
-                
-                // Sort periods in descending order to get most recent first
-                availablePeriods.sort((a, b) => b.localeCompare(a));
-                
-                // Take the 5 most recent periods
-                const recentPeriods = availablePeriods.slice(0, 5);
-                
-                // Calculate date range for these periods
-                const startPeriod = recentPeriods[recentPeriods.length - 1]; // Oldest of the 5
-                const endPeriod = recentPeriods[0]; // Most recent
-                
-                // Parse start date (first day of the start period)
-                const [startYear, startMonth] = startPeriod.split('-').map(num => parseInt(num));
-                const startDate = new Date(startYear, startMonth - 1, 1); // Month is 0-indexed in JS Date
-                
-                // Parse end date (last day of the end period)
-                const [endYear, endMonth] = endPeriod.split('-').map(num => parseInt(num));
-                const endDate = new Date(endYear, endMonth, 0); // Last day of the month
-                endDate.setHours(23, 59, 59, 999); // End of day
-                
-                console.log(`Auto-setting date range: ${startDate.toISOString()} to ${endDate.toISOString()}`);
-                
-                // Update UI with selected date range
-                UIModule.setDateRange(startDate, endDate);
-                
-                // Set date range in data module
-                DataModule.setDateRange(startDate, endDate);
-                
-                // Load data for current date range
-                await DataModule.loadDataForDateRange();
-                
-                // Get filter options
-                const filterOptions = DataModule.getFilterOptions();
-                console.log("Available filter options:", filterOptions);
-                
-                // Populate filter dropdowns
-                Object.keys(filterOptions).forEach(filterType => {
-                    if (filterType !== 'actionSelection') {
-                        UIModule.populateMultiSelect(`${filterType}-select`, filterOptions[filterType], []);
+                // Extract unique dates from this period's data
+                const datesInPeriod = new Set();
+                rejectData.forEach(item => {
+                    if (item.ProductionDate) {
+                        datesInPeriod.add(item.ProductionDate);
                     }
                 });
                 
-                // Check available action selections and update UI
-                const availableActions = DataModule.getAvailableActionSelections();
-                UIModule.updateActionSelectionButtons(availableActions);
+                console.log(`Found ${datesInPeriod.size} unique dates in period ${period}`);
                 
-                // Ensure Final Inspection is set as the default station
-                setDefaultStationToFinalInspection();
+                // Convert to array and sort in descending order (newest first)
+                const sortedDates = Array.from(datesInPeriod).sort((a, b) => 
+                    new Date(b) - new Date(a)
+                );
                 
-                // Update dashboard with loaded data
-                updateDashboard();
+                // Add dates to our collection, newest first, until we have enough
+                for (const date of sortedDates) {
+                    uniqueDates.add(date);
+                    if (uniqueDates.size >= count) break;
+                }
                 
-                return true;
-            } catch (error) {
-                console.error('Error loading initial data:', error);
-                return false;
-            } finally {
-                // Hide loading state
-                document.getElementById('top-rejects-loading').style.display = 'none';
-                document.getElementById('trend-chart-loading').style.display = 'none';
-                document.getElementById('reasons-chart-loading').style.display = 'none';
+                // Mark this period as loaded
+                loadedPeriods.push(period);
             }
-        };
+        } catch (error) {
+            console.warn(`Error processing period ${period}:`, error);
+            continue;
+        }
+    }
+    
+    // Return the dates as a sorted array (newest first)
+    return Array.from(uniqueDates).sort((a, b) => new Date(b) - new Date(a)).slice(0, count);
+};
         
         // Set default station to Final Inspection
         const setDefaultStationToFinalInspection = function() {
@@ -4393,128 +4503,266 @@
             }
         };
         
-        // Update Final Inspection station card
-        const updateFinalInspectionCard = function() {
-            // Get current station index
-            const stationIndex = UIModule.getCurrentStationIndex();
+        // Modified updateFinalInspectionCard function
+const updateFinalInspectionCard = function() {
+    // Get current station index
+    const stationIndex = UIModule.getCurrentStationIndex();
+    
+    // Get available stations
+    const stations = DataModule.getAvailableStations();
+    
+    if (stations.length === 0) {
+        // No stations available
+        return;
+    }
+    
+    // Get current station
+    const currentStation = stations[stationIndex];
+    
+    // Get station data
+    let stationData = {
+        qty: 0,
+        cost: 0
+    };
+    
+    // If this is the Final Inspection station, get data from Final Inspection aliases
+    if (currentStation === 'Final Inspection') {
+        const finalInspectionData = DataModule.getFinalInspectionData();
+        
+        // Calculate totals
+        finalInspectionData.forEach(item => {
+            stationData.qty += (item.QTY || 0);
+            stationData.cost += (item.Cost || 0);
+        });
+        
+        // Get station reasons
+        const reasonsPage = UIModule.getCurrentStationReasonsPage();
+        const reasonsData = DataModule.getFinalInspectionReasons(UIModule.getCurrentSortBy(), reasonsPage);
+        
+        // Get the actual active Final Inspection stations based on current filters
+        const activeStations = getActiveFinalInspectionStations();
+        
+        // Update title and show active stations
+        const stationTitle = document.getElementById('station-title');
+        const stationAliases = document.getElementById('station-aliases');
+        
+        if (stationTitle) {
+            stationTitle.textContent = 'Final Inspection';
+        }
+        
+        if (stationAliases) {
+            if (activeStations.length > 0) {
+                stationAliases.textContent = `(${activeStations.join(', ')})`;
+                stationAliases.style.display = '';
+            } else {
+                stationAliases.style.display = 'none';
+            }
+        }
+        
+        // Update UI with compact reasons format
+        updateCompactReasons(reasonsData, stationData, stations);
+    } else {
+        // Get data for a regular station
+        const filteredData = DataModule.getFilteredData();
+        const stationItems = filteredData.filter(item => item.Station === currentStation);
+        
+        // Calculate totals
+        stationItems.forEach(item => {
+            stationData.qty += (item.QTY || 0);
+            stationData.cost += (item.Cost || 0);
+        });
+        
+        // Group by reasons
+        const reasonsData = {};
+        stationItems.forEach(item => {
+            const reason = item.RejectReason || 'Unknown';
             
-            // Get available stations
-            const stations = DataModule.getAvailableStations();
-            
-            if (stations.length === 0) {
-                // No stations available
-                return;
+            if (!reasonsData[reason]) {
+                reasonsData[reason] = {
+                    reason,
+                    qty: 0,
+                    cost: 0,
+                    parts: new Set()
+                };
             }
             
-            // Get current station
-            const currentStation = stations[stationIndex];
+            // Add parts
+            let parts = [];
+            if (Array.isArray(item.Parts)) {
+                parts = item.Parts.filter(p => p && p.trim());
+            } else if (typeof item.Parts === 'string') {
+                parts = item.Parts.split(',').map(p => p.trim()).filter(p => p);
+            }
             
-            // Get station data
-            let stationData = {
-                qty: 0,
-                cost: 0
-            };
+            parts.forEach(part => {
+                if (part) reasonsData[reason].parts.add(part);
+            });
             
-            // If this is the Final Inspection station, get data from Final Inspection aliases
-            if (currentStation === 'Final Inspection') {
-                const finalInspectionData = DataModule.getFinalInspectionData();
-                
-                // Calculate totals
-                finalInspectionData.forEach(item => {
-                    stationData.qty += (item.QTY || 0);
-                    stationData.cost += (item.Cost || 0);
-                });
-                
-                // Get station reasons
-                const reasonsPage = UIModule.getCurrentStationReasonsPage();
-                const reasonsData = DataModule.getFinalInspectionReasons(UIModule.getCurrentSortBy(), reasonsPage);
-                
-                // Update UI
-                UIModule.updateFinalInspectionCard(reasonsData, stationData, stations);
-            } else {
-                // Get data for a regular station
-                const filteredData = DataModule.getFilteredData();
-                const stationItems = filteredData.filter(item => item.Station === currentStation);
-                
-                // Calculate totals
-                stationItems.forEach(item => {
-                    stationData.qty += (item.QTY || 0);
-                    stationData.cost += (item.Cost || 0);
-                });
-                
-                // Group by reasons
-                const reasonsData = {};
-                stationItems.forEach(item => {
-                    const reason = item.RejectReason || 'Unknown';
-                    
-                    if (!reasonsData[reason]) {
-                        reasonsData[reason] = {
-                            reason,
-                            qty: 0,
-                            cost: 0,
-                            parts: new Set()
-                        };
-                    }
-                    
-                    // Add parts
-                    let parts = [];
-                    if (Array.isArray(item.Parts)) {
-                        parts = item.Parts.filter(p => p && p.trim());
-                    } else if (typeof item.Parts === 'string') {
-                        parts = item.Parts.split(',').map(p => p.trim()).filter(p => p);
-                    }
-                    
-                    parts.forEach(part => {
-                        if (part) reasonsData[reason].parts.add(part);
-                    });
-                    
-                    // Accumulate qty and cost
-                    reasonsData[reason].qty += (item.QTY || 0);
-                    reasonsData[reason].cost += (item.Cost || 0);
-                });
-                
-                // Convert to array and sort
-                let reasonsArray = Object.values(reasonsData);
-                
-                // Sort by selected metric
-                const sortBy = UIModule.getCurrentSortBy();
-                if (sortBy === 'qty') {
-                    reasonsArray.sort((a, b) => b.qty - a.qty);
-                } else {
-                    reasonsArray.sort((a, b) => b.cost - a.cost);
-                }
-                
-                // Format parts as comma-separated string
-                reasonsArray = reasonsArray.map(item => ({
-                    ...item,
-                    parts: Array.from(item.parts).join(', ')
-                }));
-                
-                // Calculate pagination
-                const pageSize = 3;
-                const reasonsPage = UIModule.getCurrentStationReasonsPage();
-                const totalRecords = reasonsArray.length;
-                const totalPages = Math.ceil(totalRecords / pageSize);
-                const offset = (reasonsPage - 1) * pageSize;
-                
-                // Apply pagination
-                const paginatedData = reasonsArray.slice(offset, offset + pageSize);
-                
-                // Prepare data structure for UI
-                const reasonsDataObj = {
-                    data: paginatedData,
-                    pagination: {
-                        page: reasonsPage,
-                        pageSize,
-                        totalRecords,
-                        totalPages
-                    }
-                };
-                
-                // Update UI
-                UIModule.updateFinalInspectionCard(reasonsDataObj, stationData, stations);
+            // Accumulate qty and cost
+            reasonsData[reason].qty += (item.QTY || 0);
+            reasonsData[reason].cost += (item.Cost || 0);
+        });
+        
+        // Convert to array and sort
+        let reasonsArray = Object.values(reasonsData);
+        
+        // Sort by selected metric
+        const sortBy = UIModule.getCurrentSortBy();
+        if (sortBy === 'qty') {
+            reasonsArray.sort((a, b) => b.qty - a.qty);
+        } else {
+            reasonsArray.sort((a, b) => b.cost - a.cost);
+        }
+        
+        // Format parts as comma-separated string
+        reasonsArray = reasonsArray.map(item => ({
+            ...item,
+            parts: Array.from(item.parts).join(', ')
+        }));
+        
+        // Calculate pagination
+        const pageSize = 3;
+        const reasonsPage = UIModule.getCurrentStationReasonsPage();
+        const totalRecords = reasonsArray.length;
+        const totalPages = Math.ceil(totalRecords / pageSize);
+        const offset = (reasonsPage - 1) * pageSize;
+        
+        // Apply pagination
+        const paginatedData = reasonsArray.slice(offset, offset + pageSize);
+        
+        // Prepare data structure for UI
+        const reasonsDataObj = {
+            data: paginatedData,
+            pagination: {
+                page: reasonsPage,
+                pageSize,
+                totalRecords,
+                totalPages
             }
         };
+        
+        // Update station title (for regular stations)
+        const stationTitle = document.getElementById('station-title');
+        const stationAliases = document.getElementById('station-aliases');
+        
+        if (stationTitle) {
+            stationTitle.textContent = currentStation;
+        }
+        
+        if (stationAliases) {
+            stationAliases.style.display = 'none';
+        }
+        
+        // Update UI with compact reasons format
+        updateCompactReasons(reasonsDataObj, stationData, stations);
+    }
+};
+
+// Helper function to get active Final Inspection stations based on filters
+const getActiveFinalInspectionStations = function() {
+    const finalInspectionAliases = DataModule.finalInspectionAliases;
+    const filteredData = DataModule.getFilteredData();
+    
+    // Get unique stations that match the aliases
+    const activeStations = new Set();
+    
+    filteredData.forEach(item => {
+        if (item.Station && finalInspectionAliases.includes(item.Station)) {
+            activeStations.add(item.Station);
+        }
+    });
+    
+    return Array.from(activeStations);
+};
+
+// Update the station card with compact reasons format
+const updateCompactReasons = function(reasonsData, stationData, stationsList) {
+    const { data: reasons, pagination } = reasonsData;
+    
+    // Update metrics
+    if (elements.finalInspectionQty) {
+        elements.finalInspectionQty.textContent = stationData.qty.toLocaleString();
+    }
+    
+    if (elements.finalInspectionCost) {
+        elements.finalInspectionCost.textContent = Utils.formatCurrency(stationData.cost);
+    }
+    
+    // Update reasons list with compact format
+    if (elements.stationReasonsContainer) {
+        elements.stationReasonsContainer.innerHTML = '';
+        
+        if (reasons && reasons.length > 0) {
+            reasons.forEach(reason => {
+                const reasonItem = document.createElement('div');
+                reasonItem.className = 'reason-item';
+                
+                // Info section with reason name and parts
+                const reasonInfo = document.createElement('div');
+                reasonInfo.className = 'reason-info';
+                
+                // Main reason section with name
+                const reasonName = document.createElement('div');
+                reasonName.className = 'reason-name';
+                reasonName.title = reason.reason;
+                reasonName.textContent = Utils.truncateText(reason.reason, 20);
+                
+                // Parts section below
+                const reasonParts = document.createElement('div');
+                reasonParts.className = 'reason-parts';
+                reasonParts.title = reason.parts;
+                reasonParts.textContent = `Parts: ${Utils.truncateText(reason.parts, 30)}`;
+                
+                reasonInfo.appendChild(reasonName);
+                reasonInfo.appendChild(reasonParts);
+                
+                // Values section with qty and cost
+                const reasonValue = document.createElement('div');
+                reasonValue.className = 'reason-value';
+                reasonValue.title = `Qty: ${reason.qty}, Cost: ${Utils.formatCurrency(reason.cost)}`;
+                reasonValue.textContent = `${reason.qty} (${Utils.formatCurrency(reason.cost)})`;
+                
+                reasonItem.appendChild(reasonInfo);
+                reasonItem.appendChild(reasonValue);
+                
+                elements.stationReasonsContainer.appendChild(reasonItem);
+            });
+        } else {
+            const emptyReasons = document.createElement('div');
+            emptyReasons.className = 'empty-text';
+            emptyReasons.textContent = 'No reasons data available';
+            elements.stationReasonsContainer.appendChild(emptyReasons);
+        }
+    }
+    
+    // Update reasons pagination
+    if (elements.stationReasonsPagination) {
+        elements.stationReasonsPagination.innerHTML = '';
+        
+        if (pagination && pagination.totalPages > 1) {
+            for (let i = 1; i <= pagination.totalPages; i++) {
+                const pageBtn = document.createElement('button');
+                pageBtn.className = `station-page-btn ${i === pagination.page ? 'active' : ''}`;
+                pageBtn.dataset.page = i;
+                pageBtn.textContent = i;
+                elements.stationReasonsPagination.appendChild(pageBtn);
+            }
+        }
+    }
+    
+    // Update station navigation
+    availableStations = stationsList;
+    
+    if (elements.stationCurrent && elements.stationTotal) {
+        elements.stationCurrent.textContent = currentStationIndex + 1;
+        elements.stationTotal.textContent = availableStations.length;
+    }
+    
+    if (elements.prevStationBtn && elements.nextStationBtn) {
+        elements.prevStationBtn.disabled = currentStationIndex <= 0;
+        elements.nextStationBtn.disabled = currentStationIndex >= availableStations.length - 1;
+    }
+};
         
         // Update top rejects table
         const updateTopRejectsTable = function() {
