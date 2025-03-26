@@ -411,6 +411,43 @@
             background-color: var(--secondary-color);
             color: white;
         }
+
+        /* Added styles for the action toggle buttons */
+        .action-toggle-buttons {
+            display: flex;
+            gap: 1px;
+            overflow: hidden;
+            border-radius: var(--border-radius-sm);
+            background-color: var(--border-color);
+            margin-left: var(--space-md);
+        }
+        
+        .action-toggle-btn {
+            background-color: white;
+            border: none;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: var(--small-font-size);
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .action-toggle-btn.active {
+            background-color: var(--info-color);
+            color: white;
+        }
+        
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+        }
+        
+        .toggle-label {
+            font-size: var(--small-font-size);
+            color: var(--text-muted);
+            font-weight: 500;
+        }
         
         /* Dashboard Content */
         .dashboard-content {
@@ -857,9 +894,21 @@
                         </div>
                     </div>
                     
-                    <div class="toggle-buttons">
-                        <button id="sort-by-qty" class="toggle-btn active">Qty</button>
-                        <button id="sort-by-cost" class="toggle-btn">Cost</button>
+                    <div class="toggle-group">
+                        <div class="toggle-label">Sort By:</div>
+                        <div class="toggle-buttons">
+                            <button id="sort-by-qty" class="toggle-btn active">Qty</button>
+                            <button id="sort-by-cost" class="toggle-btn">Cost</button>
+                        </div>
+                        
+                        <!-- New Action Selection Toggle Buttons -->
+                        <div class="toggle-label">Filter Action:</div>
+                        <div class="action-toggle-buttons" id="action-toggle">
+                            <button id="action-all" class="action-toggle-btn active">All</button>
+                            <button id="action-scrap" class="action-toggle-btn">Scrap</button>
+                            <button id="action-rts" class="action-toggle-btn">RTS</button>
+                            <button id="action-local" class="action-toggle-btn">Local</button>
+                        </div>
                     </div>
                 </div>
 
@@ -1129,7 +1178,8 @@
             supervisor: [],
             product: [],
             variant: [],
-            station: []
+            station: [],
+            actionSelection: [] // New filter for ActionSelection
         };
         
         // Filter associations for interdependent filtering
@@ -1140,8 +1190,10 @@
             station: {}      // station: { value: { supervisor: [values], product: [values], variant: [values] } }
         };
         
-        // Special stations to track
-        const specialStations = ['Wrapping & Checkers', 'FI', 'Checkers', 'Wrapping'];
+        // Special stations to track - now combined into a primary name and aliases
+        const specialStationGroups = {
+            'Quality Control': ['Wrapping & Checkers', 'FI', 'Checkers', 'Wrapping']
+        };
         
         // Initialize data module
         const init = async function() {
@@ -1397,6 +1449,14 @@
                 console.log(`After station filtering: ${filteredData.length} records`);
             }
             
+            // Apply ActionSelection filter if any are selected
+            if (currentFilters.actionSelection && currentFilters.actionSelection.length > 0) {
+                filteredData = filteredData.filter(item => 
+                    item.ActionSelection && currentFilters.actionSelection.includes(item.ActionSelection)
+                );
+                console.log(`After ActionSelection filtering: ${filteredData.length} records`);
+            }
+            
             return filteredData;
         };
         
@@ -1409,7 +1469,8 @@
                 supervisor: new Set(),
                 product: new Set(),
                 variant: new Set(),
-                station: new Set()
+                station: new Set(),
+                actionSelection: new Set() // New option set for ActionSelection
             };
             
             // Process each record in the filtered data to extract unique values
@@ -1419,13 +1480,15 @@
                 if (item.Product) options.product.add(item.Product);
                 if (item.Variant) options.variant.add(item.Variant);
                 if (item.Station) options.station.add(item.Station);
+                if (item.ActionSelection) options.actionSelection.add(item.ActionSelection);
             });
             
             console.log("Extracted filter options:", 
                 "Supervisors:", options.supervisor.size,
                 "Products:", options.product.size,
                 "Variants:", options.variant.size,
-                "Stations:", options.station.size
+                "Stations:", options.station.size,
+                "ActionSelections:", options.actionSelection.size
             );
             
             // Convert Sets to sorted arrays
@@ -1433,7 +1496,8 @@
                 supervisor: Array.from(options.supervisor).sort(),
                 product: Array.from(options.product).sort(),
                 variant: Array.from(options.variant).sort(),
-                station: Array.from(options.station).sort()
+                station: Array.from(options.station).sort(),
+                actionSelection: Array.from(options.actionSelection).sort()
             };
         };
         
@@ -1458,6 +1522,7 @@
             currentFilters.product = [];
             currentFilters.variant = [];
             currentFilters.station = [];
+            currentFilters.actionSelection = []; // Reset ActionSelection filter
             
             applyFilters();
             return true;
@@ -1653,14 +1718,15 @@
             };
         };
         
-        // Get special stations data
+        // Get special stations data - UPDATED to combine similar stations
         const getSpecialStationsData = function() {
+            // Initialize combined data structure for station groups
             const stationsData = {};
             
-            // Initialize data structure for each special station
-            specialStations.forEach(station => {
-                stationsData[station] = {
-                    name: station,
+            // Initialize each group with a single entry
+            Object.keys(specialStationGroups).forEach(groupName => {
+                stationsData[groupName] = {
+                    name: groupName,
                     qty: 0,
                     cost: 0,
                     reasons: {},
@@ -1672,44 +1738,51 @@
             filteredData.forEach(item => {
                 if (!item.Station) return;
                 
-                // Check if this item belongs to a special station
-                specialStations.forEach(stationName => {
-                    if (item.Station.includes(stationName)) {
-                        stationsData[stationName].qty += (item.QTY || 0);
-                        stationsData[stationName].cost += (item.Cost || 0);
-                        stationsData[stationName].items.push(item);
+                // Check each station group
+                Object.keys(specialStationGroups).forEach(groupName => {
+                    const aliases = specialStationGroups[groupName];
+                    
+                    // Check if this station belongs to any group
+                    const matchesGroup = aliases.some(alias => 
+                        item.Station.includes(alias)
+                    );
+                    
+                    if (matchesGroup) {
+                        stationsData[groupName].qty += (item.QTY || 0);
+                        stationsData[groupName].cost += (item.Cost || 0);
+                        stationsData[groupName].items.push(item);
                         
                         // Track reasons
                         const reason = item.RejectReason || 'Unknown';
-                        if (!stationsData[stationName].reasons[reason]) {
-                            stationsData[stationName].reasons[reason] = {
+                        if (!stationsData[groupName].reasons[reason]) {
+                            stationsData[groupName].reasons[reason] = {
                                 name: reason,
                                 qty: 0,
                                 cost: 0
                             };
                         }
                         
-                        stationsData[stationName].reasons[reason].qty += (item.QTY || 0);
-                        stationsData[stationName].reasons[reason].cost += (item.Cost || 0);
+                        stationsData[groupName].reasons[reason].qty += (item.QTY || 0);
+                        stationsData[groupName].reasons[reason].cost += (item.Cost || 0);
                     }
                 });
             });
             
             // Convert reasons to arrays and sort
-            Object.keys(stationsData).forEach(station => {
-                if (stationsData[station].items.length === 0) {
+            Object.keys(stationsData).forEach(groupName => {
+                if (stationsData[groupName].items.length === 0) {
                     return;
                 }
                 
-                const reasonsArray = Object.values(stationsData[station].reasons)
+                const reasonsArray = Object.values(stationsData[groupName].reasons)
                     .sort((a, b) => b.qty - a.qty);
                     
-                stationsData[station].topReasons = reasonsArray.slice(0, 3);
+                stationsData[groupName].topReasons = reasonsArray.slice(0, 3);
             });
             
-            // Filter out stations with no data
+            // Filter out groups with no data
             const result = Object.values(stationsData)
-                .filter(station => station.items.length > 0);
+                .filter(group => group.items.length > 0);
                 
             return result;
         };
@@ -1717,6 +1790,23 @@
         // Get current filter values
         const getCurrentFilters = function() {
             return currentFilters;
+        };
+        
+        // Get available action selections
+        const getAvailableActionSelections = function() {
+            const selections = new Set();
+            
+            // Look for all possible ActionSelection values in the current date range
+            rejectData.forEach(item => {
+                if (item.ActionSelection && item.ProductionDate) {
+                    const itemDate = new Date(item.ProductionDate);
+                    if (itemDate >= currentFilters.dateFrom && itemDate <= currentFilters.dateTo) {
+                        selections.add(item.ActionSelection);
+                    }
+                }
+            });
+            
+            return Array.from(selections).sort();
         };
         
         // Set test data (for demo purposes)
@@ -1740,8 +1830,9 @@
             getMetricsSummary,
             getSpecialStationsData,
             getCurrentFilters,
+            getAvailableActionSelections,
             setTestData,
-            specialStations
+            specialStationGroups
         };
     })();
 
@@ -1768,7 +1859,12 @@
             localMetric: document.getElementById('local-metric'),
             topRejectsBody: document.getElementById('top-rejects-body'),
             topRejectsEmpty: document.getElementById('top-rejects-empty'),
-            topRejectsLoading: document.getElementById('top-rejects-loading')
+            topRejectsLoading: document.getElementById('top-rejects-loading'),
+            // New elements for ActionSelection toggle
+            actionAll: document.getElementById('action-all'),
+            actionScrap: document.getElementById('action-scrap'),
+            actionRts: document.getElementById('action-rts'),
+            actionLocal: document.getElementById('action-local')
         };
         
         // Current state
@@ -1934,6 +2030,23 @@
                 }
             });
             
+            // Initialize ActionSelection toggle buttons
+            document.getElementById('action-all').addEventListener('click', () => {
+                setActionFilter('all');
+            });
+            
+            document.getElementById('action-scrap').addEventListener('click', () => {
+                setActionFilter('Scrap');
+            });
+            
+            document.getElementById('action-rts').addEventListener('click', () => {
+                setActionFilter('RTS');
+            });
+            
+            document.getElementById('action-local').addEventListener('click', () => {
+                setActionFilter('Local');
+            });
+            
             return true;
         };
         
@@ -1949,6 +2062,30 @@
             
             // Trigger event to update charts and data
             triggerEvent('sortChanged', { sortBy });
+        };
+        
+        // Set ActionSelection filter
+        const setActionFilter = function(action) {
+            // Update button states
+            const buttons = document.querySelectorAll('.action-toggle-btn');
+            buttons.forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            let actionValues = [];
+            if (action === 'all') {
+                document.getElementById('action-all').classList.add('active');
+                // Empty array means no filtering
+            } else {
+                document.getElementById(`action-${action.toLowerCase()}`).classList.add('active');
+                actionValues = [action];
+            }
+            
+            // Trigger filter change event
+            triggerEvent('filterChanged', {
+                type: 'actionSelection',
+                values: actionValues
+            });
         };
         
         // Create and populate multi-select options
@@ -2225,6 +2362,29 @@
             document.dispatchEvent(event);
         };
         
+        // Update ActionSelection toggle button states
+        const updateActionSelectionButtons = function(availableActions) {
+            // Check if we have action types available
+            const hasScrap = availableActions.includes('Scrap');
+            const hasRts = availableActions.includes('RTS');
+            const hasLocal = availableActions.includes('Local');
+            
+            // Show/hide buttons based on available data
+            document.getElementById('action-scrap').style.display = hasScrap ? '' : 'none';
+            document.getElementById('action-rts').style.display = hasRts ? '' : 'none';
+            document.getElementById('action-local').style.display = hasLocal ? '' : 'none';
+            
+            // If none are available, hide the entire section
+            const actionToggle = document.getElementById('action-toggle');
+            if (actionToggle) {
+                if (availableActions.length === 0) {
+                    actionToggle.parentElement.style.display = 'none';
+                } else {
+                    actionToggle.parentElement.style.display = '';
+                }
+            }
+        };
+        
         // Return public methods
         return {
             init,
@@ -2234,7 +2394,8 @@
             updateMetrics,
             updateTopRejectsTable,
             updateSpecialStations,
-            getCurrentSortBy
+            getCurrentSortBy,
+            updateActionSelectionButtons
         };
     })();
 
@@ -2246,7 +2407,15 @@
         // Create trend chart
         const createTrendChart = function(data, sortBy = 'qty') {
             const container = document.getElementById('trend-chart-container');
-            if (!container || !data || data.length === 0) return;
+            if (!container || !data || data.length === 0) {
+                const emptyElement = document.getElementById('trend-chart-empty');
+                if (emptyElement) emptyElement.style.display = 'flex';
+                return;
+            }
+            
+            // Hide empty state
+            const emptyElement = document.getElementById('trend-chart-empty');
+            if (emptyElement) emptyElement.style.display = 'none';
             
             // Clear previous chart
             container.innerHTML = '';
@@ -2403,7 +2572,15 @@
         // Create reasons chart
         const createReasonsChart = function(data, sortBy = 'qty') {
             const container = document.getElementById('reasons-chart-container');
-            if (!container || !data || data.length === 0) return;
+            if (!container || !data || data.length === 0) {
+                const emptyElement = document.getElementById('reasons-chart-empty');
+                if (emptyElement) emptyElement.style.display = 'flex';
+                return;
+            }
+            
+            // Hide empty state
+            const emptyElement = document.getElementById('reasons-chart-empty');
+            if (emptyElement) emptyElement.style.display = 'none';
             
             // Clear previous chart
             container.innerHTML = '';
@@ -2599,7 +2776,7 @@
                 
                 // Update UI with available options for other filters
                 Object.keys(filterOptions).forEach(filterType => {
-                    if (filterType !== type) {
+                    if (filterType !== type && filterType !== 'actionSelection') {
                         const currentFilters = DataModule.getCurrentFilters();
                         const selectedValues = currentFilters[filterType] || [];
                         
@@ -2620,8 +2797,16 @@
                 const filterOptions = DataModule.getFilterOptions();
                 
                 Object.keys(filterOptions).forEach(filterType => {
-                    UIModule.populateMultiSelect(`${filterType}-select`, filterOptions[filterType], []);
+                    if (filterType !== 'actionSelection') {
+                        UIModule.populateMultiSelect(`${filterType}-select`, filterOptions[filterType], []);
+                    }
                 });
+                
+                // Reset action selection buttons
+                document.querySelectorAll('.action-toggle-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                document.getElementById('action-all').classList.add('active');
                 
                 // Update dashboard with filtered data
                 updateDashboard();
@@ -2636,51 +2821,48 @@
             });
         };
         
-                // Load initial data
-                const loadInitialData = async function() {
-                    try {
-                        console.log("Loading initial data...");
-                        
-                        // Show loading state
-                        document.getElementById('top-rejects-loading').style.display = 'flex';
-                        document.getElementById('trend-chart-loading').style.display = 'flex';
-                        document.getElementById('reasons-chart-loading').style.display = 'flex';
-                        
-                        // Set date range to 2023-05 for testing purposes
-                        const startDate = new Date(2023, 4, 1); // May 1, 2023 (months are 0-indexed)
-                        const endDate = new Date(2023, 4, 31);  // May 31, 2023
-                        
-                        UIModule.setDateRange(startDate, endDate);
-                        DataModule.setDateRange(startDate, endDate);
-                        
-                        console.log("Set date range to May 2023 for initial data");
-                        
-                        // Load data for the date range
-                        await DataModule.loadDataForDateRange();
-                        
-                        // Get filter options
-                        const filterOptions = DataModule.getFilterOptions();
-                        console.log("Available filter options:", filterOptions);
-                        
-                        // Populate filter dropdowns
-                        Object.keys(filterOptions).forEach(filterType => {
-                            UIModule.populateMultiSelect(`${filterType}-select`, filterOptions[filterType], []);
-                        });
-                        
-                        // Update dashboard with loaded data
-                        updateDashboard();
-                        
-                        return true;
-                    } catch (error) {
-                        console.error('Error loading initial data:', error);
-                        return false;
-                    } finally {
-                        // Hide loading state
-                        document.getElementById('top-rejects-loading').style.display = 'none';
-                        document.getElementById('trend-chart-loading').style.display = 'none';
-                        document.getElementById('reasons-chart-loading').style.display = 'none';
+        // Load initial data
+        const loadInitialData = async function() {
+            try {
+                console.log("Loading initial data...");
+                
+                // Show loading state
+                document.getElementById('top-rejects-loading').style.display = 'flex';
+                document.getElementById('trend-chart-loading').style.display = 'flex';
+                document.getElementById('reasons-chart-loading').style.display = 'flex';
+                
+                // Load data for the current date range
+                await DataModule.loadDataForDateRange();
+                
+                // Get filter options
+                const filterOptions = DataModule.getFilterOptions();
+                console.log("Available filter options:", filterOptions);
+                
+                // Populate filter dropdowns
+                Object.keys(filterOptions).forEach(filterType => {
+                    if (filterType !== 'actionSelection') {
+                        UIModule.populateMultiSelect(`${filterType}-select`, filterOptions[filterType], []);
                     }
-                };
+                });
+                
+                // Check available action selections and update UI
+                const availableActions = DataModule.getAvailableActionSelections();
+                UIModule.updateActionSelectionButtons(availableActions);
+                
+                // Update dashboard with loaded data
+                updateDashboard();
+                
+                return true;
+            } catch (error) {
+                console.error('Error loading initial data:', error);
+                return false;
+            } finally {
+                // Hide loading state
+                document.getElementById('top-rejects-loading').style.display = 'none';
+                document.getElementById('trend-chart-loading').style.display = 'none';
+                document.getElementById('reasons-chart-loading').style.display = 'none';
+            }
+        };
         
         // Load data for changed date range
         const loadDataForDateRange = async function() {
@@ -2698,11 +2880,17 @@
                 
                 // Populate filter dropdowns with updated options
                 Object.keys(filterOptions).forEach(filterType => {
-                    const currentFilters = DataModule.getCurrentFilters();
-                    const selectedValues = currentFilters[filterType] || [];
-                    
-                    UIModule.populateMultiSelect(`${filterType}-select`, filterOptions[filterType], selectedValues);
+                    if (filterType !== 'actionSelection') {
+                        const currentFilters = DataModule.getCurrentFilters();
+                        const selectedValues = currentFilters[filterType] || [];
+                        
+                        UIModule.populateMultiSelect(`${filterType}-select`, filterOptions[filterType], selectedValues);
+                    }
                 });
+                
+                // Check available action selections and update UI
+                const availableActions = DataModule.getAvailableActionSelections();
+                UIModule.updateActionSelectionButtons(availableActions);
                 
                 // Update dashboard with loaded data
                 updateDashboard();
