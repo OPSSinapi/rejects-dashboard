@@ -40,12 +40,12 @@
             --heading-font-size: 1.1rem;
             --subheading-font-size: 0.95rem;
             
-            /* Spacing */
-            --space-xs: 4px;
-            --space-sm: 8px;
-            --space-md: 12px;
-            --space-lg: 16px;
-            --space-xl: 24px;
+            /* Spacing - Adjusted for reduced whitespace */
+            --space-xs: 3px;
+            --space-sm: 6px;
+            --space-md: 10px;
+            --space-lg: 12px;
+            --space-xl: 18px;
             
             /* Components */
             --border-radius-sm: 4px;
@@ -54,10 +54,10 @@
             --card-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
             --card-shadow-hover: 0 4px 8px rgba(0, 0, 0, 0.1);
             
-            /* Layout */
-            --header-height: 50px;
-            --filter-height: 60px;
-            --metrics-height: 60px;
+            /* Layout - Adjusted heights for more compact layout */
+            --header-height: 45px;
+            --filter-height: 50px;
+            --metrics-height: 50px;
         }
 
         /* ========== RESET & BASE STYLES ========== */
@@ -105,11 +105,12 @@
             overflow: hidden;
         }
         
+        /* More compact header */
         .dashboard-header {
             height: var(--header-height);
+            padding: 0 var(--space-md);
             background-color: var(--card-bg-color);
             box-shadow: 0 1px 3px rgba(0,0,0,0.12);
-            padding: 0 var(--space-lg);
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -171,10 +172,11 @@
             background-color: var(--secondary-dark);
         }
         
-        /* Filter Section */
+        /* More compact filter section */
         .filter-section {
+            padding: var(--space-xs) var(--space-md);
+            height: var(--filter-height);
             background-color: var(--card-bg-color);
-            padding: var(--space-sm) var(--space-lg);
             border-bottom: 1px solid var(--border-color);
             display: flex;
             align-items: center;
@@ -335,11 +337,11 @@
             background-color: #c0392b;
         }
         
-        /* Metrics Bar */
+        /* More compact metrics bar */
         .metrics-bar {
             height: var(--metrics-height);
+            padding: 0 var(--space-md);
             background-color: var(--card-bg-color);
-            padding: 0 var(--space-lg);
             border-bottom: 1px solid var(--border-color);
             display: flex;
             align-items: center;
@@ -466,21 +468,21 @@
             font-weight: 500;
         }
         
-        /* Dashboard Content */
+        /* Dashboard content with reduced padding */
         .dashboard-content {
+            padding: var(--space-xs);
             display: flex;
             flex-direction: column;
             flex: 1;
             overflow: hidden;
-            padding: var(--space-sm);
         }
         
-        /* Modified grid layout to match schematic */
+        /* Improved grid layout for better visibility */
         .dashboard-grid {
             display: grid;
-            grid-template-columns: 2fr 1fr;
-            grid-template-rows: auto auto 1fr;
-            gap: var(--space-sm);
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto 1fr;
+            gap: var(--space-xs);
             flex: 1;
             min-height: 0;
             overflow: hidden;
@@ -490,18 +492,22 @@
             min-height: 0;
         }
         
+        /* Station row takes full width */
         .special-stations-row {
             grid-column: span 2;
             display: flex;
-            gap: var(--space-sm);
+            gap: var(--space-xs);
             overflow: hidden;
-            height: 160px;
+            height: auto;
+            min-height: 140px;
+            max-height: 160px;
         }
         
+        /* More compact station card */
         .station-card {
+            padding: var(--space-xs);
             background-color: var(--card-bg-color);
             border-radius: var(--border-radius-sm);
-            padding: var(--space-sm);
             box-shadow: var(--card-shadow);
             flex: 1;
             height: 100%;
@@ -512,19 +518,19 @@
         }
         
         .station-card-title {
+            margin-bottom: var(--space-xs);
             font-size: var(--small-font-size);
             font-weight: 600;
             color: var(--primary-color);
-            margin-bottom: var(--space-xs);
             display: flex;
             align-items: center;
             justify-content: space-between;
         }
         
         .station-card-metrics {
+            margin-bottom: var(--space-xs);
             display: flex;
             gap: var(--space-md);
-            margin-bottom: var(--space-xs);
         }
         
         .station-card-metric {
@@ -542,7 +548,9 @@
             color: var(--text-muted);
         }
         
+        /* Make more efficient use of space in station card */
         .station-card-reasons {
+            margin-top: var(--space-xs);
             flex: 1;
             min-height: 0;
             overflow: auto;
@@ -559,10 +567,10 @@
         }
         
         .reason-item {
+            padding: 1px 0;
             display: flex;
             justify-content: space-between;
             font-size: var(--small-font-size);
-            padding: 2px 0;
         }
         
         .reason-item:not(:last-child) {
@@ -647,23 +655,31 @@
             overflow: hidden;
         }
         
-        /* Top rejects card modified to span the first two rows in the first column */
+        /* New grid layout positioning */
+        /* First row, first column: Top Rejects Table */
         .top-rejects-card {
             grid-column: 1;
-            grid-row: 2 / 4;
+            grid-row: 2;
+            min-height: 300px;
         }
         
-        /* Charts in right column */
+        /* First row, second column: Daily Trend Chart */
         .trend-chart-card {
             grid-column: 2;
             grid-row: 2;
+            height: calc(50% - var(--space-xs));
+            margin-bottom: auto;
         }
         
+        /* Second row, second column: Top Reject Reasons Chart */
         .reasons-chart-card {
             grid-column: 2;
-            grid-row: 3;
+            grid-row: 2;
+            height: calc(50% - var(--space-xs));
+            margin-top: auto;
         }
         
+        /* More compact card headers */
         .card-header {
             padding: var(--space-xs) var(--space-sm);
             display: flex;
@@ -687,6 +703,7 @@
             gap: var(--space-xs);
         }
         
+        /* Reduce padding in card content */
         .card-content {
             flex: 1;
             overflow: auto;
@@ -695,7 +712,7 @@
             min-height: 0;
         }
         
-        /* Table Styles */
+        /* More compact table cells */
         .data-table {
             width: 100%;
             border-collapse: collapse;
@@ -746,13 +763,18 @@
             color: var(--secondary-color);
         }
         
-        /* Chart containers */
+        /* Adjust chart containers for better visibility */
         .chart-container {
+            padding: var(--space-xs);
             position: relative;
             width: 100%;
             height: 100%;
-            padding: var(--space-xs);
             overflow: hidden;
+        }
+        
+        /* Ensure full visibility of charts */
+        .trend-chart-card, .reasons-chart-card {
+            min-height: 200px;
         }
         
         /* Loading and empty states */
@@ -844,12 +866,12 @@
             background: #a0aec0;
         }
         
-        /* Pagination for tables and reasons */
+        /* Adjust pagination controls to use less space */
         .pagination {
+            padding: var(--space-xs) 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: var(--space-xs) 0;
             border-top: 1px solid var(--border-color);
             gap: var(--space-xs);
         }
@@ -902,13 +924,13 @@
             color: var(--primary-color);
         }
         
-        /* Legend for stacked bar chart */
+        /* Reduce legend spacing */
         .chart-legend {
+            margin-top: var(--space-xs);
+            gap: var(--space-xs);
             display: flex;
             align-items: center;
-            gap: var(--space-sm);
             font-size: var(--small-font-size);
-            margin-top: var(--space-xs);
             flex-wrap: wrap;
         }
         
@@ -953,8 +975,14 @@
             height: 2px;
         }
         
-        /* Responsive adjustments */
-        @media (max-width: 1024px) {
+        /* Media Queries */
+        @media (max-width: 1200px) {
+            .dashboard-grid {
+                grid-template-columns: 3fr 2fr;
+            }
+        }
+
+        @media (max-width: 992px) {
             .dashboard-grid {
                 grid-template-columns: 1fr;
                 grid-template-rows: auto auto auto auto;
@@ -973,11 +1001,75 @@
             .trend-chart-card {
                 grid-column: 1;
                 grid-row: 3;
+                height: auto;
+                min-height: 250px;
+                margin: 0;
             }
             
             .reasons-chart-card {
                 grid-column: 1;
                 grid-row: 4;
+                height: auto;
+                min-height: 250px;
+                margin: 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .filter-section {
+                flex-direction: column;
+                align-items: stretch;
+                gap: var(--space-sm);
+                padding: var(--space-sm);
+                height: auto;
+                min-height: var(--filter-height);
+            }
+            
+            .filter-group {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .multi-select {
+                width: 100%;
+            }
+            
+            .filter-buttons {
+                width: 100%;
+                margin-top: var(--space-sm);
+                justify-content: flex-end;
+            }
+            
+            .metrics-bar {
+                flex-direction: column;
+                height: auto;
+                padding: var(--space-sm);
+                gap: var(--space-md);
+            }
+            
+            .metrics-group {
+                flex-wrap: wrap;
+                justify-content: space-between;
+            }
+            
+            .toggle-group {
+                width: 100%;
+                flex-wrap: wrap;
+                justify-content: space-between;
+            }
+            
+            .data-table th, 
+            .data-table td {
+                padding: var(--space-xs) var(--space-xs);
+                font-size: calc(var(--small-font-size) - 1px);
+            }
+            
+            /* Hide less important columns on very small screens */
+            @media (max-width: 480px) {
+                .data-table th:nth-child(2), 
+                .data-table td:nth-child(2) {
+                    display: none;
+                }
             }
         }
     </style>
@@ -1142,11 +1234,10 @@
                         </div>
                     </div>
                 </div>
-
                 <!-- Dashboard Content -->
                 <div class="dashboard-content">
                     <div class="dashboard-grid">
-                        <!-- Special Stations Row - now renamed to Final Inspection Station -->
+                        <!-- Special Stations Row - Final Inspection Station -->
                         <div class="special-stations-row">
                             <div class="station-card" id="final-inspection-card">
                                 <div class="station-card-title">
@@ -1192,7 +1283,7 @@
                             </div>
                         </div>
                         
-                        <!-- Top Rejects Table Card - moved to first column -->
+                        <!-- Top Rejects Table Card - first column -->
                         <div class="dashboard-card top-rejects-card">
                             <div class="card-header">
                                 <div class="card-title">
@@ -1215,8 +1306,8 @@
                                             <th class="sortable" data-sort="station">Station</th>
                                             <th data-sort="parts">Parts</th>
                                             <th class="sortable" data-sort="reason">Reject Reason</th>
-                                            <th data-sort="qty">QTY</th>
-                                            <th data-sort="cost">Cost (R)</th>
+                                            <th class="sortable" data-sort="qty">QTY</th>
+                                            <th class="sortable" data-sort="cost">Cost (R)</th>
                                             <!-- PartBatchNumber column is added dynamically when RTS is selected -->
                                         </tr>
                                     </thead>
@@ -1241,7 +1332,7 @@
                             </div>
                         </div>
                         
-                        <!-- Trend Chart Card - moved to second column -->
+                        <!-- Trend Chart Card - top half of second column -->
                         <div class="dashboard-card trend-chart-card">
                             <div class="card-header">
                                 <div class="card-title">
@@ -1314,7 +1405,7 @@
                             </div>
                         </div>
                         
-                        <!-- Top Reasons Chart Card - moved to second column, bottom row -->
+                        <!-- Top Reasons Chart Card - bottom half of second column -->
                         <div class="dashboard-card reasons-chart-card">
                             <div class="card-header">
                                 <div class="card-title">
@@ -1355,7 +1446,6 @@
 
     <!-- Load libraries from CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
-
     <script>
     /**
      * Manufacturing Rejects Dashboard
@@ -1580,6 +1670,12 @@
             variant: [],
             station: [],
             actionSelection: [] // Filter for ActionSelection
+        };
+        
+        // Current table sorting parameters
+        let currentTableSort = {
+            sortBy: 'station',
+            sortDirection: 'asc'
         };
         
         // Filter associations for interdependent filtering
@@ -1934,6 +2030,18 @@
             };
         };
         
+        // Set table sort parameters
+        const setTableSort = function(sortBy, sortDirection) {
+            currentTableSort.sortBy = sortBy;
+            currentTableSort.sortDirection = sortDirection;
+            return true;
+        };
+        
+        // Get current table sort parameters
+        const getTableSort = function() {
+            return currentTableSort;
+        };
+        
         // Update filter values
         const setFilter = function(filterName, values) {
             console.log(`Setting ${filterName} filter to:`, values);
@@ -2123,10 +2231,39 @@
             // Convert to array and sort
             let sortedData = Object.values(groupedData);
             
-            if (sortBy === 'qty') {
-                sortedData.sort((a, b) => b.qty - a.qty);
+            // Apply table-specific sorting if needed
+            if (currentTableSort.sortBy && currentTableSort.sortBy !== sortBy) {
+                if (currentTableSort.sortBy === 'station') {
+                    sortedData.sort((a, b) => {
+                        return currentTableSort.sortDirection === 'asc' 
+                            ? a.station.localeCompare(b.station)
+                            : b.station.localeCompare(a.station);
+                    });
+                } else if (currentTableSort.sortBy === 'reason') {
+                    sortedData.sort((a, b) => {
+                        return currentTableSort.sortDirection === 'asc' 
+                            ? a.rejectReason.localeCompare(b.rejectReason)
+                            : b.rejectReason.localeCompare(a.rejectReason);
+                    });
+                } else if (currentTableSort.sortBy === 'qty') {
+                    sortedData.sort((a, b) => {
+                        return currentTableSort.sortDirection === 'asc' 
+                            ? a.qty - b.qty
+                            : b.qty - a.qty;
+                    });
+                } else if (currentTableSort.sortBy === 'cost') {
+                    sortedData.sort((a, b) => {
+                        return currentTableSort.sortDirection === 'asc' 
+                            ? a.cost - b.cost
+                            : b.cost - a.cost;
+                    });
+                }
             } else {
-                sortedData.sort((a, b) => b.cost - a.cost);
+                if (sortBy === 'qty') {
+                    sortedData.sort((a, b) => b.qty - a.qty);
+                } else {
+                    sortedData.sort((a, b) => b.cost - a.cost);
+                }
             }
             
             // Format parts and batch numbers as comma-separated strings
@@ -2537,13 +2674,17 @@
                 }
             });
             
-            // If Final Inspection is included, exclude its aliases
-            if (stationGroups['Final Inspection']) {
-                stationGroups['Final Inspection'].forEach(alias => {
+            // If any Final Inspection alias is included, exclude the individual aliases
+            // and add a single "Final Inspection" entry
+            let hasFinalInspection = false;
+            finalInspectionAliases.forEach(alias => {
+                if (stations.has(alias)) {
+                    hasFinalInspection = true;
                     stations.delete(alias);
-                });
-                
-                // Add the main Final Inspection name
+                }
+            });
+            
+            if (hasFinalInspection) {
                 stations.add('Final Inspection');
             }
             
@@ -2577,6 +2718,8 @@
             getCurrentFilters,
             getAvailableActionSelections,
             getAvailableStations,
+            setTableSort,
+            getTableSort,
             setTestData,
             finalInspectionAliases,
             stationGroups
@@ -2769,6 +2912,36 @@
             }
         };
         
+        // Initialize table sorting functionality
+        const initTableSorting = function() {
+            document.querySelector('#top-rejects-table').addEventListener('click', function(e) {
+                if (e.target.tagName === 'TH' && e.target.classList.contains('sortable')) {
+                    const sortBy = e.target.dataset.sort;
+                    const headerCells = document.querySelectorAll('#top-rejects-table th');
+                    
+                    // Remove existing sort classes
+                    headerCells.forEach(cell => {
+                        cell.classList.remove('sorted-asc', 'sorted-desc');
+                    });
+                    
+                    // Determine sort direction
+                    let sortDirection = 'asc';
+                    if (e.target.classList.contains('sorted-asc')) {
+                        sortDirection = 'desc';
+                        e.target.classList.add('sorted-desc');
+                    } else {
+                        e.target.classList.add('sorted-asc');
+                    }
+                    
+                    // Trigger sort event
+                    triggerEvent('tableSortChanged', { 
+                        sortBy, 
+                        sortDirection 
+                    });
+                }
+            });
+        };
+        
         // Initialize pagination controls
         const initPagination = function() {
             // Top Rejects pagination
@@ -2868,6 +3041,9 @@
         const init = function() {
             // Initialize multiselect dropdowns
             initMultiselect();
+            
+            // Initialize table sorting
+            initTableSorting();
             
             // Initialize pagination controls
             initPagination();
@@ -3295,6 +3471,11 @@
             return currentStationIndex;
         };
         
+        // Set current station index
+        const setCurrentStationIndex = function(index) {
+            currentStationIndex = index;
+        };
+        
         // Get current station reasons page
         const getCurrentStationReasonsPage = function() {
             return currentStationReasonsPage;
@@ -3357,8 +3538,10 @@
             getCurrentReasonsView,
             getCurrentTopRejectsPage,
             getCurrentStationIndex,
+            setCurrentStationIndex,
             getCurrentStationReasonsPage,
-            getSelectedComparisonPeriod
+            getSelectedComparisonPeriod,
+            triggerEvent
         };
     })();
 
@@ -3367,7 +3550,7 @@
      * Creates and updates data visualizations
      */
     const ChartModule = (function() {
-        // Create trend chart
+        // Create trend chart with improved sizing and visibility
         const createTrendChart = function(data, comparisonData = null, sortBy = 'qty') {
             const container = document.getElementById('trend-chart-container');
             if (!container || !data || !data.data || data.data.length === 0) {
@@ -3383,18 +3566,22 @@
             // Clear previous chart
             container.innerHTML = '';
             
-            // Set dimensions
+            // Set dimensions - use the container size
             const width = container.clientWidth;
             const height = container.clientHeight;
-            const margin = { top: 20, right: 20, bottom: 40, left: 60 };
+            
+            // Adjust margins to reduce whitespace but ensure labels are visible
+            const margin = { top: 15, right: 15, bottom: 35, left: 50 };
             const chartWidth = width - margin.left - margin.right;
             const chartHeight = height - margin.top - margin.bottom;
             
-            // Create SVG container
+            // Create SVG container with proper viewBox for responsiveness
             const svg = d3.select(container)
                 .append('svg')
                 .attr('width', width)
                 .attr('height', height)
+                .attr('viewBox', `0 0 ${width} ${height}`)
+                .attr('preserveAspectRatio', 'xMidYMid meet')
                 .append('g')
                 .attr('transform', `translate(${margin.left},${margin.top})`);
             
@@ -3411,19 +3598,13 @@
             let yMax = 0;
             
             if (sortBy === 'qty') {
-                // Max for quantity
                 yMax = d3.max(trendData, d => d.total.qty);
-                
-                // Check comparison data if available
                 if (comparisonData && comparisonData.data) {
                     const compMax = d3.max(comparisonData.data, d => d.total.qty);
                     yMax = Math.max(yMax, compMax);
                 }
             } else {
-                // Max for cost
                 yMax = d3.max(trendData, d => d.total.cost);
-                
-                // Check comparison data if available
                 if (comparisonData && comparisonData.data) {
                     const compMax = d3.max(comparisonData.data, d => d.total.cost);
                     yMax = Math.max(yMax, compMax);
@@ -3437,7 +3618,14 @@
                 .domain([0, yMax])
                 .range([chartHeight, 0]);
             
-            // Add X axis
+            // Add X axis - make tick labels dynamic based on available width
+            const tickValues = xScale.domain().filter((d, i) => {
+                // Create ticker algorithm based on available width
+                const numOfDays = trendData.length;
+                const spacing = Math.max(1, Math.floor(numOfDays / Math.min(10, Math.floor(chartWidth / 50))));
+                return i % spacing === 0;
+            });
+            
             const xAxis = svg.append('g')
                 .attr('transform', `translate(0,${chartHeight})`)
                 .call(d3.axisBottom(xScale)
@@ -3445,36 +3633,33 @@
                         const date = new Date(d);
                         return date.getDate().toString();
                     })
-                    .tickValues(xScale.domain().filter((d, i) => {
-                        // Show fewer ticks if there are many dates
-                        return trendData.length > 14 ? i % 3 === 0 : true;
-                    }))
+                    .tickValues(tickValues)
                 );
             
             // Add X axis label
             svg.append('text')
                 .attr('transform', `translate(${chartWidth/2},${chartHeight + margin.bottom - 5})`)
                 .style('text-anchor', 'middle')
-                .style('font-size', '11px')
+                .style('font-size', '10px')
                 .text('Day of Month');
             
-            // Add Y axis
+            // Add Y axis with more readable ticks
             svg.append('g')
                 .call(d3.axisLeft(yScale)
-                    .ticks(5)
+                    .ticks(Math.min(5, Math.floor(chartHeight / 30))) // Adjust ticks based on height
                     .tickFormat(d => sortBy === 'cost' ? `R${d}` : d));
             
             // Add Y axis label
             svg.append('text')
                 .attr('transform', 'rotate(-90)')
-                .attr('y', -margin.left + 15)
+                .attr('y', -margin.left + 10)
                 .attr('x', -chartHeight / 2)
                 .attr('dy', '1em')
                 .style('text-anchor', 'middle')
-                .style('font-size', '11px')
+                .style('font-size', '10px')
                 .text(sortBy === 'qty' ? 'Quantity' : 'Cost (R)');
             
-            // Add grid lines
+            // Add light grid lines to improve readability
             svg.append('g')
                 .attr('class', 'grid')
                 .selectAll('line')
@@ -3486,8 +3671,8 @@
                 .attr('y1', d => yScale(d))
                 .attr('y2', d => yScale(d))
                 .attr('stroke', '#e0e0e0')
-                .attr('stroke-width', 1);
-            
+                .attr('stroke-width', 0.5);
+
             // Define action types and colors
             const actionTypes = ['Scrap', 'RTS', 'Local'];
             const colors = {
@@ -3496,7 +3681,7 @@
                 'Local': 'var(--local-color)'
             };
             
-            // Create stacked bars for each action type
+            // Create stacked bars for each action type with improved positioning
             actionTypes.forEach((action, i) => {
                 svg.selectAll(`.bar-${action}`)
                     .data(trendData)
@@ -3505,7 +3690,6 @@
                     .attr('class', `bar-${action}`)
                     .attr('x', d => {
                         const baseX = xScale(d.date);
-                        // Split the bar into 3 parts (one for each action type)
                         const segmentWidth = xScale.bandwidth() / actionTypes.length;
                         return baseX + i * segmentWidth;
                     })
@@ -3521,10 +3705,9 @@
                     .attr('fill', colors[action])
                     .attr('opacity', 0.8)
                     .on('mouseover', function(event, d) {
-                        // Highlight on hover
+                        // Enhanced tooltip
                         d3.select(this).attr('opacity', 1);
                         
-                        // Create tooltip
                         const tooltip = d3.select('body')
                             .append('div')
                             .attr('class', 'tooltip')
@@ -3535,18 +3718,17 @@
                             .style('opacity', 0.9);
                         
                         tooltip.html(`
-                            <b>${Utils.formatDateForDisplay(d.date)} - ${action}</b><br>
-                            Quantity: ${d[action].qty}<br>
-                            Cost: ${Utils.formatCurrency(d[action].cost)}
+                            <div style="font-weight:bold;margin-bottom:4px">
+                                ${Utils.formatDateForDisplay(d.date)} - ${action}
+                            </div>
+                            <div>Quantity: <strong>${d[action].qty}</strong></div>
+                            <div>Cost: <strong>${Utils.formatCurrency(d[action].cost)}</strong></div>
                         `)
                         .style('left', (event.pageX + 10) + 'px')
                         .style('top', (event.pageY - 28) + 'px');
                     })
                     .on('mouseout', function() {
-                        // Restore original opacity
                         d3.select(this).attr('opacity', 0.8);
-                        
-                        // Remove tooltip
                         d3.selectAll('.tooltip').remove();
                     });
             });
@@ -3585,7 +3767,7 @@
                         .attr('stroke-dasharray', '5,5');
                 }
                 
-                // Add labels for trend lines
+                // Add labels for trend lines with more compact presentation
                 svg.append('text')
                     .attr('x', 5)
                     .attr('y', yScale(data.stats.max) - 5)
@@ -3652,7 +3834,7 @@
                     .attr('stroke', '#9b59b6')
                     .attr('stroke-width', 1.5)
                     .on('mouseover', function(event, d) {
-                        // Create tooltip
+                        // Enhanced tooltip for comparison points
                         const tooltip = d3.select('body')
                             .append('div')
                             .attr('class', 'tooltip')
@@ -3663,21 +3845,22 @@
                             .style('opacity', 0.9);
                         
                         tooltip.html(`
-                            <b>Comparison: ${Utils.formatDateForDisplay(d.date)}</b><br>
-                            Quantity: ${d.total.qty}<br>
-                            Cost: ${Utils.formatCurrency(d.total.cost)}
+                            <div style="font-weight:bold;margin-bottom:4px">
+                                Comparison: ${Utils.formatDateForDisplay(d.date)}
+                            </div>
+                            <div>Quantity: <strong>${d.total.qty}</strong></div>
+                            <div>Cost: <strong>${Utils.formatCurrency(d.total.cost)}</strong></div>
                         `)
                         .style('left', (event.pageX + 10) + 'px')
                         .style('top', (event.pageY - 28) + 'px');
                     })
                     .on('mouseout', function() {
-                        // Remove tooltip
                         d3.selectAll('.tooltip').remove();
                     });
             }
         };
         
-        // Create reasons chart
+        // Create reasons chart with improved visibility
         const createReasonsChart = function(data, sortBy = 'qty') {
             const container = document.getElementById('reasons-chart-container');
             if (!container || !data || data.length === 0) {
@@ -3693,10 +3876,12 @@
             // Clear previous chart
             container.innerHTML = '';
             
-            // Set dimensions
+            // Set dimensions - use container size
             const width = container.clientWidth;
             const height = container.clientHeight;
-            const margin = { top: 10, right: 20, bottom: 30, left: 180 };
+            
+            // Adjust margins to reduce whitespace but ensure labels are visible
+            const margin = { top: 10, right: 60, bottom: 20, left: 120 };
             const chartWidth = width - margin.left - margin.right;
             const chartHeight = height - margin.top - margin.bottom;
             
@@ -3709,14 +3894,16 @@
                 }
             });
             
-            // Limit to 5 items
+            // Limit to top 5 reasons
             data = data.slice(0, 5);
             
-            // Create SVG container
+            // Create SVG container with responsive viewBox
             const svg = d3.select(container)
                 .append('svg')
                 .attr('width', width)
                 .attr('height', height)
+                .attr('viewBox', `0 0 ${width} ${height}`)
+                .attr('preserveAspectRatio', 'xMidYMid meet')
                 .append('g')
                 .attr('transform', `translate(${margin.left},${margin.top})`);
             
@@ -3733,19 +3920,22 @@
                 .domain([0, xMax * 1.1]) // Add 10% padding
                 .range([0, chartWidth]);
             
-            // Add Y axis
+            // Add Y axis with truncated text for better fit
             svg.append('g')
                 .call(d3.axisLeft(yScale)
-                    .tickFormat(d => Utils.truncateText(d, 25)));
+                    .tickFormat(d => Utils.truncateText(d, 15)));
             
-            // Add X axis
+            // Add X axis with fewer ticks for clarity
             svg.append('g')
                 .attr('transform', `translate(0,${chartHeight})`)
                 .call(d3.axisBottom(xScale)
-                    .ticks(5)
+                    .ticks(Math.min(5, Math.floor(chartWidth / 50)))
                     .tickFormat(d => sortBy === 'cost' ? `R${d}` : d));
             
-            // Add bars
+            // Create color scale for bars
+            const colors = ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6'];
+            
+            // Add bars with enhanced styling
             svg.selectAll('.bar')
                 .data(data)
                 .enter()
@@ -3755,15 +3945,15 @@
                 .attr('height', yScale.bandwidth())
                 .attr('x', 0)
                 .attr('width', d => xScale(xValue(d)))
-                .attr('fill', (d, i) => {
-                    const colors = ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6'];
-                    return colors[i % colors.length];
-                })
+                .attr('fill', (d, i) => colors[i % colors.length])
+                .attr('rx', 2) // Rounded corners
                 .on('mouseover', function(event, d) {
-                    // Highlight on hover
-                    d3.select(this).attr('opacity', 0.8);
+                    // Enhanced tooltip
+                    d3.select(this)
+                        .attr('opacity', 0.8)
+                        .attr('stroke', '#333')
+                        .attr('stroke-width', 1);
                     
-                    // Create tooltip
                     const tooltip = d3.select('body')
                         .append('div')
                         .attr('class', 'tooltip')
@@ -3781,24 +3971,35 @@
                         ? `${stations}... (${d.stations.size - 3} more)`
                         : stations;
                     
+                    // Format products list
+                    const products = Array.from(d.products || [])
+                        .slice(0, 3)
+                        .join(', ');
+                    const productsText = d.products && d.products.size > 3 
+                        ? `${products}... (${d.products.size - 3} more)`
+                        : products;
+                    
                     tooltip.html(`
-                        <b>${d.reason}</b><br>
-                        Quantity: ${d.qty}<br>
-                        Cost: ${Utils.formatCurrency(d.cost)}<br>
-                        Stations: ${stationsText}
+                        <div style="font-weight:bold;border-bottom:1px solid #eee;padding-bottom:4px;margin-bottom:4px">
+                            ${d.reason}
+                        </div>
+                        <div>Quantity: <strong>${d.qty}</strong></div>
+                        <div>Cost: <strong>${Utils.formatCurrency(d.cost)}</strong></div>
+                        <div>Stations: ${stationsText || 'N/A'}</div>
+                        <div>Products: ${productsText || 'N/A'}</div>
                     `)
                     .style('left', (event.pageX + 10) + 'px')
                     .style('top', (event.pageY - 28) + 'px');
                 })
                 .on('mouseout', function() {
-                    // Restore original opacity
-                    d3.select(this).attr('opacity', 1);
+                    d3.select(this)
+                        .attr('opacity', 1)
+                        .attr('stroke', 'none');
                     
-                    // Remove tooltip
                     d3.selectAll('.tooltip').remove();
                 });
             
-            // Add value labels
+            // Add value labels with better positioning
             svg.selectAll('.bar-label')
                 .data(data)
                 .enter()
@@ -3806,9 +4007,11 @@
                 .attr('class', 'bar-label')
                 .attr('y', d => yScale(d.reason) + yScale.bandwidth() / 2 + 4)
                 .attr('x', d => xScale(xValue(d)) + 5)
-                .text(d => sortBy === 'qty' 
-                    ? `${d.qty} (${Utils.formatCurrency(d.cost)})` 
-                    : `${Utils.formatCurrency(d.cost)} (${d.qty})`)
+                .text(d => {
+                    const value = sortBy === 'qty' ? d.qty : Utils.formatCurrency(d.cost);
+                    // Keep label short to avoid overflow
+                    return value;
+                })
                 .attr('font-size', '10px')
                 .attr('fill', '#333');
         };
@@ -3839,14 +4042,7 @@
                 // Set up event listeners
                 setupEventListeners();
                 
-                // Set default date range (last 30 days)
-                const defaultDateRange = Utils.getLastNDaysRange(30);
-                UIModule.setDateRange(defaultDateRange.start, defaultDateRange.end);
-                DataModule.setDateRange(defaultDateRange.start, defaultDateRange.end);
-                
-                console.log("Set default date range for initial data");
-                
-                // Load initial data
+                // Load initial data - modified to auto-load last 5 dates
                 await loadInitialData();
                 
                 console.log("Dashboard initialization complete");
@@ -3868,6 +4064,17 @@
                 
                 // Reload data for new date range
                 await loadDataForDateRange();
+            });
+            
+            // Table sort changed
+            document.addEventListener('tableSortChanged', (e) => {
+                const { sortBy, sortDirection } = e.detail;
+                
+                // Update data module with sort parameters
+                DataModule.setTableSort(sortBy, sortDirection);
+                
+                // Update just the top rejects table
+                updateTopRejectsTable();
             });
             
             // Load data for current date range
@@ -3980,7 +4187,7 @@
             });
         };
         
-        // Load initial data
+        // Load initial data - modified to auto-load last 5 dates with reject data
         const loadInitialData = async function() {
             try {
                 console.log("Loading initial data...");
@@ -3990,7 +4197,47 @@
                 document.getElementById('trend-chart-loading').style.display = 'flex';
                 document.getElementById('reasons-chart-loading').style.display = 'flex';
                 
-                // Load data for the current date range
+                // Get the available periods from the index data
+                const indexResponse = await fetch('RejectsIndex.json');
+                if (!indexResponse.ok) {
+                    throw new Error('Failed to load index data');
+                }
+                
+                const indexData = await indexResponse.json();
+                const availablePeriods = indexData.availablePeriods || [];
+                
+                if (availablePeriods.length === 0) {
+                    throw new Error('No available periods found');
+                }
+                
+                // Sort periods in descending order to get most recent first
+                availablePeriods.sort((a, b) => b.localeCompare(a));
+                
+                // Take the 5 most recent periods
+                const recentPeriods = availablePeriods.slice(0, 5);
+                
+                // Calculate date range for these periods
+                const startPeriod = recentPeriods[recentPeriods.length - 1]; // Oldest of the 5
+                const endPeriod = recentPeriods[0]; // Most recent
+                
+                // Parse start date (first day of the start period)
+                const [startYear, startMonth] = startPeriod.split('-').map(num => parseInt(num));
+                const startDate = new Date(startYear, startMonth - 1, 1); // Month is 0-indexed in JS Date
+                
+                // Parse end date (last day of the end period)
+                const [endYear, endMonth] = endPeriod.split('-').map(num => parseInt(num));
+                const endDate = new Date(endYear, endMonth, 0); // Last day of the month
+                endDate.setHours(23, 59, 59, 999); // End of day
+                
+                console.log(`Auto-setting date range: ${startDate.toISOString()} to ${endDate.toISOString()}`);
+                
+                // Update UI with selected date range
+                UIModule.setDateRange(startDate, endDate);
+                
+                // Set date range in data module
+                DataModule.setDateRange(startDate, endDate);
+                
+                // Load data for current date range
                 await DataModule.loadDataForDateRange();
                 
                 // Get filter options
@@ -4008,6 +4255,9 @@
                 const availableActions = DataModule.getAvailableActionSelections();
                 UIModule.updateActionSelectionButtons(availableActions);
                 
+                // Ensure Final Inspection is set as the default station
+                setDefaultStationToFinalInspection();
+                
                 // Update dashboard with loaded data
                 updateDashboard();
                 
@@ -4020,6 +4270,32 @@
                 document.getElementById('top-rejects-loading').style.display = 'none';
                 document.getElementById('trend-chart-loading').style.display = 'none';
                 document.getElementById('reasons-chart-loading').style.display = 'none';
+            }
+        };
+        
+        // Set default station to Final Inspection
+        const setDefaultStationToFinalInspection = function() {
+            // Get available stations
+            const stations = DataModule.getAvailableStations();
+            
+            if (stations.length === 0) {
+                return; // No stations available
+            }
+            
+            // Find index of "Final Inspection" or any of its aliases
+            let finalInspectionIndex = stations.findIndex(station => station === 'Final Inspection');
+            
+            // If Final Inspection isn't found by name, check for aliases
+            if (finalInspectionIndex === -1) {
+                for (const alias of DataModule.finalInspectionAliases) {
+                    finalInspectionIndex = stations.findIndex(station => station === alias);
+                    if (finalInspectionIndex !== -1) break;
+                }
+            }
+            
+            // If found, set current station index to Final Inspection
+            if (finalInspectionIndex !== -1) {
+                UIModule.setCurrentStationIndex(finalInspectionIndex);
             }
         };
         
@@ -4324,3 +4600,7 @@
     </script>
 </body>
 </html>
+
+
+                        
+                        
