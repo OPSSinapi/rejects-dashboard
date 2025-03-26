@@ -21,6 +21,11 @@
             --warning-color: #f1c40f;
             --info-color: #9b59b6;
             
+            /* Action colors */
+            --scrap-color: #e74c3c;
+            --rts-color: #f39c12;
+            --local-color: #2ecc71;
+            
             /* Neutral colors */
             --background-color: #f5f7fa;
             --card-bg-color: #ffffff;
@@ -437,6 +442,18 @@
             color: white;
         }
         
+        .action-toggle-btn.action-scrap.active {
+            background-color: var(--scrap-color);
+        }
+        
+        .action-toggle-btn.action-rts.active {
+            background-color: var(--rts-color);
+        }
+        
+        .action-toggle-btn.action-local.active {
+            background-color: var(--local-color);
+        }
+        
         .toggle-group {
             display: flex;
             align-items: center;
@@ -458,10 +475,11 @@
             padding: var(--space-sm);
         }
         
+        /* Modified grid layout to match schematic */
         .dashboard-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: auto 1fr;
+            grid-template-columns: 2fr 1fr;
+            grid-template-rows: auto auto 1fr;
             gap: var(--space-sm);
             flex: 1;
             min-height: 0;
@@ -473,7 +491,7 @@
         }
         
         .special-stations-row {
-            grid-column: span 3;
+            grid-column: span 2;
             display: flex;
             gap: var(--space-sm);
             overflow: hidden;
@@ -535,6 +553,9 @@
             font-weight: 600;
             color: var(--primary-color);
             margin-bottom: var(--space-xs);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         
         .reason-item {
@@ -562,6 +583,61 @@
             white-space: nowrap;
         }
         
+        /* Station Navigation */
+        .station-nav {
+            display: flex;
+            gap: var(--space-xs);
+            margin-top: auto;
+            padding-top: var(--space-xs);
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .station-nav-btn {
+            background: none;
+            border: none;
+            color: var(--secondary-color);
+            cursor: pointer;
+            font-size: var(--small-font-size);
+            padding: 2px 4px;
+        }
+        
+        .station-nav-btn:hover {
+            color: var(--secondary-dark);
+        }
+        
+        .station-nav-btn:disabled {
+            color: var(--text-muted);
+            cursor: not-allowed;
+        }
+        
+        .station-nav-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            font-size: var(--small-font-size);
+            color: var(--text-muted);
+        }
+        
+        .station-pagination {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .station-page-btn {
+            background: none;
+            border: none;
+            color: var(--secondary-color);
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .station-page-btn.active {
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+        
         .dashboard-card {
             background-color: var(--card-bg-color);
             border-radius: var(--border-radius-sm);
@@ -571,9 +647,21 @@
             overflow: hidden;
         }
         
+        /* Top rejects card modified to span the first two rows in the first column */
         .top-rejects-card {
-            grid-column: span 2;
-            grid-row: span 1;
+            grid-column: 1;
+            grid-row: 2 / 4;
+        }
+        
+        /* Charts in right column */
+        .trend-chart-card {
+            grid-column: 2;
+            grid-row: 2;
+        }
+        
+        .reasons-chart-card {
+            grid-column: 2;
+            grid-row: 3;
         }
         
         .card-header {
@@ -588,6 +676,12 @@
             font-size: var(--small-font-size);
             font-weight: 600;
             color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+        }
+        
+        .card-controls {
             display: flex;
             align-items: center;
             gap: var(--space-xs);
@@ -749,6 +843,143 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #a0aec0;
         }
+        
+        /* Pagination for tables and reasons */
+        .pagination {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-xs) 0;
+            border-top: 1px solid var(--border-color);
+            gap: var(--space-xs);
+        }
+        
+        .pagination-btn {
+            background: none;
+            border: none;
+            color: var(--secondary-color);
+            cursor: pointer;
+            padding: 2px 6px;
+            font-size: var(--small-font-size);
+            border-radius: var(--border-radius-sm);
+        }
+        
+        .pagination-btn:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .pagination-btn:disabled {
+            color: var(--text-muted);
+            cursor: not-allowed;
+        }
+        
+        .pagination-info {
+            font-size: var(--small-font-size);
+            color: var(--text-muted);
+        }
+        
+        /* Comparison selector for trend chart */
+        .comparison-select {
+            padding: 2px 6px;
+            font-size: var(--small-font-size);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-sm);
+            background-color: white;
+        }
+        
+        /* More options button for cards */
+        .more-options-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: var(--small-font-size);
+            padding: 2px;
+            margin-left: var(--space-xs);
+        }
+        
+        .more-options-btn:hover {
+            color: var(--primary-color);
+        }
+        
+        /* Legend for stacked bar chart */
+        .chart-legend {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            font-size: var(--small-font-size);
+            margin-top: var(--space-xs);
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+        
+        /* Trend line styles */
+        .trend-line-legend {
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+            font-size: var(--small-font-size);
+        }
+        
+        .trend-line-dash {
+            width: 15px;
+            height: 2px;
+            background-color: #ccc;
+        }
+        
+        .trend-line-dash.max {
+            background-color: var(--danger-color);
+            height: 2px;
+        }
+        
+        .trend-line-dash.mean {
+            background-color: var(--warning-color);
+            height: 2px;
+        }
+        
+        .trend-line-dash.min {
+            background-color: var(--success-color);
+            height: 2px;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 1024px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto auto;
+            }
+            
+            .special-stations-row {
+                grid-column: 1;
+                grid-row: 1;
+            }
+            
+            .top-rejects-card {
+                grid-column: 1;
+                grid-row: 2;
+            }
+            
+            .trend-chart-card {
+                grid-column: 1;
+                grid-row: 3;
+            }
+            
+            .reasons-chart-card {
+                grid-column: 1;
+                grid-row: 4;
+            }
+        }
     </style>
 </head>
 <body>
@@ -901,13 +1132,13 @@
                             <button id="sort-by-cost" class="toggle-btn">Cost</button>
                         </div>
                         
-                        <!-- New Action Selection Toggle Buttons -->
+                        <!-- Action Selection Toggle Buttons -->
                         <div class="toggle-label">Filter Action:</div>
                         <div class="action-toggle-buttons" id="action-toggle">
                             <button id="action-all" class="action-toggle-btn active">All</button>
-                            <button id="action-scrap" class="action-toggle-btn">Scrap</button>
-                            <button id="action-rts" class="action-toggle-btn">RTS</button>
-                            <button id="action-local" class="action-toggle-btn">Local</button>
+                            <button id="action-scrap" class="action-toggle-btn action-scrap">Scrap</button>
+                            <button id="action-rts" class="action-toggle-btn action-rts">RTS</button>
+                            <button id="action-local" class="action-toggle-btn action-local">Local</button>
                         </div>
                     </div>
                 </div>
@@ -915,16 +1146,66 @@
                 <!-- Dashboard Content -->
                 <div class="dashboard-content">
                     <div class="dashboard-grid">
-                        <!-- Special Stations Row -->
+                        <!-- Special Stations Row - now renamed to Final Inspection Station -->
                         <div class="special-stations-row">
-                            <!-- Station cards will be added dynamically -->
+                            <div class="station-card" id="final-inspection-card">
+                                <div class="station-card-title">
+                                    <span>Final Inspection Station</span>
+                                    <i class="fas fa-info-circle"></i>
+                                </div>
+                                <div class="station-card-metrics">
+                                    <div class="station-card-metric">
+                                        <div class="station-card-value" id="final-inspection-qty">0</div>
+                                        <div class="station-card-label">Quantity</div>
+                                    </div>
+                                    <div class="station-card-metric">
+                                        <div class="station-card-value" id="final-inspection-cost">R0</div>
+                                        <div class="station-card-label">Cost</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="station-card-reasons">
+                                    <div class="station-card-reasons-title">
+                                        <span>Top Reasons</span>
+                                        <div class="station-pagination" id="station-reasons-pagination">
+                                            <button class="station-page-btn" data-page="1">1</button>
+                                            <button class="station-page-btn" data-page="2">2</button>
+                                            <button class="station-page-btn" data-page="3">3</button>
+                                        </div>
+                                    </div>
+                                    <div id="station-reasons-container">
+                                        <!-- Reasons will be populated dynamically -->
+                                    </div>
+                                </div>
+                                
+                                <div class="station-nav">
+                                    <button class="station-nav-btn" id="prev-station">
+                                        <i class="fas fa-chevron-left"></i> Prev
+                                    </button>
+                                    <div class="station-nav-indicator">
+                                        <span id="station-current">1</span>/<span id="station-total">3</span>
+                                    </div>
+                                    <button class="station-nav-btn" id="next-station">
+                                        Next <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                         
-                        <!-- Top Rejects Table Card -->
+                        <!-- Top Rejects Table Card - moved to first column -->
                         <div class="dashboard-card top-rejects-card">
                             <div class="card-header">
                                 <div class="card-title">
                                     <i class="fas fa-exclamation-triangle"></i> Top Rejects
+                                </div>
+                                <div class="card-controls">
+                                    <span class="pagination-info" id="top-rejects-pagination-info">Showing 1-5 of 0</span>
+                                    <button class="pagination-btn" id="prev-rejects" disabled>
+                                        <i class="fas fa-chevron-left"></i>
+                                    </button>
+                                    <button class="pagination-btn" id="next-rejects" disabled>
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
                                 </div>
                             </div>
                             <div class="card-content">
@@ -936,6 +1217,7 @@
                                             <th class="sortable" data-sort="reason">Reject Reason</th>
                                             <th data-sort="qty">QTY</th>
                                             <th data-sort="cost">Cost (R)</th>
+                                            <!-- PartBatchNumber column is added dynamically when RTS is selected -->
                                         </tr>
                                     </thead>
                                     <tbody id="top-rejects-body">
@@ -959,16 +1241,61 @@
                             </div>
                         </div>
                         
-                        <!-- Trend Chart Card -->
-                        <div class="dashboard-card">
+                        <!-- Trend Chart Card - moved to second column -->
+                        <div class="dashboard-card trend-chart-card">
                             <div class="card-header">
                                 <div class="card-title">
                                     <i class="fas fa-chart-line"></i> Daily Rejects Trend
+                                </div>
+                                <div class="card-controls">
+                                    <!-- Toggle between cost and quantity for the trend chart -->
+                                    <div class="toggle-buttons">
+                                        <button id="trend-view-qty" class="toggle-btn active">Qty</button>
+                                        <button id="trend-view-cost" class="toggle-btn">Cost</button>
+                                    </div>
+                                    
+                                    <!-- Comparison period selector -->
+                                    <select id="comparison-period" class="comparison-select">
+                                        <option value="none">No Comparison</option>
+                                        <option value="previous">Previous Period</option>
+                                        <option value="month">Month</option>
+                                        <option value="qtd">QTD</option>
+                                        <option value="ytd">YTD</option>
+                                        <option value="1y">1 Year</option>
+                                    </select>
                                 </div>
                             </div>
                             <div class="card-content">
                                 <div class="chart-container" id="trend-chart-container">
                                     <!-- Chart will be rendered here -->
+                                </div>
+                                
+                                <!-- Chart legend -->
+                                <div class="chart-legend" id="trend-chart-legend">
+                                    <div class="legend-item">
+                                        <div class="legend-color" style="background-color: var(--scrap-color);"></div>
+                                        <span>Scrap</span>
+                                    </div>
+                                    <div class="legend-item">
+                                        <div class="legend-color" style="background-color: var(--rts-color);"></div>
+                                        <span>RTS</span>
+                                    </div>
+                                    <div class="legend-item">
+                                        <div class="legend-color" style="background-color: var(--local-color);"></div>
+                                        <span>Local</span>
+                                    </div>
+                                    <div class="trend-line-legend">
+                                        <div class="trend-line-dash max"></div>
+                                        <span>Max</span>
+                                    </div>
+                                    <div class="trend-line-legend">
+                                        <div class="trend-line-dash mean"></div>
+                                        <span>Mean</span>
+                                    </div>
+                                    <div class="trend-line-legend">
+                                        <div class="trend-line-dash min"></div>
+                                        <span>Min (Non-Zero)</span>
+                                    </div>
                                 </div>
                                 
                                 <!-- Empty state (hidden by default) -->
@@ -987,11 +1314,17 @@
                             </div>
                         </div>
                         
-                        <!-- Top Reasons Chart Card -->
-                        <div class="dashboard-card">
+                        <!-- Top Reasons Chart Card - moved to second column, bottom row -->
+                        <div class="dashboard-card reasons-chart-card">
                             <div class="card-header">
                                 <div class="card-title">
                                     <i class="fas fa-exclamation-circle"></i> Top Reject Reasons
+                                </div>
+                                <div class="card-controls">
+                                    <div class="toggle-buttons">
+                                        <button id="reasons-view-qty" class="toggle-btn active">Qty</button>
+                                        <button id="reasons-view-cost" class="toggle-btn">Cost</button>
+                                    </div>
                                 </div>
                             </div>
                             <div class="card-content">
@@ -1145,6 +1478,70 @@
             return text.substring(0, maxLength) + '...';
         };
         
+        // Get comparison period date range
+        const getComparisonDateRange = (currentStart, currentEnd, period) => {
+            const currentRange = currentEnd - currentStart;
+            const start = new Date(currentStart);
+            const end = new Date(currentEnd);
+            
+            switch (period) {
+                case 'previous':
+                    // Previous period of same length
+                    start.setTime(start.getTime() - currentRange);
+                    end.setTime(end.getTime() - currentRange);
+                    break;
+                    
+                case 'month':
+                    // First day to last day of current month
+                    start.setDate(1);
+                    end.setDate(0); // Last day of previous month
+                    end.setMonth(end.getMonth() + 2); // Last day of current month
+                    break;
+                    
+                case 'qtd':
+                    // First day of quarter to today
+                    const quarterMonth = Math.floor(start.getMonth() / 3) * 3;
+                    start.setMonth(quarterMonth);
+                    start.setDate(1);
+                    break;
+                    
+                case 'ytd':
+                    // First day of year to today
+                    start.setMonth(0);
+                    start.setDate(1);
+                    break;
+                    
+                case '1y':
+                    // Same period one year ago
+                    start.setFullYear(start.getFullYear() - 1);
+                    end.setFullYear(end.getFullYear() - 1);
+                    break;
+                    
+                default:
+                    // No comparison
+                    return null;
+            }
+            
+            return { start, end };
+        };
+        
+        // Calculate non-zero min, mean, and max from an array of numbers
+        const calculateStats = (values) => {
+            if (!values || values.length === 0) {
+                return { min: 0, mean: 0, max: 0 };
+            }
+            
+            // Filter out zero values for min calculation
+            const nonZeroValues = values.filter(v => v > 0);
+            
+            const min = nonZeroValues.length > 0 ? Math.min(...nonZeroValues) : 0;
+            const max = values.length > 0 ? Math.max(...values) : 0;
+            const sum = values.reduce((a, b) => a + b, 0);
+            const mean = values.length > 0 ? sum / values.length : 0;
+            
+            return { min, mean, max };
+        };
+        
         return {
             formatCurrency,
             formatDateForAPI,
@@ -1158,7 +1555,9 @@
             hideEmpty,
             generateId,
             getLastNDaysRange,
-            truncateText
+            truncateText,
+            getComparisonDateRange,
+            calculateStats
         };
     })();
 
@@ -1172,6 +1571,7 @@
         let rejectData = [];
         let filteredData = [];
         let loadedMonths = {};
+        let comparisonData = null;
         let currentFilters = {
             dateFrom: null,
             dateTo: null,
@@ -1179,21 +1579,23 @@
             product: [],
             variant: [],
             station: [],
-            actionSelection: [] // New filter for ActionSelection
+            actionSelection: [] // Filter for ActionSelection
         };
         
         // Filter associations for interdependent filtering
         let filterAssociations = {
-            supervisor: {},  // supervisor: { value: { product: [values], variant: [values], station: [values] } }
-            product: {},     // product: { value: { supervisor: [values], variant: [values], station: [values] } }
-            variant: {},     // variant: { value: { supervisor: [values], product: [values], station: [values] } }
-            station: {}      // station: { value: { supervisor: [values], product: [values], variant: [values] } }
+            supervisor: {},  // supervisor: { value: { product: [values], variant: [values], station: [values], actionSelection: [values] } }
+            product: {},     // product: { value: { supervisor: [values], variant: [values], station: [values], actionSelection: [values] } }
+            variant: {},     // variant: { value: { supervisor: [values], product: [values], station: [values], actionSelection: [values] } }
+            station: {},     // station: { value: { supervisor: [values], product: [values], variant: [values], actionSelection: [values] } }
+            actionSelection: {} // actionSelection: { value: { supervisor: [values], product: [values], variant: [values], station: [values] } }
         };
         
-        // Special stations to track - now combined into a primary name and aliases
-        const specialStationGroups = {
-            'Quality Control': ['Wrapping & Checkers', 'FI', 'Checkers', 'Wrapping']
-        };
+        // Final Inspection Station Aliases
+        const finalInspectionAliases = ['Wrapping & Checkers', 'FI', 'Checkers'];
+        
+        // Other stations to track
+        let stationGroups = {};
         
         // Initialize data module
         const init = async function() {
@@ -1210,6 +1612,11 @@
                 const { start, end } = Utils.getLastNDaysRange(30);
                 currentFilters.dateFrom = start;
                 currentFilters.dateTo = end;
+                
+                // Initialize station groups
+                stationGroups = {
+                    'Final Inspection': finalInspectionAliases
+                };
                 
                 return true;
             } catch (error) {
@@ -1296,7 +1703,8 @@
                 supervisor: {},
                 product: {},
                 variant: {},
-                station: {}
+                station: {},
+                actionSelection: {}
             };
             
             // Process each reject item
@@ -1315,13 +1723,15 @@
                         filterAssociations.supervisor[item.LineSupervisor] = {
                             product: new Set(),
                             variant: new Set(),
-                            station: new Set()
+                            station: new Set(),
+                            actionSelection: new Set()
                         };
                     }
                     
                     if (item.Product) filterAssociations.supervisor[item.LineSupervisor].product.add(item.Product);
                     if (item.Variant) filterAssociations.supervisor[item.LineSupervisor].variant.add(item.Variant);
                     if (item.Station) filterAssociations.supervisor[item.LineSupervisor].station.add(item.Station);
+                    if (item.ActionSelection) filterAssociations.supervisor[item.LineSupervisor].actionSelection.add(item.ActionSelection);
                 }
                 
                 // Process product associations
@@ -1330,13 +1740,15 @@
                         filterAssociations.product[item.Product] = {
                             supervisor: new Set(),
                             variant: new Set(),
-                            station: new Set()
+                            station: new Set(),
+                            actionSelection: new Set()
                         };
                     }
                     
                     if (item.LineSupervisor) filterAssociations.product[item.Product].supervisor.add(item.LineSupervisor);
                     if (item.Variant) filterAssociations.product[item.Product].variant.add(item.Variant);
                     if (item.Station) filterAssociations.product[item.Product].station.add(item.Station);
+                    if (item.ActionSelection) filterAssociations.product[item.Product].actionSelection.add(item.ActionSelection);
                 }
                 
                 // Process variant associations
@@ -1345,13 +1757,15 @@
                         filterAssociations.variant[item.Variant] = {
                             supervisor: new Set(),
                             product: new Set(),
-                            station: new Set()
+                            station: new Set(),
+                            actionSelection: new Set()
                         };
                     }
                     
                     if (item.LineSupervisor) filterAssociations.variant[item.Variant].supervisor.add(item.LineSupervisor);
                     if (item.Product) filterAssociations.variant[item.Variant].product.add(item.Product);
                     if (item.Station) filterAssociations.variant[item.Variant].station.add(item.Station);
+                    if (item.ActionSelection) filterAssociations.variant[item.Variant].actionSelection.add(item.ActionSelection);
                 }
                 
                 // Process station associations
@@ -1360,13 +1774,32 @@
                         filterAssociations.station[item.Station] = {
                             supervisor: new Set(),
                             product: new Set(),
-                            variant: new Set()
+                            variant: new Set(),
+                            actionSelection: new Set()
                         };
                     }
                     
                     if (item.LineSupervisor) filterAssociations.station[item.Station].supervisor.add(item.LineSupervisor);
                     if (item.Product) filterAssociations.station[item.Station].product.add(item.Product);
                     if (item.Variant) filterAssociations.station[item.Station].variant.add(item.Variant);
+                    if (item.ActionSelection) filterAssociations.station[item.Station].actionSelection.add(item.ActionSelection);
+                }
+                
+                // Process ActionSelection associations
+                if (item.ActionSelection) {
+                    if (!filterAssociations.actionSelection[item.ActionSelection]) {
+                        filterAssociations.actionSelection[item.ActionSelection] = {
+                            supervisor: new Set(),
+                            product: new Set(),
+                            variant: new Set(),
+                            station: new Set()
+                        };
+                    }
+                    
+                    if (item.LineSupervisor) filterAssociations.actionSelection[item.ActionSelection].supervisor.add(item.LineSupervisor);
+                    if (item.Product) filterAssociations.actionSelection[item.ActionSelection].product.add(item.Product);
+                    if (item.Variant) filterAssociations.actionSelection[item.ActionSelection].variant.add(item.Variant);
+                    if (item.Station) filterAssociations.actionSelection[item.ActionSelection].station.add(item.Station);
                 }
             });
             
@@ -1470,7 +1903,7 @@
                 product: new Set(),
                 variant: new Set(),
                 station: new Set(),
-                actionSelection: new Set() // New option set for ActionSelection
+                actionSelection: new Set()
             };
             
             // Process each record in the filtered data to extract unique values
@@ -1522,7 +1955,7 @@
             currentFilters.product = [];
             currentFilters.variant = [];
             currentFilters.station = [];
-            currentFilters.actionSelection = []; // Reset ActionSelection filter
+            currentFilters.actionSelection = [];
             
             applyFilters();
             return true;
@@ -1535,15 +1968,111 @@
             return true;
         };
         
+        // Load comparison data
+        const loadComparisonData = async function(period) {
+            if (!currentFilters.dateFrom || !currentFilters.dateTo) {
+                return false;
+            }
+            
+            try {
+                // Calculate comparison date range
+                const comparisonRange = Utils.getComparisonDateRange(
+                    currentFilters.dateFrom, 
+                    currentFilters.dateTo,
+                    period
+                );
+                
+                if (!comparisonRange) {
+                    comparisonData = null;
+                    return false;
+                }
+                
+                console.log("Loading comparison data for range:", 
+                    comparisonRange.start.toISOString().split('T')[0], 
+                    "to", 
+                    comparisonRange.end.toISOString().split('T')[0]);
+                
+                // Get list of months needed
+                const monthsToLoad = getMonthsInRange(
+                    comparisonRange.start, 
+                    comparisonRange.end
+                );
+                
+                if (monthsToLoad.length === 0) {
+                    console.warn('No comparison data available for selected period');
+                    return false;
+                }
+                
+                let tempData = [];
+                
+                // Load each required month
+                for (const month of monthsToLoad) {
+                    if (!loadedMonths[month]) {
+                        try {
+                            console.log(`Loading comparison data for ${month}...`);
+                            const monthResponse = await fetch(`data/${month}.json`);
+                            if (!monthResponse.ok) {
+                                console.warn(`Month data for ${month} not available or error: ${monthResponse.statusText}`);
+                                continue;
+                            }
+                            
+                            const monthData = await monthResponse.json();
+                            loadedMonths[month] = monthData.rejectData || [];
+                        } catch (error) {
+                            console.warn(`Error loading comparison data for ${month}:`, error);
+                            continue;
+                        }
+                    }
+                    
+                    // Add this month's data
+                    tempData = tempData.concat(loadedMonths[month]);
+                }
+                
+                // Filter by date range
+                comparisonData = tempData.filter(item => {
+                    if (!item.ProductionDate) return false;
+                    const itemDate = new Date(item.ProductionDate);
+                    return itemDate >= comparisonRange.start && 
+                           itemDate <= comparisonRange.end;
+                });
+                
+                console.log(`Loaded ${comparisonData.length} comparison records`);
+                
+                return true;
+            } catch (error) {
+                console.error('Error loading comparison data:', error);
+                comparisonData = null;
+                return false;
+            }
+        };
+        
         // Get currently filtered data
         const getFilteredData = function() {
             return filteredData;
         };
         
+        // Get comparison data
+        const getComparisonData = function() {
+            return comparisonData;
+        };
+        
+        // Get final inspection station data
+        const getFinalInspectionData = function() {
+            // Filter data for the Final Inspection stations
+            const finalInspectionData = filteredData.filter(item => 
+                item.Station && finalInspectionAliases.includes(item.Station)
+            );
+            
+            return finalInspectionData;
+        };
+        
         // Get top rejects sorted by metric
-        const getTopRejects = function(limit = 10, sortBy = 'qty') {
+        const getTopRejects = function(limit = 5, sortBy = 'qty', page = 1, pageSize = 5) {
             // Group data by station and reason
             const groupedData = {};
+            
+            // Calculate offset for pagination
+            const offset = (page - 1) * pageSize;
             
             filteredData.forEach(item => {
                 const key = `${item.Station || 'Unknown'}-${item.RejectReason || 'Unknown'}`;
@@ -1560,6 +2089,7 @@
                         station: item.Station || 'Unknown',
                         rejectReason: item.RejectReason || 'Unknown',
                         parts: new Set(parts),
+                        partBatchNumbers: new Set(),
                         items: [item],
                         qty: 0,
                         cost: 0
@@ -1571,13 +2101,18 @@
                     let parts = [];
                     if (Array.isArray(item.Parts)) {
                         parts = item.Parts.filter(p => p && p.trim());
-                    } else if (typeof item.Parts === 'string') {
+                        } else if (typeof item.Parts === 'string') {
                         parts = item.Parts.split(',').map(p => p.trim()).filter(p => p);
                     }
                     
                     parts.forEach(part => {
                         if (part) groupedData[key].parts.add(part);
                     });
+                    
+                    // Track batch numbers for RTS
+                    if (item.PartBatchNumber) {
+                        groupedData[key].partBatchNumbers.add(item.PartBatchNumber);
+                    }
                 }
                 
                 // Accumulate qty and cost
@@ -1594,18 +2129,36 @@
                 sortedData.sort((a, b) => b.cost - a.cost);
             }
             
-            // Format parts as comma-separated string
+            // Format parts and batch numbers as comma-separated strings
             sortedData = sortedData.map(item => ({
                 ...item,
-                parts: Array.from(item.parts).join(', ')
+                parts: Array.from(item.parts).join(', '),
+                partBatchNumbers: Array.from(item.partBatchNumbers).join(', ')
             }));
             
-            return sortedData.slice(0, limit);
+            // Get total number of records
+            const totalRecords = sortedData.length;
+            
+            // Calculate total pages
+            const totalPages = Math.ceil(totalRecords / pageSize);
+            
+            // Apply pagination
+            const paginatedData = sortedData.slice(offset, offset + pageSize);
+            
+            return {
+                data: paginatedData,
+                pagination: {
+                    page,
+                    pageSize,
+                    totalRecords,
+                    totalPages
+                }
+            };
         };
         
         // Get data for trend chart
         const getTrendChartData = function(sortBy = 'qty') {
-            // Group by date and count/sum
+            // Group by date and action type
             const dailyData = {};
             
             filteredData.forEach(item => {
@@ -1613,11 +2166,25 @@
                 
                 const date = item.ProductionDate;
                 if (!dailyData[date]) {
-                    dailyData[date] = { date, qty: 0, cost: 0 };
+                    dailyData[date] = { 
+                        date, 
+                        total: { qty: 0, cost: 0 },
+                        Scrap: { qty: 0, cost: 0 },
+                        RTS: { qty: 0, cost: 0 },
+                        Local: { qty: 0, cost: 0 }
+                    };
                 }
                 
-                dailyData[date].qty += (item.QTY || 0);
-                dailyData[date].cost += (item.Cost || 0);
+                // Add to total
+                dailyData[date].total.qty += (item.QTY || 0);
+                dailyData[date].total.cost += (item.Cost || 0);
+                
+                // Add to specific action type
+                const actionType = item.ActionSelection || 'Unknown';
+                if (dailyData[date][actionType]) {
+                    dailyData[date][actionType].qty += (item.QTY || 0);
+                    dailyData[date][actionType].cost += (item.Cost || 0);
+                }
             });
             
             // Convert to array and sort by date
@@ -1625,7 +2192,64 @@
                 new Date(a.date) - new Date(b.date)
             );
             
-            return trendData;
+            // Get stats for trend lines (non-zero min, mean, max)
+            const valueField = sortBy === 'qty' ? 'qty' : 'cost';
+            const values = trendData.map(d => d.total[valueField]);
+            const stats = Utils.calculateStats(values);
+            
+            return {
+                data: trendData,
+                stats
+            };
+        };
+        
+        // Get comparison data for trend chart
+        const getComparisonTrendData = function(sortBy = 'qty') {
+            if (!comparisonData) return null;
+            
+            // Group by date and action type
+            const dailyData = {};
+            
+            comparisonData.forEach(item => {
+                if (!item.ProductionDate) return;
+                
+                const date = item.ProductionDate;
+                if (!dailyData[date]) {
+                    dailyData[date] = { 
+                        date, 
+                        total: { qty: 0, cost: 0 },
+                        Scrap: { qty: 0, cost: 0 },
+                        RTS: { qty: 0, cost: 0 },
+                        Local: { qty: 0, cost: 0 }
+                    };
+                }
+                
+                // Add to total
+                dailyData[date].total.qty += (item.QTY || 0);
+                dailyData[date].total.cost += (item.Cost || 0);
+                
+                // Add to specific action type
+                const actionType = item.ActionSelection || 'Unknown';
+                if (dailyData[date][actionType]) {
+                    dailyData[date][actionType].qty += (item.QTY || 0);
+                    dailyData[date][actionType].cost += (item.Cost || 0);
+                }
+            });
+            
+            // Convert to array and sort by date
+            const trendData = Object.values(dailyData).sort((a, b) => 
+                new Date(a.date) - new Date(b.date)
+            );
+            
+            // Get stats for trend lines (non-zero min, mean, max)
+            const valueField = sortBy === 'qty' ? 'qty' : 'cost';
+            const values = trendData.map(d => d.total[valueField]);
+            const stats = Utils.calculateStats(values);
+            
+            return {
+                data: trendData,
+                stats
+            };
         };
         
         // Get top reject reasons data
@@ -1718,73 +2342,81 @@
             };
         };
         
-        // Get special stations data - UPDATED to combine similar stations
-        const getSpecialStationsData = function() {
-            // Initialize combined data structure for station groups
-            const stationsData = {};
+        // Get final inspection station reasons
+        const getFinalInspectionReasons = function(sortBy = 'qty', page = 1, pageSize = 3) {
+            // Get Final Inspection data
+            const finalInspectionData = getFinalInspectionData();
             
-            // Initialize each group with a single entry
-            Object.keys(specialStationGroups).forEach(groupName => {
-                stationsData[groupName] = {
-                    name: groupName,
-                    qty: 0,
-                    cost: 0,
-                    reasons: {},
-                    items: []
-                };
-            });
+            // Group data by reason
+            const reasonsData = {};
             
-            // Process filtered data
-            filteredData.forEach(item => {
-                if (!item.Station) return;
+            finalInspectionData.forEach(item => {
+                const reason = item.RejectReason || 'Unknown';
                 
-                // Check each station group
-                Object.keys(specialStationGroups).forEach(groupName => {
-                    const aliases = specialStationGroups[groupName];
-                    
-                    // Check if this station belongs to any group
-                    const matchesGroup = aliases.some(alias => 
-                        item.Station.includes(alias)
-                    );
-                    
-                    if (matchesGroup) {
-                        stationsData[groupName].qty += (item.QTY || 0);
-                        stationsData[groupName].cost += (item.Cost || 0);
-                        stationsData[groupName].items.push(item);
-                        
-                        // Track reasons
-                        const reason = item.RejectReason || 'Unknown';
-                        if (!stationsData[groupName].reasons[reason]) {
-                            stationsData[groupName].reasons[reason] = {
-                                name: reason,
-                                qty: 0,
-                                cost: 0
-                            };
-                        }
-                        
-                        stationsData[groupName].reasons[reason].qty += (item.QTY || 0);
-                        stationsData[groupName].reasons[reason].cost += (item.Cost || 0);
-                    }
-                });
-            });
-            
-            // Convert reasons to arrays and sort
-            Object.keys(stationsData).forEach(groupName => {
-                if (stationsData[groupName].items.length === 0) {
-                    return;
+                if (!reasonsData[reason]) {
+                    // Initialize reason data
+                    reasonsData[reason] = {
+                        reason,
+                        qty: 0,
+                        cost: 0,
+                        parts: new Set(),
+                        items: []
+                    };
                 }
                 
-                const reasonsArray = Object.values(stationsData[groupName].reasons)
-                    .sort((a, b) => b.qty - a.qty);
-                    
-                stationsData[groupName].topReasons = reasonsArray.slice(0, 3);
+                // Add parts
+                let parts = [];
+                if (Array.isArray(item.Parts)) {
+                    parts = item.Parts.filter(p => p && p.trim());
+                } else if (typeof item.Parts === 'string') {
+                    parts = item.Parts.split(',').map(p => p.trim()).filter(p => p);
+                }
+                
+                parts.forEach(part => {
+                    if (part) reasonsData[reason].parts.add(part);
+                });
+                
+                // Add this item
+                reasonsData[reason].items.push(item);
+                
+                // Accumulate qty and cost
+                reasonsData[reason].qty += (item.QTY || 0);
+                reasonsData[reason].cost += (item.Cost || 0);
             });
             
-            // Filter out groups with no data
-            const result = Object.values(stationsData)
-                .filter(group => group.items.length > 0);
-                
-            return result;
+            // Convert to array
+            let reasonsArray = Object.values(reasonsData);
+            
+            // Sort by selected metric
+            if (sortBy === 'qty') {
+                reasonsArray.sort((a, b) => b.qty - a.qty);
+            } else {
+                reasonsArray.sort((a, b) => b.cost - a.cost);
+            }
+            
+            // Format parts as comma-separated string
+            reasonsArray = reasonsArray.map(item => ({
+                ...item,
+                parts: Array.from(item.parts).join(', ')
+            }));
+            
+            // Calculate pagination
+            const totalRecords = reasonsArray.length;
+            const totalPages = Math.ceil(totalRecords / pageSize);
+            const offset = (page - 1) * pageSize;
+            
+            // Apply pagination
+            const paginatedData = reasonsArray.slice(offset, offset + pageSize);
+            
+            return {
+                data: paginatedData,
+                pagination: {
+                    page,
+                    pageSize,
+                    totalRecords,
+                    totalPages
+                }
+            };
         };
         
         // Get current filter values
@@ -1792,21 +2424,130 @@
             return currentFilters;
         };
         
-        // Get available action selections
+        // Get available action selections based on applied filters
         const getAvailableActionSelections = function() {
-            const selections = new Set();
+            // Start with all actions from the current date range
+            const availableActions = new Set();
             
-            // Look for all possible ActionSelection values in the current date range
-            rejectData.forEach(item => {
-                if (item.ActionSelection && item.ProductionDate) {
-                    const itemDate = new Date(item.ProductionDate);
-                    if (itemDate >= currentFilters.dateFrom && itemDate <= currentFilters.dateTo) {
-                        selections.add(item.ActionSelection);
+            // Determine which actions are available based on current filters
+            let availableSet = null;
+            
+            // Check supervisor filter
+            if (currentFilters.supervisor.length > 0) {
+                const supervisorActions = new Set();
+                currentFilters.supervisor.forEach(supervisor => {
+                    if (filterAssociations.supervisor[supervisor] && 
+                        filterAssociations.supervisor[supervisor].actionSelection) {
+                        filterAssociations.supervisor[supervisor].actionSelection.forEach(action => {
+                            supervisorActions.add(action);
+                        });
                     }
+                });
+                
+                if (!availableSet) {
+                    availableSet = supervisorActions;
+                } else {
+                    // Intersect with previous set
+                    availableSet = new Set([...availableSet].filter(action => supervisorActions.has(action)));
+                }
+            }
+            
+            // Check product filter
+            if (currentFilters.product.length > 0) {
+                const productActions = new Set();
+                currentFilters.product.forEach(product => {
+                    if (filterAssociations.product[product] && 
+                        filterAssociations.product[product].actionSelection) {
+                        filterAssociations.product[product].actionSelection.forEach(action => {
+                            productActions.add(action);
+                        });
+                    }
+                });
+                
+                if (!availableSet) {
+                    availableSet = productActions;
+                } else {
+                    // Intersect with previous set
+                    availableSet = new Set([...availableSet].filter(action => productActions.has(action)));
+                }
+            }
+            
+            // Check variant filter
+            if (currentFilters.variant.length > 0) {
+                const variantActions = new Set();
+                currentFilters.variant.forEach(variant => {
+                    if (filterAssociations.variant[variant] && 
+                        filterAssociations.variant[variant].actionSelection) {
+                        filterAssociations.variant[variant].actionSelection.forEach(action => {
+                            variantActions.add(action);
+                        });
+                    }
+                });
+                
+                if (!availableSet) {
+                    availableSet = variantActions;
+                } else {
+                    // Intersect with previous set
+                    availableSet = new Set([...availableSet].filter(action => variantActions.has(action)));
+                }
+            }
+            
+            // Check station filter
+            if (currentFilters.station.length > 0) {
+                const stationActions = new Set();
+                currentFilters.station.forEach(station => {
+                    if (filterAssociations.station[station] && 
+                        filterAssociations.station[station].actionSelection) {
+                        filterAssociations.station[station].actionSelection.forEach(action => {
+                            stationActions.add(action);
+                        });
+                    }
+                });
+                
+                if (!availableSet) {
+                    availableSet = stationActions;
+                } else {
+                    // Intersect with previous set
+                    availableSet = new Set([...availableSet].filter(action => stationActions.has(action)));
+                }
+            }
+            
+            // If no specific filters are applied, get all actions in date range
+            if (!availableSet) {
+                filteredData.forEach(item => {
+                    if (item.ActionSelection) {
+                        availableActions.add(item.ActionSelection);
+                    }
+                });
+                
+                return Array.from(availableActions).sort();
+            }
+            
+            return Array.from(availableSet).sort();
+        };
+        
+        // Get available stations for navigation
+        const getAvailableStations = function() {
+            const stations = new Set();
+            
+            // Get all stations from filtered data
+            filteredData.forEach(item => {
+                if (item.Station) {
+                    stations.add(item.Station);
                 }
             });
             
-            return Array.from(selections).sort();
+            // If Final Inspection is included, exclude its aliases
+            if (stationGroups['Final Inspection']) {
+                stationGroups['Final Inspection'].forEach(alias => {
+                    stations.delete(alias);
+                });
+                
+                // Add the main Final Inspection name
+                stations.add('Final Inspection');
+            }
+            
+            return Array.from(stations).sort();
         };
         
         // Set test data (for demo purposes)
@@ -1822,17 +2563,23 @@
             setFilter,
             resetFilters,
             setDateRange,
+            loadComparisonData,
             getFilterOptions,
             getFilteredData,
+            getComparisonData,
+            getFinalInspectionData,
             getTopRejects,
             getTrendChartData,
+            getComparisonTrendData,
             getTopReasons,
             getMetricsSummary,
-            getSpecialStationsData,
+            getFinalInspectionReasons,
             getCurrentFilters,
             getAvailableActionSelections,
+            getAvailableStations,
             setTestData,
-            specialStationGroups
+            finalInspectionAliases,
+            stationGroups
         };
     })();
 
@@ -1860,7 +2607,23 @@
             topRejectsBody: document.getElementById('top-rejects-body'),
             topRejectsEmpty: document.getElementById('top-rejects-empty'),
             topRejectsLoading: document.getElementById('top-rejects-loading'),
-            // New elements for ActionSelection toggle
+            topRejectsPaginationInfo: document.getElementById('top-rejects-pagination-info'),
+            prevRejectsBtn: document.getElementById('prev-rejects'),
+            nextRejectsBtn: document.getElementById('next-rejects'),
+            // Final Inspection station elements
+            finalInspectionQty: document.getElementById('final-inspection-qty'),
+            finalInspectionCost: document.getElementById('final-inspection-cost'),
+            stationReasonsContainer: document.getElementById('station-reasons-container'),
+            stationReasonsPagination: document.getElementById('station-reasons-pagination'),
+            prevStationBtn: document.getElementById('prev-station'),
+            nextStationBtn: document.getElementById('next-station'),
+            stationCurrent: document.getElementById('station-current'),
+            stationTotal: document.getElementById('station-total'),
+            // Trend chart elements
+            trendViewQty: document.getElementById('trend-view-qty'),
+            trendViewCost: document.getElementById('trend-view-cost'),
+            comparisonPeriod: document.getElementById('comparison-period'),
+            // Action selection toggle elements
             actionAll: document.getElementById('action-all'),
             actionScrap: document.getElementById('action-scrap'),
             actionRts: document.getElementById('action-rts'),
@@ -1869,6 +2632,13 @@
         
         // Current state
         let currentSortBy = 'qty'; // 'qty' or 'cost'
+        let currentTopRejectsPage = 1;
+        let currentStationPage = 1;
+        let currentStationReasonsPage = 1;
+        let currentTrendView = 'qty';
+        let currentReasonsView = 'qty';
+        let currentStationIndex = 0;
+        let availableStations = [];
         
         // Initialize multiselect dropdowns
         const initMultiselect = function() {
@@ -1999,12 +2769,113 @@
             }
         };
         
+        // Initialize pagination controls
+        const initPagination = function() {
+            // Top Rejects pagination
+            elements.prevRejectsBtn.addEventListener('click', () => {
+                if (currentTopRejectsPage > 1) {
+                    currentTopRejectsPage--;
+                    triggerEvent('pageChanged', { 
+                        type: 'topRejects', 
+                        page: currentTopRejectsPage 
+                    });
+                }
+            });
+            
+            elements.nextRejectsBtn.addEventListener('click', () => {
+                currentTopRejectsPage++;
+                triggerEvent('pageChanged', { 
+                    type: 'topRejects', 
+                    page: currentTopRejectsPage 
+                });
+            });
+            
+            // Station reasons pagination
+            if (elements.stationReasonsPagination) {
+                elements.stationReasonsPagination.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('station-page-btn')) {
+                        const page = parseInt(e.target.dataset.page);
+                        currentStationReasonsPage = page;
+                        triggerEvent('pageChanged', { 
+                            type: 'stationReasons', 
+                            page: currentStationReasonsPage 
+                        });
+                    }
+                });
+            }
+            
+            // Station navigation
+            elements.prevStationBtn.addEventListener('click', () => {
+                if (currentStationIndex > 0) {
+                    currentStationIndex--;
+                    triggerEvent('stationChanged', { index: currentStationIndex });
+                }
+            });
+            
+            elements.nextStationBtn.addEventListener('click', () => {
+                if (currentStationIndex < availableStations.length - 1) {
+                    currentStationIndex++;
+                    triggerEvent('stationChanged', { index: currentStationIndex });
+                }
+            });
+        };
+        
+        // Initialize trend view toggles
+        const initTrendToggles = function() {
+            // Trend chart view toggle (qty/cost)
+            elements.trendViewQty.addEventListener('click', () => {
+                elements.trendViewQty.classList.add('active');
+                elements.trendViewCost.classList.remove('active');
+                currentTrendView = 'qty';
+                triggerEvent('viewChanged', { type: 'trend', view: 'qty' });
+            });
+            
+            elements.trendViewCost.addEventListener('click', () => {
+                elements.trendViewQty.classList.remove('active');
+                elements.trendViewCost.classList.add('active');
+                currentTrendView = 'cost';
+                triggerEvent('viewChanged', { type: 'trend', view: 'cost' });
+            });
+            
+            // Reasons chart view toggle (qty/cost)
+            elements.reasonsViewQty = document.getElementById('reasons-view-qty');
+            elements.reasonsViewCost = document.getElementById('reasons-view-cost');
+            
+            if (elements.reasonsViewQty && elements.reasonsViewCost) {
+                elements.reasonsViewQty.addEventListener('click', () => {
+                    elements.reasonsViewQty.classList.add('active');
+                    elements.reasonsViewCost.classList.remove('active');
+                    currentReasonsView = 'qty';
+                    triggerEvent('viewChanged', { type: 'reasons', view: 'qty' });
+                });
+                
+                elements.reasonsViewCost.addEventListener('click', () => {
+                    elements.reasonsViewQty.classList.remove('active');
+                    elements.reasonsViewCost.classList.add('active');
+                    currentReasonsView = 'cost';
+                    triggerEvent('viewChanged', { type: 'reasons', view: 'cost' });
+                });
+            }
+            
+            // Comparison period selector
+            elements.comparisonPeriod.addEventListener('change', () => {
+                const period = elements.comparisonPeriod.value;
+                triggerEvent('comparisonChanged', { period });
+            });
+        };
+        
         // Initialize the UI module
         const init = function() {
             // Initialize multiselect dropdowns
             initMultiselect();
             
-            // Set up other event listeners
+            // Initialize pagination controls
+            initPagination();
+            
+            // Initialize trend view toggles
+            initTrendToggles();
+            
+            // Set up main sort buttons
             document.getElementById('sort-by-qty').addEventListener('click', () => {
                 setSortBy('qty');
             });
@@ -2219,7 +3090,8 @@
         };
         
         // Update top rejects table
-        const updateTopRejectsTable = function(rejects) {
+        const updateTopRejectsTable = function(rejectsData, isRtsSelected) {
+            const { data: rejects, pagination } = rejectsData;
             const tableBody = document.getElementById('top-rejects-body');
             if (!tableBody) return;
             
@@ -2227,11 +3099,42 @@
             
             if (!rejects || rejects.length === 0) {
                 document.getElementById('top-rejects-empty').style.display = 'flex';
+                elements.prevRejectsBtn.disabled = true;
+                elements.nextRejectsBtn.disabled = true;
+                elements.topRejectsPaginationInfo.textContent = 'Showing 0-0 of 0';
                 return;
             }
             
             document.getElementById('top-rejects-empty').style.display = 'none';
             
+            // Update table header for RTS view (add PartBatchNumber column)
+            const headerRow = document.querySelector('#top-rejects-table thead tr');
+            if (headerRow) {
+                // Check if PartBatchNumber column exists
+                const batchHeader = headerRow.querySelector('th[data-sort="batch"]');
+                
+                if (isRtsSelected && !batchHeader) {
+                    // Add batch number column for RTS view
+                    const newHeader = document.createElement('th');
+                    newHeader.textContent = 'Batch Number';
+                    newHeader.dataset.sort = 'batch';
+                    headerRow.insertBefore(newHeader, headerRow.querySelector('th[data-sort="qty"]'));
+                } else if (!isRtsSelected && batchHeader) {
+                    // Remove batch number column when not in RTS view
+                    headerRow.removeChild(batchHeader);
+                }
+            }
+            
+            // Update pagination info
+            const startItem = (pagination.page - 1) * pagination.pageSize + 1;
+            const endItem = Math.min(startItem + rejects.length - 1, pagination.totalRecords);
+            elements.topRejectsPaginationInfo.textContent = `Showing ${startItem}-${endItem} of ${pagination.totalRecords}`;
+            
+            // Update pagination buttons
+            elements.prevRejectsBtn.disabled = pagination.page <= 1;
+            elements.nextRejectsBtn.disabled = pagination.page >= pagination.totalPages;
+            
+            // Add data rows
             rejects.forEach(reject => {
                 const row = document.createElement('tr');
                 
@@ -2258,6 +3161,15 @@
                 row.appendChild(stationCell);
                 row.appendChild(partsCell);
                 row.appendChild(reasonCell);
+                
+                // Add batch number cell if RTS is selected
+                if (isRtsSelected) {
+                    const batchCell = document.createElement('td');
+                    batchCell.title = reject.partBatchNumbers;
+                    batchCell.textContent = Utils.truncateText(reject.partBatchNumbers, 30);
+                    row.appendChild(batchCell);
+                }
+                
                 row.appendChild(qtyCell);
                 row.appendChild(costCell);
                 
@@ -2266,89 +3178,96 @@
             });
         };
         
-        // Update special stations section
-        const updateSpecialStations = function(stationsData) {
-            const container = document.querySelector('.special-stations-row');
-            if (!container) return;
+        // Update final inspection station card
+        const updateFinalInspectionCard = function(reasonsData, stationData, stationsList) {
+            const { data: reasons, pagination } = reasonsData;
             
-            container.innerHTML = '';
-            
-            if (!stationsData || stationsData.length === 0) {
-                const emptyState = document.createElement('div');
-                emptyState.className = 'empty-state';
-                emptyState.innerHTML = `
-                    <div class="empty-icon"><i class="fas fa-filter"></i></div>
-                    <div class="empty-text">No data available for special stations</div>
-                `;
-                container.appendChild(emptyState);
-                return;
+            // Update metrics
+            if (elements.finalInspectionQty) {
+                elements.finalInspectionQty.textContent = stationData.qty.toLocaleString();
             }
             
-            // Create a card for each special station
-            stationsData.forEach(station => {
-                const card = document.createElement('div');
-                card.className = 'station-card';
+            if (elements.finalInspectionCost) {
+                elements.finalInspectionCost.textContent = Utils.formatCurrency(stationData.cost);
+            }
+            
+            // Update reasons list
+            if (elements.stationReasonsContainer) {
+                elements.stationReasonsContainer.innerHTML = '';
                 
-                const titleEl = document.createElement('div');
-                titleEl.className = 'station-card-title';
-                titleEl.innerHTML = `
-                    <span>${station.name}</span>
-                    <i class="fas fa-info-circle"></i>
-                `;
-                
-                const metricsEl = document.createElement('div');
-                metricsEl.className = 'station-card-metrics';
-                metricsEl.innerHTML = `
-                    <div class="station-card-metric">
-                        <div class="station-card-value">${station.qty}</div>
-                        <div class="station-card-label">Quantity</div>
-                    </div>
-                    <div class="station-card-metric">
-                        <div class="station-card-value">${Utils.formatCurrency(station.cost)}</div>
-                        <div class="station-card-label">Cost</div>
-                    </div>
-                `;
-                
-                const reasonsContainer = document.createElement('div');
-                reasonsContainer.className = 'station-card-reasons';
-                
-                const reasonsTitle = document.createElement('div');
-                reasonsTitle.className = 'station-card-reasons-title';
-                reasonsTitle.textContent = 'Top Reasons';
-                
-                reasonsContainer.appendChild(reasonsTitle);
-                
-                if (station.topReasons && station.topReasons.length > 0) {
-                    station.topReasons.forEach(reason => {
+                if (reasons && reasons.length > 0) {
+                    reasons.forEach(reason => {
                         const reasonItem = document.createElement('div');
                         reasonItem.className = 'reason-item';
                         
+                        const reasonInfo = document.createElement('div');
+                        reasonInfo.className = 'reason-info';
+                        
                         const reasonName = document.createElement('div');
                         reasonName.className = 'reason-name';
-                        reasonName.title = reason.name;
-                        reasonName.textContent = Utils.truncateText(reason.name, 20);
+                        reasonName.title = reason.reason;
+                        reasonName.textContent = Utils.truncateText(reason.reason, 20);
+                        
+                        const reasonParts = document.createElement('div');
+                        reasonParts.className = 'reason-parts';
+                        reasonParts.title = reason.parts;
+                        reasonParts.textContent = Utils.truncateText(`Parts: ${reason.parts}`, 30);
+                        reasonParts.style.fontSize = '0.75rem';
+                        reasonParts.style.color = 'var(--text-muted)';
+                        
+                        reasonInfo.appendChild(reasonName);
+                        reasonInfo.appendChild(reasonParts);
                         
                         const reasonValue = document.createElement('div');
                         reasonValue.className = 'reason-value';
                         reasonValue.textContent = `${reason.qty} (${Utils.formatCurrency(reason.cost)})`;
                         
-                        reasonItem.appendChild(reasonName);
+                        reasonItem.appendChild(reasonInfo);
                         reasonItem.appendChild(reasonValue);
-                        reasonsContainer.appendChild(reasonItem);
+                        
+                        elements.stationReasonsContainer.appendChild(reasonItem);
                     });
                 } else {
                     const emptyReasons = document.createElement('div');
                     emptyReasons.className = 'empty-text';
-                    emptyReasons.textContent = 'No reasons data';
-                    reasonsContainer.appendChild(emptyReasons);
+                    emptyReasons.textContent = 'No reasons data available';
+                    elements.stationReasonsContainer.appendChild(emptyReasons);
                 }
+            }
+            
+            // Update reasons pagination
+            if (elements.stationReasonsPagination) {
+                elements.stationReasonsPagination.innerHTML = '';
                 
-                card.appendChild(titleEl);
-                card.appendChild(metricsEl);
-                card.appendChild(reasonsContainer);
-                
-                container.appendChild(card);
-            });
+                if (pagination && pagination.totalPages > 1) {
+                    for (let i = 1; i <= pagination.totalPages; i++) {
+                        const pageBtn = document.createElement('button');
+                        pageBtn.className = `station-page-btn ${i === pagination.page ? 'active' : ''}`;
+                        pageBtn.dataset.page = i;
+                        pageBtn.textContent = i;
+                        elements.stationReasonsPagination.appendChild(pageBtn);
+                    }
+                }
+            }
+            
+            // Update station navigation
+            availableStations = stationsList;
+            
+            if (elements.stationCurrent && elements.stationTotal) {
+                elements.stationCurrent.textContent = currentStationIndex + 1;
+                elements.stationTotal.textContent = availableStations.length;
+            }
+            
+            if (elements.prevStationBtn && elements.nextStationBtn) {
+                elements.prevStationBtn.disabled = currentStationIndex <= 0;
+                elements.nextStationBtn.disabled = currentStationIndex >= availableStations.length - 1;
+            }
+            
+            // Update station title
+            const stationTitleElement = document.querySelector('#final-inspection-card .station-card-title span');
+            if (stationTitleElement && availableStations[currentStationIndex]) {
+                stationTitleElement.textContent = availableStations[currentStationIndex];
+            }
         };
         
         // Get current sort method
@@ -2356,10 +3275,34 @@
             return currentSortBy;
         };
         
-        // Trigger a custom event
-        const triggerEvent = function(name, detail = {}) {
-            const event = new CustomEvent(name, { detail });
-            document.dispatchEvent(event);
+        // Get current trend view (qty or cost)
+        const getCurrentTrendView = function() {
+            return currentTrendView;
+        };
+        
+        // Get current reasons view (qty or cost)
+        const getCurrentReasonsView = function() {
+            return currentReasonsView;
+        };
+        
+        // Get current top rejects page
+        const getCurrentTopRejectsPage = function() {
+            return currentTopRejectsPage;
+        };
+        
+        // Get current station index
+        const getCurrentStationIndex = function() {
+            return currentStationIndex;
+        };
+        
+        // Get current station reasons page
+        const getCurrentStationReasonsPage = function() {
+            return currentStationReasonsPage;
+        };
+        
+        // Get selected comparison period
+        const getSelectedComparisonPeriod = function() {
+            return elements.comparisonPeriod.value;
         };
         
         // Update ActionSelection toggle button states
@@ -2385,17 +3328,37 @@
             }
         };
         
+        // Reset pagination
+        const resetPagination = function() {
+            currentTopRejectsPage = 1;
+            currentStationReasonsPage = 1;
+        };
+        
+        // Trigger a custom event
+        const triggerEvent = function(name, detail = {}) {
+            const event = new CustomEvent(name, { detail });
+            document.dispatchEvent(event);
+        };
+        
         // Return public methods
         return {
             init,
             setSortBy,
+            setActionFilter,
             populateMultiSelect,
             setDateRange,
             updateMetrics,
             updateTopRejectsTable,
-            updateSpecialStations,
+            updateFinalInspectionCard,
+            updateActionSelectionButtons,
+            resetPagination,
             getCurrentSortBy,
-            updateActionSelectionButtons
+            getCurrentTrendView,
+            getCurrentReasonsView,
+            getCurrentTopRejectsPage,
+            getCurrentStationIndex,
+            getCurrentStationReasonsPage,
+            getSelectedComparisonPeriod
         };
     })();
 
@@ -2405,9 +3368,9 @@
      */
     const ChartModule = (function() {
         // Create trend chart
-        const createTrendChart = function(data, sortBy = 'qty') {
+        const createTrendChart = function(data, comparisonData = null, sortBy = 'qty') {
             const container = document.getElementById('trend-chart-container');
-            if (!container || !data || data.length === 0) {
+            if (!container || !data || !data.data || data.data.length === 0) {
                 const emptyElement = document.getElementById('trend-chart-empty');
                 if (emptyElement) emptyElement.style.display = 'flex';
                 return;
@@ -2435,17 +3398,43 @@
                 .append('g')
                 .attr('transform', `translate(${margin.left},${margin.top})`);
             
+            // Process data for stacked bars
+            const trendData = data.data;
+            
             // Create scales
             const xScale = d3.scaleBand()
-                .domain(data.map(d => d.date))
+                .domain(trendData.map(d => d.date))
                 .range([0, chartWidth])
-                .padding(0.3);
+                .padding(0.2);
             
-            const yValue = d => sortBy === 'qty' ? d.qty : d.cost;
-            const yMax = d3.max(data, yValue);
+            // Determine max value for Y scale
+            let yMax = 0;
+            
+            if (sortBy === 'qty') {
+                // Max for quantity
+                yMax = d3.max(trendData, d => d.total.qty);
+                
+                // Check comparison data if available
+                if (comparisonData && comparisonData.data) {
+                    const compMax = d3.max(comparisonData.data, d => d.total.qty);
+                    yMax = Math.max(yMax, compMax);
+                }
+            } else {
+                // Max for cost
+                yMax = d3.max(trendData, d => d.total.cost);
+                
+                // Check comparison data if available
+                if (comparisonData && comparisonData.data) {
+                    const compMax = d3.max(comparisonData.data, d => d.total.cost);
+                    yMax = Math.max(yMax, compMax);
+                }
+            }
+            
+            // Add padding to yMax
+            yMax = yMax * 1.1;
             
             const yScale = d3.scaleLinear()
-                .domain([0, yMax * 1.1]) // Add 10% padding
+                .domain([0, yMax])
                 .range([chartHeight, 0]);
             
             // Add X axis
@@ -2458,7 +3447,7 @@
                     })
                     .tickValues(xScale.domain().filter((d, i) => {
                         // Show fewer ticks if there are many dates
-                        return data.length > 14 ? i % 3 === 0 : true;
+                        return trendData.length > 14 ? i % 3 === 0 : true;
                     }))
                 );
             
@@ -2499,73 +3488,192 @@
                 .attr('stroke', '#e0e0e0')
                 .attr('stroke-width', 1);
             
-            // Add bars
-            svg.selectAll('.bar')
-                .data(data)
-                .enter()
-                .append('rect')
-                .attr('class', 'bar')
-                .attr('x', d => xScale(d.date))
-                .attr('width', xScale.bandwidth())
-                .attr('y', d => yScale(yValue(d)))
-                .attr('height', d => chartHeight - yScale(yValue(d)))
-                .attr('fill', sortBy === 'qty' ? '#3498db' : '#e67e22')
-                .on('mouseover', function(event, d) {
-                    // Highlight on hover
-                    d3.select(this).attr('fill', '#9b59b6');
-                    
-                    // Create tooltip
-                    const tooltip = d3.select('body')
-                        .append('div')
-                        .attr('class', 'tooltip')
-                        .style('opacity', 0);
-                    
-                    tooltip.transition()
-                        .duration(200)
-                        .style('opacity', 0.9);
-                    
-                    tooltip.html(`
-                        <b>${Utils.formatDateForDisplay(d.date)}</b><br>
-                        Quantity: ${d.qty}<br>
-                        Cost: ${Utils.formatCurrency(d.cost)}
-                    `)
-                    .style('left', (event.pageX + 10) + 'px')
-                    .style('top', (event.pageY - 28) + 'px');
-                })
-                .on('mouseout', function() {
-                    // Restore original color
-                    d3.select(this).attr('fill', sortBy === 'qty' ? '#3498db' : '#e67e22');
-                    
-                    // Remove tooltip
-                    d3.selectAll('.tooltip').remove();
-                });
+            // Define action types and colors
+            const actionTypes = ['Scrap', 'RTS', 'Local'];
+            const colors = {
+                'Scrap': 'var(--scrap-color)',
+                'RTS': 'var(--rts-color)',
+                'Local': 'var(--local-color)'
+            };
             
-            // Add a line for trend
-            if (data.length > 1) {
-                const line = d3.line()
-                    .x(d => xScale(d.date) + xScale.bandwidth() / 2)
-                    .y(d => yScale(yValue(d)))
+            // Create stacked bars for each action type
+            actionTypes.forEach((action, i) => {
+                svg.selectAll(`.bar-${action}`)
+                    .data(trendData)
+                    .enter()
+                    .append('rect')
+                    .attr('class', `bar-${action}`)
+                    .attr('x', d => {
+                        const baseX = xScale(d.date);
+                        // Split the bar into 3 parts (one for each action type)
+                        const segmentWidth = xScale.bandwidth() / actionTypes.length;
+                        return baseX + i * segmentWidth;
+                    })
+                    .attr('width', xScale.bandwidth() / actionTypes.length)
+                    .attr('y', d => {
+                        const value = sortBy === 'qty' ? d[action].qty : d[action].cost;
+                        return yScale(value);
+                    })
+                    .attr('height', d => {
+                        const value = sortBy === 'qty' ? d[action].qty : d[action].cost;
+                        return chartHeight - yScale(value);
+                    })
+                    .attr('fill', colors[action])
+                    .attr('opacity', 0.8)
+                    .on('mouseover', function(event, d) {
+                        // Highlight on hover
+                        d3.select(this).attr('opacity', 1);
+                        
+                        // Create tooltip
+                        const tooltip = d3.select('body')
+                            .append('div')
+                            .attr('class', 'tooltip')
+                            .style('opacity', 0);
+                        
+                        tooltip.transition()
+                            .duration(200)
+                            .style('opacity', 0.9);
+                        
+                        tooltip.html(`
+                            <b>${Utils.formatDateForDisplay(d.date)} - ${action}</b><br>
+                            Quantity: ${d[action].qty}<br>
+                            Cost: ${Utils.formatCurrency(d[action].cost)}
+                        `)
+                        .style('left', (event.pageX + 10) + 'px')
+                        .style('top', (event.pageY - 28) + 'px');
+                    })
+                    .on('mouseout', function() {
+                        // Restore original opacity
+                        d3.select(this).attr('opacity', 0.8);
+                        
+                        // Remove tooltip
+                        d3.selectAll('.tooltip').remove();
+                    });
+            });
+            
+            // Add trend lines (min, mean, max)
+            if (data.stats) {
+                // Max trend line
+                svg.append('line')
+                    .attr('x1', 0)
+                    .attr('x2', chartWidth)
+                    .attr('y1', yScale(data.stats.max))
+                    .attr('y2', yScale(data.stats.max))
+                    .attr('stroke', 'var(--danger-color)')
+                    .attr('stroke-width', 2)
+                    .attr('stroke-dasharray', '5,5');
+                
+                // Mean trend line
+                svg.append('line')
+                    .attr('x1', 0)
+                    .attr('x2', chartWidth)
+                    .attr('y1', yScale(data.stats.mean))
+                    .attr('y2', yScale(data.stats.mean))
+                    .attr('stroke', 'var(--warning-color)')
+                    .attr('stroke-width', 2)
+                    .attr('stroke-dasharray', '5,5');
+                
+                // Min (non-zero) trend line
+                if (data.stats.min > 0) {
+                    svg.append('line')
+                        .attr('x1', 0)
+                        .attr('x2', chartWidth)
+                        .attr('y1', yScale(data.stats.min))
+                        .attr('y2', yScale(data.stats.min))
+                        .attr('stroke', 'var(--success-color)')
+                        .attr('stroke-width', 2)
+                        .attr('stroke-dasharray', '5,5');
+                }
+                
+                // Add labels for trend lines
+                svg.append('text')
+                    .attr('x', 5)
+                    .attr('y', yScale(data.stats.max) - 5)
+                    .attr('font-size', '10px')
+                    .attr('fill', 'var(--danger-color)')
+                    .text(`Max: ${sortBy === 'qty' ? data.stats.max : Utils.formatCurrency(data.stats.max)}`);
+                
+                svg.append('text')
+                    .attr('x', 5)
+                    .attr('y', yScale(data.stats.mean) - 5)
+                    .attr('font-size', '10px')
+                    .attr('fill', 'var(--warning-color)')
+                    .text(`Mean: ${sortBy === 'qty' ? Math.round(data.stats.mean) : Utils.formatCurrency(data.stats.mean)}`);
+                
+                if (data.stats.min > 0) {
+                    svg.append('text')
+                        .attr('x', 5)
+                        .attr('y', yScale(data.stats.min) - 5)
+                        .attr('font-size', '10px')
+                        .attr('fill', 'var(--success-color)')
+                        .text(`Min: ${sortBy === 'qty' ? data.stats.min : Utils.formatCurrency(data.stats.min)}`);
+                }
+            }
+            
+            // Add comparison line if data is available
+            if (comparisonData && comparisonData.data && comparisonData.data.length > 0) {
+                // Create a line for comparison data
+                const compData = comparisonData.data;
+                
+                // Create a line function
+                const compLine = d3.line()
+                    .x((d, i) => {
+                        // Handle mapping comparison dates to current dates
+                        return xScale(trendData[Math.min(i, trendData.length - 1)].date) + xScale.bandwidth() / 2;
+                    })
+                    .y(d => {
+                        const value = sortBy === 'qty' ? d.total.qty : d.total.cost;
+                        return yScale(value);
+                    })
                     .curve(d3.curveMonotoneX);
                 
+                // Add the comparison line
                 svg.append('path')
-                    .datum(data)
+                    .datum(compData.slice(0, trendData.length)) // Use only as many points as in current data
                     .attr('fill', 'none')
-                    .attr('stroke', '#e74c3c')
+                    .attr('stroke', '#9b59b6') // Purple for comparison
                     .attr('stroke-width', 2)
-                    .attr('d', line);
+                    .attr('stroke-dasharray', '3,3')
+                    .attr('d', compLine);
                 
-                // Add data points on the line
-                svg.selectAll('.data-point')
-                    .data(data)
+                // Add data points on the comparison line
+                svg.selectAll('.comp-point')
+                    .data(compData.slice(0, trendData.length))
                     .enter()
                     .append('circle')
-                    .attr('class', 'data-point')
-                    .attr('cx', d => xScale(d.date) + xScale.bandwidth() / 2)
-                    .attr('cy', d => yScale(yValue(d)))
+                    .attr('class', 'comp-point')
+                    .attr('cx', (d, i) => xScale(trendData[Math.min(i, trendData.length - 1)].date) + xScale.bandwidth() / 2)
+                    .attr('cy', d => {
+                        const value = sortBy === 'qty' ? d.total.qty : d.total.cost;
+                        return yScale(value);
+                    })
                     .attr('r', 3)
                     .attr('fill', 'white')
-                    .attr('stroke', '#e74c3c')
-                    .attr('stroke-width', 2);
+                    .attr('stroke', '#9b59b6')
+                    .attr('stroke-width', 1.5)
+                    .on('mouseover', function(event, d) {
+                        // Create tooltip
+                        const tooltip = d3.select('body')
+                            .append('div')
+                            .attr('class', 'tooltip')
+                            .style('opacity', 0);
+                        
+                        tooltip.transition()
+                            .duration(200)
+                            .style('opacity', 0.9);
+                        
+                        tooltip.html(`
+                            <b>Comparison: ${Utils.formatDateForDisplay(d.date)}</b><br>
+                            Quantity: ${d.total.qty}<br>
+                            Cost: ${Utils.formatCurrency(d.total.cost)}
+                        `)
+                        .style('left', (event.pageX + 10) + 'px')
+                        .style('top', (event.pageY - 28) + 'px');
+                    })
+                    .on('mouseout', function() {
+                        // Remove tooltip
+                        d3.selectAll('.tooltip').remove();
+                    });
             }
         };
         
@@ -2588,7 +3696,7 @@
             // Set dimensions
             const width = container.clientWidth;
             const height = container.clientHeight;
-            const margin = { top: 10, right: 20, bottom: 30, left: 100 };
+            const margin = { top: 10, right: 20, bottom: 30, left: 180 };
             const chartWidth = width - margin.left - margin.right;
             const chartHeight = height - margin.top - margin.bottom;
             
@@ -2628,7 +3736,7 @@
             // Add Y axis
             svg.append('g')
                 .call(d3.axisLeft(yScale)
-                    .tickFormat(d => Utils.truncateText(d, 15)));
+                    .tickFormat(d => Utils.truncateText(d, 25)));
             
             // Add X axis
             svg.append('g')
@@ -2784,6 +3892,13 @@
                     }
                 });
                 
+                // Get available action selections based on applied filters
+                const availableActions = DataModule.getAvailableActionSelections();
+                UIModule.updateActionSelectionButtons(availableActions);
+                
+                // Reset pagination
+                UIModule.resetPagination();
+                
                 // Update dashboard with filtered data
                 updateDashboard();
             });
@@ -2808,6 +3923,9 @@
                 });
                 document.getElementById('action-all').classList.add('active');
                 
+                // Reset pagination
+                UIModule.resetPagination();
+                
                 // Update dashboard with filtered data
                 updateDashboard();
             });
@@ -2818,6 +3936,47 @@
                 
                 // Update dashboard with new sort method
                 updateDashboard(sortBy);
+            });
+            
+            // Page changed
+            document.addEventListener('pageChanged', (e) => {
+                const { type, page } = e.detail;
+                
+                // Update dashboard with new page
+                updateDashboard();
+            });
+            
+            // Station changed
+            document.addEventListener('stationChanged', (e) => {
+                const { index } = e.detail;
+                
+                // Update dashboard with new station
+                updateDashboard();
+            });
+            
+            // View changed (trend or reasons)
+            document.addEventListener('viewChanged', (e) => {
+                const { type, view } = e.detail;
+                
+                // Update only the specific chart
+                if (type === 'trend') {
+                    updateTrendChart();
+                } else if (type === 'reasons') {
+                    updateReasonsChart();
+                }
+            });
+            
+            // Comparison period changed
+            document.addEventListener('comparisonChanged', async (e) => {
+                const { period } = e.detail;
+                
+                if (period === 'none') {
+                    // No comparison needed
+                    updateTrendChart();
+                } else {
+                    // Load comparison data
+                    await loadComparisonData(period);
+                }
             });
         };
         
@@ -2892,6 +4051,9 @@
                 const availableActions = DataModule.getAvailableActionSelections();
                 UIModule.updateActionSelectionButtons(availableActions);
                 
+                // Reset pagination
+                UIModule.resetPagination();
+                
                 // Update dashboard with loaded data
                 updateDashboard();
                 
@@ -2907,6 +4069,29 @@
             }
         };
         
+        // Load comparison data
+        const loadComparisonData = async function(period) {
+            try {
+                // Show loading state
+                document.getElementById('trend-chart-loading').style.display = 'flex';
+                
+                // Load comparison data
+                await DataModule.loadComparisonData(period);
+                
+                // Update trend chart with comparison data
+                updateTrendChart();
+                
+                return true;
+            } catch (error) {
+                console.error('Error loading comparison data:', error);
+                return false;
+            } finally {
+                // Hide loading state
+                document.getElementById('trend-chart-loading').style.display = 'none';
+            }
+            }
+        };
+        
         // Update dashboard with current data
         const updateDashboard = function(sortBy = UIModule.getCurrentSortBy()) {
             try {
@@ -2914,21 +4099,17 @@
                 const metrics = DataModule.getMetricsSummary();
                 UIModule.updateMetrics(metrics);
                 
-                // Get special stations data
-                const specialStationsData = DataModule.getSpecialStationsData();
-                UIModule.updateSpecialStations(specialStationsData);
+                // Update Final Inspection station card
+                updateFinalInspectionCard();
                 
-                // Get top rejects data
-                const topRejects = DataModule.getTopRejects(10, sortBy);
-                UIModule.updateTopRejectsTable(topRejects);
+                // Update top rejects table
+                updateTopRejectsTable();
                 
-                // Create trend chart
-                const trendData = DataModule.getTrendChartData(sortBy);
-                ChartModule.createTrendChart(trendData, sortBy);
+                // Update trend chart
+                updateTrendChart();
                 
-                // Create reasons chart
-                const reasonsData = DataModule.getTopReasons(5, sortBy);
-                ChartModule.createReasonsChart(reasonsData, sortBy);
+                // Update reasons chart
+                updateReasonsChart();
                 
                 return true;
             } catch (error) {
@@ -2937,9 +4118,194 @@
             }
         };
         
+        // Update Final Inspection station card
+        const updateFinalInspectionCard = function() {
+            // Get current station index
+            const stationIndex = UIModule.getCurrentStationIndex();
+            
+            // Get available stations
+            const stations = DataModule.getAvailableStations();
+            
+            if (stations.length === 0) {
+                // No stations available
+                return;
+            }
+            
+            // Get current station
+            const currentStation = stations[stationIndex];
+            
+            // Get station data
+            let stationData = {
+                qty: 0,
+                cost: 0
+            };
+            
+            // If this is the Final Inspection station, get data from Final Inspection aliases
+            if (currentStation === 'Final Inspection') {
+                const finalInspectionData = DataModule.getFinalInspectionData();
+                
+                // Calculate totals
+                finalInspectionData.forEach(item => {
+                    stationData.qty += (item.QTY || 0);
+                    stationData.cost += (item.Cost || 0);
+                });
+                
+                // Get station reasons
+                const reasonsPage = UIModule.getCurrentStationReasonsPage();
+                const reasonsData = DataModule.getFinalInspectionReasons(UIModule.getCurrentSortBy(), reasonsPage);
+                
+                // Update UI
+                UIModule.updateFinalInspectionCard(reasonsData, stationData, stations);
+            } else {
+                // Get data for a regular station
+                const filteredData = DataModule.getFilteredData();
+                const stationItems = filteredData.filter(item => item.Station === currentStation);
+                
+                // Calculate totals
+                stationItems.forEach(item => {
+                    stationData.qty += (item.QTY || 0);
+                    stationData.cost += (item.Cost || 0);
+                });
+                
+                // Group by reasons
+                const reasonsData = {};
+                stationItems.forEach(item => {
+                    const reason = item.RejectReason || 'Unknown';
+                    
+                    if (!reasonsData[reason]) {
+                        reasonsData[reason] = {
+                            reason,
+                            qty: 0,
+                            cost: 0,
+                            parts: new Set()
+                        };
+                    }
+                    
+                    // Add parts
+                    let parts = [];
+                    if (Array.isArray(item.Parts)) {
+                        parts = item.Parts.filter(p => p && p.trim());
+                    } else if (typeof item.Parts === 'string') {
+                        parts = item.Parts.split(',').map(p => p.trim()).filter(p => p);
+                    }
+                    
+                    parts.forEach(part => {
+                        if (part) reasonsData[reason].parts.add(part);
+                    });
+                    
+                    // Accumulate qty and cost
+                    reasonsData[reason].qty += (item.QTY || 0);
+                    reasonsData[reason].cost += (item.Cost || 0);
+                });
+                
+                // Convert to array and sort
+                let reasonsArray = Object.values(reasonsData);
+                
+                // Sort by selected metric
+                const sortBy = UIModule.getCurrentSortBy();
+                if (sortBy === 'qty') {
+                    reasonsArray.sort((a, b) => b.qty - a.qty);
+                } else {
+                    reasonsArray.sort((a, b) => b.cost - a.cost);
+                }
+                
+                // Format parts as comma-separated string
+                reasonsArray = reasonsArray.map(item => ({
+                    ...item,
+                    parts: Array.from(item.parts).join(', ')
+                }));
+                
+                // Calculate pagination
+                const pageSize = 3;
+                const reasonsPage = UIModule.getCurrentStationReasonsPage();
+                const totalRecords = reasonsArray.length;
+                const totalPages = Math.ceil(totalRecords / pageSize);
+                const offset = (reasonsPage - 1) * pageSize;
+                
+                // Apply pagination
+                const paginatedData = reasonsArray.slice(offset, offset + pageSize);
+                
+                // Prepare data structure for UI
+                const reasonsDataObj = {
+                    data: paginatedData,
+                    pagination: {
+                        page: reasonsPage,
+                        pageSize,
+                        totalRecords,
+                        totalPages
+                    }
+                };
+                
+                // Update UI
+                UIModule.updateFinalInspectionCard(reasonsDataObj, stationData, stations);
+            }
+        };
+        
+        // Update top rejects table
+        const updateTopRejectsTable = function() {
+            // Get current page
+            const page = UIModule.getCurrentTopRejectsPage();
+            
+            // Get sort method
+            const sortBy = UIModule.getCurrentSortBy();
+            
+            // Get current filters
+            const currentFilters = DataModule.getCurrentFilters();
+            
+            // Check if RTS filter is active
+            const isRtsSelected = currentFilters.actionSelection && 
+                                 currentFilters.actionSelection.length === 1 && 
+                                 currentFilters.actionSelection[0] === 'RTS';
+            
+            // Get top rejects data
+            const topRejects = DataModule.getTopRejects(5, sortBy, page);
+            
+            // Update UI
+            UIModule.updateTopRejectsTable(topRejects, isRtsSelected);
+        };
+        
+        // Update trend chart
+        const updateTrendChart = function() {
+            // Get trend view (qty or cost)
+            const trendView = UIModule.getCurrentTrendView();
+            
+            // Get trend data
+            const trendData = DataModule.getTrendChartData(trendView);
+            
+            // Check if comparison is selected
+            const comparisonPeriod = UIModule.getSelectedComparisonPeriod();
+            let comparisonData = null;
+            
+            if (comparisonPeriod !== 'none') {
+                comparisonData = DataModule.getComparisonTrendData(trendView);
+            }
+            
+            // Create chart
+            ChartModule.createTrendChart(trendData, comparisonData, trendView);
+        };
+        
+        // Update reasons chart
+        const updateReasonsChart = function() {
+            // Get reasons view (qty or cost)
+            const reasonsView = UIModule.getCurrentReasonsView();
+            
+            // Get reasons data
+            const reasonsData = DataModule.getTopReasons(5, reasonsView);
+            
+            // Create chart
+            ChartModule.createReasonsChart(reasonsData, reasonsView);
+        };
+        
         // Return public methods
         return {
-            init
+            init,
+            loadDataForDateRange,
+            loadComparisonData,
+            updateDashboard,
+            updateFinalInspectionCard,
+            updateTopRejectsTable,
+            updateTrendChart,
+            updateReasonsChart
         };
     })();
 
