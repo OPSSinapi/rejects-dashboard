@@ -492,592 +492,176 @@
             min-height: 0;
         }
         
-        /* Station row takes full width */
-        .special-stations-row {
-            grid-column: span 2;
-            display: flex;
-            gap: var(--space-xs);
-            overflow: hidden;
-            height: auto;
-            min-height: 140px;
-            max-height: 160px;
-        }
-        
-        /* More compact station card */
-        .station-card {
-            padding: var(--space-xs);
-            background-color: var(--card-bg-color);
-            border-radius: var(--border-radius-sm);
-            box-shadow: var(--card-shadow);
-            flex: 1;
-            height: 100%;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            border-top: 3px solid var(--info-color);
-        }
-        
-        .station-card-title {
-            margin-bottom: var(--space-xs);
-            font-size: var(--small-font-size);
-            font-weight: 600;
-            color: var(--primary-color);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        
-        .station-card-metrics {
-            margin-bottom: var(--space-xs);
-            display: flex;
-            gap: var(--space-md);
-        }
-        
-        .station-card-metric {
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .station-card-value {
-            font-size: 0.9rem;
-            font-weight: 600;
-        }
-        
-        .station-card-label {
-            font-size: var(--small-font-size);
-            color: var(--text-muted);
-        }
-        
-        /* Make more efficient use of space in station card */
-        .station-card-reasons {
-            margin-top: var(--space-xs);
-            flex: 1;
-            min-height: 0;
-            overflow: auto;
-        }
-        
-        .station-card-reasons-title {
-            font-size: var(--small-font-size);
-            font-weight: 600;
-            color: var(--primary-color);
-            margin-bottom: var(--space-xs);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .reason-item {
-            padding: 1px 0;
-            display: flex;
-            justify-content: space-between;
-            font-size: var(--small-font-size);
-        }
-        
-        .reason-item:not(:last-child) {
-            border-bottom: 1px dashed var(--border-color);
-        }
-        
-        .reason-name {
-            color: var(--text-color);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 180px;
-        }
-        
-        .reason-value {
-            font-weight: 500;
-            color: var(--primary-color);
-            white-space: nowrap;
-        }
-        
-        /* Station Navigation */
-        .station-nav {
-            display: flex;
-            gap: var(--space-xs);
-            margin-top: auto;
-            padding-top: var(--space-xs);
-            border-top: 1px solid var(--border-color);
-        }
-        
-        .station-nav-btn {
-            background: none;
-            border: none;
-            color: var(--secondary-color);
-            cursor: pointer;
-            font-size: var(--small-font-size);
-            padding: 2px 4px;
-        }
-        
-        .station-nav-btn:hover {
-            color: var(--secondary-dark);
-        }
-        
-        .station-nav-btn:disabled {
-            color: var(--text-muted);
-            cursor: not-allowed;
-        }
-        
-        .station-nav-indicator {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto;
-            font-size: var(--small-font-size);
-            color: var(--text-muted);
-        }
-        
-        .station-pagination {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        
-        .station-page-btn {
-            background: none;
-            border: none;
-            color: var(--secondary-color);
-            cursor: pointer;
-            font-size: 12px;
-        }
-        
-        .station-page-btn.active {
-            color: var(--primary-color);
-            font-weight: bold;
-        }
-        
-        .dashboard-card {
-            background-color: var(--card-bg-color);
-            border-radius: var(--border-radius-sm);
-            box-shadow: var(--card-shadow);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-        
-        /* New grid layout positioning */
-        /* First row, first column: Top Rejects Table */
-        .top-rejects-card {
-            grid-column: 1;
-            grid-row: 2;
-            min-height: 300px;
-        }
-        
-        /* First row, second column: Daily Trend Chart */
-        .trend-chart-card {
-            grid-column: 2;
-            grid-row: 2;
-            height: calc(50% - var(--space-xs));
-            margin-bottom: auto;
-        }
-        
-        /* Second row, second column: Top Reject Reasons Chart */
-        .reasons-chart-card {
-            grid-column: 2;
-            grid-row: 2;
-            height: calc(50% - var(--space-xs));
-            margin-top: auto;
-        }
-        
-        /* More compact card headers */
-        .card-header {
-            padding: var(--space-xs) var(--space-sm);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border-color);
-        }
-        
-        .card-title {
-            font-size: var(--small-font-size);
-            font-weight: 600;
-            color: var(--primary-color);
-            display: flex;
-            align-items: center;
-            gap: var(--space-xs);
-        }
-        
-        .card-controls {
-            display: flex;
-            align-items: center;
-            gap: var(--space-xs);
-        }
-        
-        /* Reduce padding in card content */
-        .card-content {
-            flex: 1;
-            overflow: auto;
-            padding: 0;
-            position: relative;
-            min-height: 0;
-        }
-        
-        /* More compact table cells */
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        .data-table th, 
-        .data-table td {
-            padding: var(--space-xs) var(--space-sm);
-            text-align: left;
-            border-bottom: 1px solid var(--border-color);
-            font-size: var(--small-font-size);
-        }
-        
-        .data-table th {
-            background-color: #f8f9fa;
-            font-weight: 600;
-            color: var(--primary-color);
-            position: sticky;
-            top: 0;
-            z-index: 5;
-        }
-        
-        .data-table tbody tr:hover {
-            background-color: #f5f9ff;
-        }
-        
-        .data-table th.sortable {
-            cursor: pointer;
-        }
-        
-        .data-table th.sortable:hover {
-            background-color: #edf2f7;
-        }
-        
-        .data-table th.sortable::after {
-            content: "⇅";
-            margin-left: 5px;
-            color: #adb5bd;
-        }
-        
-        .data-table th.sorted-asc::after {
-            content: "↑";
-            color: var(--secondary-color);
-        }
-        
-        .data-table th.sorted-desc::after {
-            content: "↓";
-            color: var(--secondary-color);
-        }
-        
-        /* Adjust chart containers for better visibility */
-        .chart-container {
-            padding: var(--space-xs);
-            position: relative;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-        }
-        
-        /* Ensure full visibility of charts */
-        .trend-chart-card, .reasons-chart-card {
-            min-height: 200px;
-        }
-        
-        /* Loading and empty states */
-        .loading-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(255, 255, 255, 0.8);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        
-        .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid var(--secondary-color);
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
-            margin-bottom: var(--space-xs);
-        }
-        
-        .loading-text {
-            font-size: var(--small-font-size);
-            color: var(--text-muted);
-        }
-        
-        .empty-state {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100%;
-            padding: var(--space-md);
-            text-align: center;
-        }
-        
-        .empty-icon {
-            font-size: 1.5rem;
-            color: var(--border-color);
-            margin-bottom: var(--space-xs);
-        }
-        
-        .empty-text {
-            color: var(--text-muted);
-            font-size: var(--small-font-size);
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        /* Tooltips */
-        .tooltip {
-            position: fixed;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 4px;
-            z-index: 1000;
-            pointer-events: none;
-            font-size: 12px;
-            max-width: 250px;
-        }
-        
-        /* Scrollbars */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 3px;
-        }
-        
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e0;
-            border-radius: 3px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-            background: #a0aec0;
-        }
-        
-        /* Adjust pagination controls to use less space */
-        .pagination {
-            padding: var(--space-xs) 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-top: 1px solid var(--border-color);
-            gap: var(--space-xs);
-        }
-        
-        .pagination-btn {
-            background: none;
-            border: none;
-            color: var(--secondary-color);
-            cursor: pointer;
-            padding: 2px 6px;
-            font-size: var(--small-font-size);
-            border-radius: var(--border-radius-sm);
-        }
-        
-        .pagination-btn:hover {
-            background-color: #f8f9fa;
-        }
-        
-        .pagination-btn:disabled {
-            color: var(--text-muted);
-            cursor: not-allowed;
-        }
-        
-        .pagination-info {
-            font-size: var(--small-font-size);
-            color: var(--text-muted);
-        }
-        
-        /* Comparison selector for trend chart */
-        .comparison-select {
-            padding: 2px 6px;
-            font-size: var(--small-font-size);
-            border: 1px solid var(--border-color);
-            border-radius: var(--border-radius-sm);
-            background-color: white;
-        }
-        
-        /* More options button for cards */
-        .more-options-btn {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            cursor: pointer;
-            font-size: var(--small-font-size);
-            padding: 2px;
-            margin-left: var(--space-xs);
-        }
-        
-        .more-options-btn:hover {
-            color: var(--primary-color);
-        }
-        
-        /* Reduce legend spacing */
-        .chart-legend {
-            margin-top: var(--space-xs);
-            gap: var(--space-xs);
-            display: flex;
-            align-items: center;
-            font-size: var(--small-font-size);
-            flex-wrap: wrap;
-        }
-        
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        
-        .legend-color {
-            width: 12px;
-            height: 12px;
-            border-radius: 2px;
-        }
-        
-        /* Trend line styles */
-        .trend-line-legend {
-            display: flex;
-            align-items: center;
-            gap: var(--space-xs);
-            font-size: var(--small-font-size);
-        }
-        
-        .trend-line-dash {
-            width: 15px;
-            height: 2px;
-            background-color: #ccc;
-        }
-        
-        .trend-line-dash.max {
-            background-color: var(--danger-color);
-            height: 2px;
-        }
-        
-        .trend-line-dash.mean {
-            background-color: var(--warning-color);
-            height: 2px;
-        }
-        
-        .trend-line-dash.min {
-            background-color: var(--success-color);
-            height: 2px;
-        }
-        
-        /* Media Queries */
-        @media (max-width: 1200px) {
-            .dashboard-grid {
-                grid-template-columns: 3fr 2fr;
-            }
-        }
+        /* Modified CSS for the Station Card to eliminate scrolling and improve visibility */
 
-        @media (max-width: 992px) {
-            .dashboard-grid {
-                grid-template-columns: 1fr;
-                grid-template-rows: auto auto auto auto;
-            }
-            
-            .special-stations-row {
-                grid-column: 1;
-                grid-row: 1;
-            }
-            
-            .top-rejects-card {
-                grid-column: 1;
-                grid-row: 2;
-            }
-            
-            .trend-chart-card {
-                grid-column: 1;
-                grid-row: 3;
-                height: auto;
-                min-height: 250px;
-                margin: 0;
-            }
-            
-            .reasons-chart-card {
-                grid-column: 1;
-                grid-row: 4;
-                height: auto;
-                min-height: 250px;
-                margin: 0;
-            }
-        }
+/* Station row takes full width - MODIFIED to remove max-height constraint */
+.special-stations-row {
+    grid-column: span 2;
+    display: flex;
+    gap: var(--space-xs);
+    overflow: visible;
+    height: auto;
+    min-height: 140px;
+    /* Removed max-height constraint to prevent scrolling */
+}
 
-        @media (max-width: 768px) {
-            .filter-section {
-                flex-direction: column;
-                align-items: stretch;
-                gap: var(--space-sm);
-                padding: var(--space-sm);
-                height: auto;
-                min-height: var(--filter-height);
-            }
-            
-            .filter-group {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            
-            .multi-select {
-                width: 100%;
-            }
-            
-            .filter-buttons {
-                width: 100%;
-                margin-top: var(--space-sm);
-                justify-content: flex-end;
-            }
-            
-            .metrics-bar {
-                flex-direction: column;
-                height: auto;
-                padding: var(--space-sm);
-                gap: var(--space-md);
-            }
-            
-            .metrics-group {
-                flex-wrap: wrap;
-                justify-content: space-between;
-            }
-            
-            .toggle-group {
-                width: 100%;
-                flex-wrap: wrap;
-                justify-content: space-between;
-            }
-            
-            .data-table th, 
-            .data-table td {
-                padding: var(--space-xs) var(--space-xs);
-                font-size: calc(var(--small-font-size) - 1px);
-            }
-            
-            /* Hide less important columns on very small screens */
-            @media (max-width: 480px) {
-                .data-table th:nth-child(2), 
-                .data-table td:nth-child(2) {
-                    display: none;
-                }
-            }
-        }
+/* More compact station card - MODIFIED to improve visibility */
+.station-card {
+    padding: var(--space-sm);
+    background-color: var(--card-bg-color);
+    border-radius: var(--border-radius-sm);
+    box-shadow: var(--card-shadow);
+    flex: 1;
+    height: 100%;
+    overflow: visible;
+    display: flex;
+    flex-direction: column;
+    border-top: 3px solid var(--info-color);
+}
+
+.station-card-title {
+    margin-bottom: var(--space-xs);
+    font-size: var(--small-font-size);
+    font-weight: 600;
+    color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.station-card-metrics {
+    margin-bottom: var(--space-xs);
+    display: flex;
+    gap: var(--space-md);
+}
+
+.station-card-metric {
+    display: flex;
+    flex-direction: column;
+}
+
+.station-card-value {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.station-card-label {
+    font-size: var(--small-font-size);
+    color: var(--text-muted);
+}
+
+/* Modified to eliminate scrolling */
+.station-card-reasons {
+    margin-top: var(--space-xs);
+    flex: 1;
+    overflow: visible;
+    display: flex;
+    flex-direction: column;
+}
+
+.station-card-reasons-title {
+    font-size: var(--small-font-size);
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: var(--space-xs);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Modified for better visibility */
+.reason-item {
+    padding: 1px 0;
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--small-font-size);
+    margin-bottom: 2px;
+}
+
+.reason-item:not(:last-child) {
+    border-bottom: 1px dashed var(--border-color);
+}
+
+.reason-name {
+    color: var(--text-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+}
+
+.reason-value {
+    font-weight: 500;
+    color: var(--primary-color);
+    white-space: nowrap;
+}
+
+/* Station Navigation */
+.station-nav {
+    display: flex;
+    gap: var(--space-xs);
+    margin-top: var(--space-xs);
+    padding-top: var(--space-xs);
+    border-top: 1px solid var(--border-color);
+}
+
+.station-nav-btn {
+    background: none;
+    border: none;
+    color: var(--secondary-color);
+    cursor: pointer;
+    font-size: var(--small-font-size);
+    padding: 2px 4px;
+}
+
+.station-nav-btn:hover {
+    color: var(--secondary-dark);
+}
+
+.station-nav-btn:disabled {
+    color: var(--text-muted);
+    cursor: not-allowed;
+}
+
+.station-nav-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    font-size: var(--small-font-size);
+    color: var(--text-muted);
+}
+
+.station-pagination {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.station-page-btn {
+    background: none;
+    border: none;
+    color: var(--secondary-color);
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.station-page-btn.active {
+    color: var(--primary-color);
+    font-weight: bold;
+}
 
 .station-aliases {
     font-size: 0.7rem;
     font-weight: normal;
     color: var(--text-muted);
     margin-left: var(--space-xs);
+}
+
+/* Enhanced compact reasons display */
+.compact-reasons {
+    display: flex;
+    flex-direction: column;
 }
 
 .compact-reasons .reason-item {
@@ -4070,6 +3654,7 @@
         };
     })();
         /**
+     /**
      * Dashboard Module
      * Orchestrates the overall application
      */
@@ -4078,6 +3663,8 @@
         let elements;
         let currentStationIndex = 0;
         let availableStations = [];
+        // Track last filters to check for changes
+        let lastFilterState = {};
 
         // Initialize the dashboard
         const init = async function() {
@@ -4295,6 +3882,9 @@
                 // Load data for the date range
                 await DataModule.loadDataForDateRange();
                 
+                // Store initial filter state
+                lastFilterState = JSON.stringify(DataModule.getCurrentFilters());
+                
                 // Get filter options
                 const filterOptions = DataModule.getFilterOptions();
                 console.log("Available filter options:", filterOptions);
@@ -4426,6 +4016,9 @@
                 // Load data for current date range
                 await DataModule.loadDataForDateRange();
                 
+                // Store current filter state
+                lastFilterState = JSON.stringify(DataModule.getCurrentFilters());
+                
                 // Get filter options
                 const filterOptions = DataModule.getFilterOptions();
                 
@@ -4502,6 +4095,9 @@
                 // Update reasons chart
                 updateReasonsChart();
                 
+                // Update stored filter state
+                lastFilterState = JSON.stringify(DataModule.getCurrentFilters());
+                
                 return true;
             } catch (error) {
                 console.error('Error updating dashboard:', error);
@@ -4509,7 +4105,13 @@
             }
         };
         
-        // Modified updateFinalInspectionCard function
+        // Check if filters have changed
+        const haveFiltersChanged = function() {
+            const currentState = JSON.stringify(DataModule.getCurrentFilters());
+            return currentState !== lastFilterState;
+        };
+        
+        // Modified updateFinalInspectionCard function - improved for visibility and context awareness
         const updateFinalInspectionCard = function() {
             // Get current station index
             const stationIndex = UIModule.getCurrentStationIndex();
@@ -4537,15 +4139,18 @@
             if (currentStation === 'Final Inspection') {
                 const finalInspectionData = DataModule.getFinalInspectionData();
                 
-                // Calculate totals
+                // Calculate totals (ensure we're not including standalone "Wrapping" station)
                 finalInspectionData.forEach(item => {
-                    stationData.qty += (item.QTY || 0);
-                    stationData.cost += (item.Cost || 0);
+                    // Check if station is in the aliases list but not standalone "Wrapping"
+                    if (item.Station && item.Station !== "Wrapping") {
+                        stationData.qty += (item.QTY || 0);
+                        stationData.cost += (item.Cost || 0);
+                    }
                 });
                 
-                // Get station reasons
+                // Get station reasons - limit to 3 for at-a-glance viewing without scrolling
                 const reasonsPage = UIModule.getCurrentStationReasonsPage();
-                const reasonsData = DataModule.getFinalInspectionReasons(UIModule.getCurrentSortBy(), reasonsPage);
+                const reasonsData = DataModule.getFinalInspectionReasons(UIModule.getCurrentSortBy(), reasonsPage, 3);
                 
                 // Get the actual active Final Inspection stations based on current filters
                 const activeStations = getActiveFinalInspectionStations();
@@ -4560,7 +4165,12 @@
                 
                 if (stationAliases) {
                     if (activeStations.length > 0) {
-                        stationAliases.textContent = `(${activeStations.join(', ')})`;
+                        // Format as a shorter string to fit without wrapping
+                        const stationsStr = activeStations.length <= 2 ? 
+                            activeStations.join(', ') : 
+                            `${activeStations[0]} + ${activeStations.length - 1} more`;
+                        
+                        stationAliases.textContent = `(${stationsStr})`;
                         stationAliases.style.display = '';
                     } else {
                         stationAliases.style.display = 'none';
@@ -4628,7 +4238,7 @@
                     parts: Array.from(item.parts).join(', ')
                 }));
                 
-                // Calculate pagination
+                // Calculate pagination - limit page size to 3 for better visibility without scrolling
                 const pageSize = 3;
                 const reasonsPage = UIModule.getCurrentStationReasonsPage();
                 const totalRecords = reasonsArray.length;
@@ -4667,15 +4277,18 @@
         };
 
         // Helper function to get active Final Inspection stations based on filters
+        // Modified to exclude standalone "Wrapping" station
         const getActiveFinalInspectionStations = function() {
             const finalInspectionAliases = DataModule.finalInspectionAliases;
             const filteredData = DataModule.getFilteredData();
             
-            // Get unique stations that match the aliases
+            // Get unique stations that match the aliases (excluding standalone "Wrapping")
             const activeStations = new Set();
             
             filteredData.forEach(item => {
-                if (item.Station && finalInspectionAliases.includes(item.Station)) {
+                if (item.Station && 
+                    finalInspectionAliases.includes(item.Station) && 
+                    item.Station !== "Wrapping") {
                     activeStations.add(item.Station);
                 }
             });
@@ -4684,6 +4297,7 @@
         };
 
         // Update the station card with compact reasons format
+        // Modified for better visibility without scrolling
         const updateCompactReasons = function(reasonsData, stationData, stationsList) {
             const { data: reasons, pagination } = reasonsData;
             
@@ -4701,7 +4315,10 @@
                 elements.stationReasonsContainer.innerHTML = '';
                 
                 if (reasons && reasons.length > 0) {
-                    reasons.forEach(reason => {
+                    // Limit to 3 reasons for better visibility
+                    const visibleReasons = reasons.slice(0, 3);
+                    
+                    visibleReasons.forEach(reason => {
                         const reasonItem = document.createElement('div');
                         reasonItem.className = 'reason-item';
                         
@@ -4715,13 +4332,20 @@
                         reasonName.title = reason.reason;
                         reasonName.textContent = Utils.truncateText(reason.reason, 20);
                         
+                        // Create more concise parts display for at-a-glance view
+                        const partsList = reason.parts.split(',').filter(p => p.trim());
+                        const partsCount = partsList.length;
+                        const partsText = partsCount > 0 
+                            ? (partsCount <= 2 
+                                ? partsList.join(', ') 
+                                : `${partsList[0]} + ${partsCount-1} more`)
+                            : 'No parts';
+                        
                         // Parts section below
                         const reasonParts = document.createElement('div');
                         reasonParts.className = 'reason-parts';
                         reasonParts.title = reason.parts;
-                        reasonParts.textContent = `Parts: ${Utils.truncateText(reason.parts, 30)}`;
-                        reasonParts.style.fontSize = '0.75rem';
-                        reasonParts.style.color = 'var(--text-muted)';
+                        reasonParts.textContent = `Parts: ${partsText}`;
                         
                         reasonInfo.appendChild(reasonName);
                         reasonInfo.appendChild(reasonParts);
@@ -4750,7 +4374,17 @@
                 elements.stationReasonsPagination.innerHTML = '';
                 
                 if (pagination && pagination.totalPages > 1) {
-                    for (let i = 1; i <= pagination.totalPages; i++) {
+                    // Only show up to 3 page buttons to save space
+                    const maxPageButtons = 3;
+                    const currentPage = pagination.page;
+                    
+                    let startPage = Math.max(1, currentPage - Math.floor(maxPageButtons / 2));
+                    let endPage = Math.min(pagination.totalPages, startPage + maxPageButtons - 1);
+                    
+                    // Adjust startPage if we're near the end
+                    startPage = Math.max(1, endPage - maxPageButtons + 1);
+                    
+                    for (let i = startPage; i <= endPage; i++) {
                         const pageBtn = document.createElement('button');
                         pageBtn.className = `station-page-btn ${i === pagination.page ? 'active' : ''}`;
                         pageBtn.dataset.page = i;
